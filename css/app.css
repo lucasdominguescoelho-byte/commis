@@ -842,7 +842,7 @@ html.is-cooking { overflow: hidden; }
   --peche: #fde6d8; --sauge: #e6eddc; --beurre: #fbf0cf; --ciel: #e3ecf3;
   --r: 26px;
 }
-:is(.card, .rc, .pc, .sum, .meal, .nextm) { border: 0; box-shadow: none; }
+:is(.card, .rc, .sum, .meal, .nextm) { border: 0; box-shadow: none; }
 /* Chaque bloc de l'accueil a sa couleur */
 [data-view='accueil'] > .grid:not(.sec) > .card:nth-child(1) { background: var(--peche); }
 [data-view='accueil'] > .grid:not(.sec) > .card:nth-child(3) { background: var(--sauge); }
@@ -854,15 +854,16 @@ html.is-cooking { overflow: hidden; }
 .card .bar { background: rgba(36, 31, 27, 0.1); }
 .strip-d { border-right-color: rgba(36, 31, 27, 0.06); }
 /* Cartes recettes : fonds pastel en alternance, coins généreux */
-.cards > :nth-child(4n + 1) { background: var(--peche); }
-.cards > :nth-child(4n + 2) { background: var(--sauge); }
-.cards > :nth-child(4n + 3) { background: var(--beurre); }
-.cards > :nth-child(4n + 4) { background: var(--ciel); }
-:is(.rc-v, .pc-v) { margin: 8px 8px 0; border-radius: 20px; }
-.pc-v { background: #fff; }
+.cards > .rc:nth-child(4n + 1) { background: var(--peche); }
+.cards > .rc:nth-child(4n + 2) { background: var(--sauge); }
+.cards > .rc:nth-child(4n + 3) { background: var(--beurre); }
+.cards > .rc:nth-child(4n + 4) { background: var(--ciel); }
+.rc-v { margin: 8px 8px 0; border-radius: 20px; }
+/* Promotions : cartes blanches à ombre douce, photo pleine largeur (comme avant « Cuisine ») */
+.pc { background: #fff; }
 .meal { background: #fff4ec; }
 .meal-v { margin: 6px 6px 0; border-radius: 14px; }
 .nav-i.is-on { background: var(--citron); color: #fff; }
 .nav-i.is-on .ic { color: #fff; }
 .side { background: rgba(255, 250, 246, 0.92); }
-@media (hover: hover) and (pointer: fine) { :is(.rc, .pc, .meal):hover { box-shadow: 0 16px 30px -18px rgba(120, 60, 30, 0.45); } }
+@media (hover: hover) and (pointer: fine) { :is(.rc, .meal):hover { box-shadow: 0 16px 30px -18px rgba(120, 60, 30, 0.45); } }
