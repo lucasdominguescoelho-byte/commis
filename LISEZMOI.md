@@ -1,18 +1,18 @@
-# Cabas — repas & courses
+# Commis — repas & courses
 
 Outil personnel pour planifier les repas de la semaine avec les promotions de **Migros, Coop et Lidl**, générer la liste de courses et suivre le budget. Usage privé : pas de compte, pas d'abonnement.
 
-## Ouvrir Cabas
+## Ouvrir Commis
 
 - **En ligne (ordinateur et téléphone)** : l'adresse GitHub Pages du dépôt, par exemple `https://<utilisateur>.github.io/cabas/`.
-- **Sur le téléphone** : ouvrir l'adresse dans Safari, puis *Partager → Sur l'écran d'accueil*. Cabas s'ouvre alors comme une app et fonctionne aussi hors ligne (la liste de courses reste disponible au magasin).
-- **En local** : double-cliquer sur `Ouvrir Cabas.command` (serveur sur `http://localhost:8765`). Ouvrir `index.html` directement fonctionne aussi, mais sans les promotions.
+- **Sur le téléphone** : ouvrir l'adresse dans Safari, puis *Partager → Sur l'écran d'accueil*. Commis s'ouvre alors comme une app et fonctionne aussi hors ligne (la liste de courses reste disponible au magasin).
+- **En local** : double-cliquer sur `Ouvrir Commis.command` (serveur sur `http://localhost:8765`). Ouvrir `index.html` directement fonctionne aussi, mais sans les promotions.
 
 Chaque appareil et chaque adresse a **ses propres données** (recettes, plannings, réglages). Pour passer de l'un à l'autre : *Réglages → Exporter une sauvegarde*, puis *Restaurer* sur l'autre appareil.
 
 ## Où sont les données
 
-Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Cabas : exportez une sauvegarde de temps en temps.
+Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Commis : exportez une sauvegarde de temps en temps.
 
 ## Les promotions
 
@@ -24,7 +24,7 @@ Mises à jour chaque matin par GitHub Actions (`.github/workflows/promotions.yml
 | Migros | aktionis.ch (agrégateur suisse d'actions) | allemand, traduit |
 | Coop | aktionis.ch | allemand, traduit |
 
-Migros et Coop bloquent l'accès automatisé à leurs propres sites ; Cabas ne contourne pas ce blocage et passe par l'agrégateur.
+Migros et Coop bloquent l'accès automatisé à leurs propres sites ; Commis ne contourne pas ce blocage et passe par l'agrégateur.
 
 - **Traduction** : un dictionnaire (`DICO` dans `outils/promotions.py`) reconnaît ~180 produits courants (viande, poisson, légumes, fromages, épicerie…) et leur donne un nom français, un rayon et un mot-clé qui les relie aux ingrédients des recettes. Un produit non reconnu garde son nom allemand et n'est relié à aucune recette.
 - **Dates** : Lidl et Migros donnent les dates exactes. Coop souvent pas : la fin est alors estimée au dimanche (« env. » dans l'app).
@@ -55,7 +55,7 @@ Ce qu'il reste à la maison, ajouté de trois façons :
 
 Les aliments servent à la génération de recettes **uniquement quand on coche « Mon frigo »**. Dans la liste de courses, ce qui est déjà au frigo est signalé et n'est pas compté dans le total (case « Déduire le frigo »).
 
-La caméra demande que Cabas soit ouvert en HTTPS (l'adresse GitHub Pages) et l'autorisation du navigateur.
+La caméra demande que Commis soit ouvert en HTTPS (l'adresse GitHub Pages) et l'autorisation du navigateur.
 
 ## Génération de recettes (gratuite, sans IA)
 
@@ -63,7 +63,7 @@ La caméra demande que Cabas soit ouvert en HTTPS (l'adresse GitHub Pages) et l'
 
 - une base d'environ 60 ingrédients courants (portion par personne, prix habituel, cuisson) ;
 - 12 modèles de plats : poêlée, pâtes, gratin, risotto, curry, soupe, salade, plaque au four, papillote, quiche, omelette, wok ;
-- pour chaque idée, Cabas essaie des centaines de combinaisons et garde celles qui utilisent le plus de produits en promotion (gros rabais d'abord) et d'aliments du frigo cochés, en respectant régime, allergies et aliments évités. « Autres idées » change de plat et de protéine principale.
+- pour chaque idée, Commis essaie des centaines de combinaisons et garde celles qui utilisent le plus de produits en promotion (gros rabais d'abord) et d'aliments du frigo cochés, en respectant régime, allergies et aliments évités. « Autres idées » change de plat et de protéine principale.
 
 C'est fiable et simple, mais moins inventif qu'un chef : pour élargir le répertoire, ajouter des ingrédients (tableaux `P`, `L`, `F`) ou des modèles (tableau `T`).
 

@@ -1,4 +1,4 @@
-/* Cabas — Liste de courses : générée depuis le planning, regroupée, chiffrée, cochable, imprimable, exportable. */
+/* Commis — Liste de courses : générée depuis le planning, regroupée, chiffrée, cochable, imprimable, exportable. */
 (function () {
   'use strict';
   const C = window.C;

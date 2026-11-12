@@ -1,4 +1,4 @@
-/* Cabas — Planning hebdomadaire : grille midi / soir, ajout, déplacement, détail d'un repas, proposition automatique. */
+/* Commis — Planning hebdomadaire : grille midi / soir, ajout, déplacement, détail d'un repas, proposition automatique. */
 (function () {
   'use strict';
   const C = window.C;
@@ -204,7 +204,7 @@
       C.sheet({
         title: 'Proposer un planning',
         sub: `Semaine ${C.weekNo(wid)} · ${C.weekLabel(wid)}`,
-        body: `<p style="color:var(--ink-2)">Cabas choisit, parmi vos recettes, celles qui profitent le mieux des promotions de la semaine, réutilisent les mêmes produits frais d’un repas à l’autre et tiennent dans votre budget.</p>
+        body: `<p style="color:var(--ink-2)">Commis choisit, parmi vos recettes, celles qui profitent le mieux des promotions de la semaine, réutilisent les mêmes produits frais d’un repas à l’autre et tiennent dans votre budget.</p>
           <div class="card rows" style="margin:16px 0;padding:16px 18px">
             ${row('Recettes compatibles avec vos préférences', `${pool} sur ${C.S.recipes.length}`)}
             ${row('Promotions valables dans vos magasins', E.activePromos(wid).length)}

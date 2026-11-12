@@ -1,4 +1,4 @@
-/* Cabas — promotions réelles.
+/* Commis — promotions réelles.
 
    Le fichier data/promotions.json est produit par outils/promotions.py, lancé
    chaque jour par GitHub Actions (voir .github/workflows/promotions.yml) :

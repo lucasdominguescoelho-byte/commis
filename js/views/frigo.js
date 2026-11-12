@@ -1,4 +1,4 @@
-/* Cabas — Frigo : ce qu'il reste à la maison.
+/* Commis — Frigo : ce qu'il reste à la maison.
    Ajout par code-barres (caméra → Open Food Facts), par ticket de caisse (texte lu sur l'appareil)
    ou à la main. Les aliments servent, sur demande, à générer des recettes, et sont
    déduits de la liste de courses. */
@@ -44,7 +44,7 @@
                ${groups.map((g) => `<section class="card" style="margin-bottom:16px"><div class="sec-h"><h2 class="h3">${esc(g.c.name)}</h2><span class="small muted">${g.list.length}</span></div><div class="rows">${g.list.map(row).join('')}</div></section>`).join('')}
                <div class="card card--citron frigo-cta"><div><p class="stat-l">${icon('wand', 17)} Cuisiner avec ce qu’il reste</p><p class="small" style="margin-top:6px">Des recettes inventées autour de vos aliments${soon.length ? ', en commençant par ceux à consommer vite' : ''}, complétées par les promotions de la semaine.</p></div><button class="btn" data-act="frigo.cook">Proposer des recettes</button></div>
                <p class="small muted" style="margin-top:14px">Les aliments du frigo sont aussi signalés « au frigo » dans la liste de courses et ne sont pas comptés dans son total.</p>`
-            : `<div class="empty"><h2 class="h2">Le frigo est vide</h2><p>Notez ce qu’il vous reste : Cabas le proposera dans des recettes et ne vous le fera pas racheter.</p>
+            : `<div class="empty"><h2 class="h2">Le frigo est vide</h2><p>Notez ce qu’il vous reste : Commis le proposera dans des recettes et ne vous le fera pas racheter.</p>
                 <div class="head-a" style="justify-content:center;margin-top:18px"><button class="btn" data-act="frigo.scan">${icon('barcode', 18)} Scanner un code-barres</button><button class="btn btn--ghost" data-act="frigo.photo">${icon('receipt', 18)} Lire un ticket de caisse</button><button class="btn btn--ghost" data-act="frigo.add">${icon('plus', 18)} Saisir</button></div></div>`
         }`;
     },
@@ -59,7 +59,7 @@
       sub: opts.sub || (f.barcode ? `Code-barres ${esc(f.barcode)}` : ''),
       body: `<form class="form" id="frigo-form" novalidate>
         ${f.photo || f.brand ? `<div class="row" style="padding-top:0">${f.photo ? `<span class="thumb"><img class="ph-img ph-img--produit" src="${esc(f.photo)}" alt="" referrerpolicy="no-referrer"></span>` : ''}<span class="row-b"><span class="row-s">${esc(f.brand || '')}</span></span></div>` : ''}
-        ${C.field('Aliment', `<input class="inp" name="name" required value="${esc(f.name)}" placeholder="Ex. Crème entière" ${opts.focus === false ? '' : 'autofocus'}>`, 'Un nom simple aide Cabas à le retrouver dans les recettes.')}
+        ${C.field('Aliment', `<input class="inp" name="name" required value="${esc(f.name)}" placeholder="Ex. Crème entière" ${opts.focus === false ? '' : 'autofocus'}>`, 'Un nom simple aide Commis à le retrouver dans les recettes.')}
         <div class="form-3">
           ${C.field('Quantité', `<input class="inp" name="qty" inputmode="decimal" value="${f.qty || ''}">`)}
           ${C.field('Unité', `<select class="inp" name="unit">${C.options(C.UNITS, f.unit)}</select>`)}
@@ -208,7 +208,7 @@
         };
         C.ui.scanFound = found;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          status.textContent = 'Caméra indisponible ici (il faut ouvrir Cabas en https). Tapez le code ou prenez une photo.';
+          status.textContent = 'Caméra indisponible ici (il faut ouvrir Commis en https). Tapez le code ou prenez une photo.';
           return;
         }
         startCamera(video, status, found)
@@ -282,7 +282,7 @@
     const st = { img: '', busy: false, progress: 0, step: '', items: null, keep: {}, error: '' };
     const body = () => {
       if (!st.img)
-        return `<p style="color:var(--ink-2)">Photographiez le ticket de caisse bien à plat, sans pli, avec une bonne lumière. Cabas lit le texte directement sur votre appareil, gratuitement, et propose les aliments reconnus : vous vérifiez avant d’ajouter.</p>
+        return `<p style="color:var(--ink-2)">Photographiez le ticket de caisse bien à plat, sans pli, avec une bonne lumière. Commis lit le texte directement sur votre appareil, gratuitement, et propose les aliments reconnus : vous vérifiez avant d’ajouter.</p>
           <p class="small muted" style="margin-top:8px">La première fois, le module de lecture (quelques Mo) est téléchargé puis gardé en mémoire.</p>
           <button class="btn btn--citron btn--block" data-act="frigo.shoot" style="margin-top:16px">${icon('receipt', 18)} Photographier le ticket</button>`;
       const head = `<img class="shot shot--ticket" src="${st.img}" alt="Ticket analysé">`;

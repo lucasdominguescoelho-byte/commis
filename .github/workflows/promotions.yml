@@ -1,4 +1,4 @@
-# Cabas — met à jour les promotions chaque matin, puis publie le site sur GitHub Pages.
+# Commis — met à jour les promotions chaque matin, puis publie le site sur GitHub Pages.
 # Réglage requis une seule fois : Settings → Pages → Source : « GitHub Actions ».
 name: Promotions et publication
 

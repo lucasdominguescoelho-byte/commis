@@ -1,4 +1,4 @@
-/* Cabas — Recettes : bibliothèque, fiche détaillée, éditeur, ajout au planning. */
+/* Commis — Recettes : bibliothèque, fiche détaillée, éditeur, ajout au planning. */
 (function () {
   'use strict';
   const C = window.C;
@@ -109,7 +109,7 @@
     const fromIa = r.source === 'cabas' || r.source === 'ia';
     root.innerHTML = `
       <a class="back" href="#/recettes" data-act="rec.back" data-v="${r.validated ? 'mes' : 'tester'}">${icon('left', 16)} ${r.validated ? 'Mes recettes' : 'À tester'}</a>
-      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromIa ? `Composée par Cabas avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
+      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
       <div class="rd">
         <div>
           <div class="rd-v">${C.recipeVisual(r)}</div>

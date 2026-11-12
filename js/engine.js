@@ -1,4 +1,4 @@
-/* Cabas — moteur : préférences, promotions, coûts, génération du planning, liste de courses, budget.
+/* Commis — moteur : préférences, promotions, coûts, génération du planning, liste de courses, budget.
    Logique 100 % locale et déterministe (règles + score). Aucune IA, aucune donnée externe. */
 (function () {
   'use strict';

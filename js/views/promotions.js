@@ -1,4 +1,4 @@
-/* Cabas — Promotions : vraies promotions synchronisées (Lidl, Migros, Coop), filtres, recherche,
+/* Commis — Promotions : vraies promotions synchronisées (Lidl, Migros, Coop), filtres, recherche,
    saisie manuelle et import JSON. La synchronisation elle-même est dans js/sources.js. */
 (function () {
   'use strict';
@@ -58,7 +58,7 @@
       ${rows.length > f.shown ? `<div style="text-align:center;margin-top:20px"><button class="btn btn--ghost" data-act="promo.more">Afficher ${Math.min(PAGE, rows.length - f.shown)} de plus</button></div>` : ''}`;
   }
   function syncHint() {
-    if (location.protocol === 'file:') return 'Les promotions se chargent quand Cabas est ouvert depuis son adresse (en ligne ou avec « Ouvrir Cabas.command »), pas en double-cliquant sur index.html.';
+    if (location.protocol === 'file:') return 'Les promotions se chargent quand Commis est ouvert depuis son adresse (en ligne ou avec « Ouvrir Commis.command »), pas en double-cliquant sur index.html.';
     return 'Les promotions n’ont pas encore pu être chargées. Vérifiez la connexion puis touchez « Actualiser ».';
   }
   // État de la synchronisation : date et nombre de promotions par magasin.
@@ -234,7 +234,7 @@
     'promo.sync': async () => {
       C.toast('Actualisation des promotions…');
       const r = await C.sources.sync(true);
-      if (r.skipped) C.toast('Ouvrez Cabas depuis son adresse pour charger les promotions.');
+      if (r.skipped) C.toast('Ouvrez Commis depuis son adresse pour charger les promotions.');
       else if (r.error) C.toast(`Impossible d’actualiser : ${r.error}.`);
       else C.toast(`${r.added} promotions chargées`);
     },

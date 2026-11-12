@@ -1,4 +1,4 @@
-/* Cabas — Recettes › Générer : idées de recettes composées sur le moment, gratuitement et
+/* Commis — Recettes › Générer : idées de recettes composées sur le moment, gratuitement et
    sur l'appareil (js/generateur.js), à partir des promotions de la semaine et, sur demande,
    des aliments du frigo. Les idées retenues partent dans « À tester ». */
 (function () {
@@ -66,10 +66,10 @@
   function results() {
     const notes = [
       G.note ? `<div class="note" style="margin-top:20px">${icon('info', 18)}<span>${esc(G.note)}</span></div>` : '',
-      G.unused.length ? `<p class="small muted" style="margin-top:12px">Pas utilisé cette fois : ${esc(G.unused.join(', '))} (pas encore dans les modèles de Cabas, ou incompatible avec vos préférences).</p>` : '',
+      G.unused.length ? `<p class="small muted" style="margin-top:12px">Pas utilisé cette fois : ${esc(G.unused.join(', '))} (pas encore dans les modèles de Commis, ou incompatible avec vos préférences).</p>` : '',
     ].join('');
     if (!G.results.length) return notes;
-    return `<div class="sec-h" style="margin-top:28px"><h2 class="h2">Idées</h2><span class="small muted">Composées par Cabas à partir de modèles de plats</span></div>
+    return `<div class="sec-h" style="margin-top:28px"><h2 class="h2">Idées</h2><span class="small muted">Composées par Commis à partir de modèles de plats</span></div>
       <div class="ideas">${G.results.map(idea).join('')}</div>${notes}
       <p class="small muted" style="margin-top:14px">Les prix sont estimés, les rabais viennent des promotions réelles. Pas convaincu ? « Autres idées » tire de nouvelles combinaisons.</p>`;
   }

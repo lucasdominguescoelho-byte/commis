@@ -1,4 +1,4 @@
-/* Cabas — recettes d'exemple chargées au tout premier lancement (marquées demo:true).
+/* Commis — recettes d'exemple chargées au tout premier lancement (marquées demo:true).
    Les coûts sont des estimations au prix habituel ; les promotions réelles s'y appliquent ensuite. */
 (function () {
   'use strict';

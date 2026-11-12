@@ -1,4 +1,4 @@
-/* Cabas — Budget : estimation des repas planifiés, dépenses réelles saisies, économies liées aux promotions. */
+/* Commis — Budget : estimation des repas planifiés, dépenses réelles saisies, économies liées aux promotions. */
 (function () {
   'use strict';
   const C = window.C;

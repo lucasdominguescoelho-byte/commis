@@ -1,6 +1,6 @@
 {
-  "name": "Cabas — repas & courses",
-  "short_name": "Cabas",
+  "name": "Commis — repas & courses",
+  "short_name": "Commis",
   "description": "Planifier ses repas avec les promotions de Migros, Coop et Lidl, et générer la liste de courses.",
   "lang": "fr-CH",
   "start_url": "./#/accueil",

@@ -1,9 +1,9 @@
-/* Cabas — service worker : l'application s'ouvre même sans réseau (au magasin, en sous-sol…).
+/* Commis — service worker : l'application s'ouvre même sans réseau (au magasin, en sous-sol…).
    - Fichiers de l'app (HTML, CSS, JS) : réseau d'abord, copie locale si hors ligne.
    - Promotions (data/promotions.json) : réseau d'abord, dernière version connue sinon.
    - Images et icônes de l'app : copie locale d'abord.
    Les photos des produits (sites des magasins) ne passent pas par ici. */
-const CACHE = 'cabas-v3';
+const CACHE = 'commis-v4';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/core.js', 'js/seed.js', 'js/engine.js', 'js/sources.js', 'js/ui.js', 'js/generateur.js', 'js/app.js',

@@ -1,4 +1,4 @@
-/* Cabas — composants d'interface partagés : icônes, fenêtres, notifications, visuels, graphiques. */
+/* Commis — composants d'interface partagés : icônes, fenêtres, notifications, visuels, graphiques. */
 (function () {
   'use strict';
   const C = window.C;

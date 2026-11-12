@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cabas — récupère les vraies promotions de la semaine et écrit data/promotions.json.
+"""Commis — récupère les vraies promotions de la semaine et écrit data/promotions.json.
 
 Sources (pages publiques, lues une fois par jour) :
   - Lidl   : site officiel lidl.ch, en français (« Promotions de la semaine »)
@@ -35,7 +35,7 @@ AUJOURDHUI = dt.date.today()
 
 LIDL_URL = 'https://www.lidl.ch/c/fr-CH/store/promotions-de-la-semaine/a10106737'
 AKTIONIS = 'https://www.aktionis.ch'
-# Rayons alimentaires d'aktionis.ch → rayons de Cabas
+# Rayons alimentaires d'aktionis.ch → rayons de Commis
 AK_RAYONS = {
     '7-33': 'vp',       # Fleisch / Wurstwaren
     '7-228112': 'vp',   # Fisch / Meeresfrüchte

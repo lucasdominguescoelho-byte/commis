@@ -1,4 +1,4 @@
-/* Cabas — Accueil : la semaine en cours d'un coup d'œil. */
+/* Commis — Accueil : la semaine en cours d'un coup d'œil. */
 (function () {
   'use strict';
   const C = window.C;
@@ -64,7 +64,7 @@
         ${
           t.meals === 0
             ? `<section class="card hero" style="margin-bottom:16px"><div><h2 class="h2">Rien n’est encore prévu.<br>Voulez-vous une proposition ?</h2>
-                <p class="lede">Cabas compose une semaine à partir de vos recettes, en privilégiant les produits en promotion et ceux qui servent à plusieurs repas.</p>
+                <p class="lede">Commis compose une semaine à partir de vos recettes, en privilégiant les produits en promotion et ceux qui servent à plusieurs repas.</p>
                 <div class="head-a" style="margin-top:20px"><button class="btn btn--citron" data-act="home.generate" ${pool ? '' : 'disabled'}>${icon('wand', 18)} Proposer un planning</button><a class="btn btn--ghost" href="#/planning" data-act="home.week">Composer moi-même</a></div></div>
                 <ol class="hero-steps"><li><span><b>${promos.length}</b> promotion${promos.length > 1 ? 's' : ''} en cours dans vos magasins</span></li><li><span><b>${pool}</b> recette${pool > 1 ? 's' : ''} compatible${pool > 1 ? 's' : ''} avec vos préférences</span></li><li><span>Une liste de courses regroupée et chiffrée, prête à cocher</span></li></ol></section>`
             : ''

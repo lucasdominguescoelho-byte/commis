@@ -1,9 +1,9 @@
-/* Cabas — socle : constantes, utilitaires, stockage local (IndexedDB), état.
+/* Commis — socle : constantes, utilitaires, stockage local (IndexedDB), état.
    Tout est exposé sur window.C. Aucun appel réseau : les données restent dans le navigateur. */
 (function () {
   'use strict';
   const C = (window.C = {});
-  C.APP = 'Cabas'; // nom affiché de l'application (logo, titres, messages)
+  C.APP = 'Commis'; // nom affiché de l'application (logo, titres, messages)
   C.views = {}; // pages, enregistrées par js/views/*.js
   C.acts = {}; // actions déclenchées par les attributs data-act / data-input / data-change
 
@@ -161,7 +161,7 @@
     });
   }
   const fail = (e) => {
-    console.error('[Cabas] écriture impossible', e);
+    console.error('[Commis] écriture impossible', e);
     if (C.toast) C.toast("L'enregistrement a échoué — l'espace de stockage est peut-être plein.");
   };
   C.db = {
@@ -210,7 +210,7 @@
     try {
       db = await openDb();
     } catch (e) {
-      console.warn('[Cabas] stockage local indisponible, les données ne seront pas conservées', e);
+      console.warn('[Commis] stockage local indisponible, les données ne seront pas conservées', e);
       C.noStorage = true;
     }
     await readAll();
@@ -231,7 +231,7 @@
     }
   };
 
-  // Mises à jour des données enregistrées par une version précédente de Cabas.
+  // Mises à jour des données enregistrées par une version précédente de Commis.
   C.migrate = () => {
     // Novembre 2026 : seuls Migros, Coop et Lidl restent ; les promotions fictives disparaissent.
     const valid = C.STORES.map((s) => s.id);
@@ -374,7 +374,7 @@
   });
 
   C.importData = async (data) => {
-    if (!data || data.app !== 'cabas' || !Array.isArray(data.recipes)) throw new Error("Ce fichier n'est pas une sauvegarde Cabas.");
+    if (!data || data.app !== 'cabas' || !Array.isArray(data.recipes)) throw new Error("Ce fichier n'est pas une sauvegarde Commis.");
     await Promise.all(TABLES.map((t) => C.db.clear(t)));
     const put = (t, arr) => Promise.all((arr || []).filter((x) => x && x.id).map((x) => C.db.put(t, x)));
     await Promise.all([

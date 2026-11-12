@@ -1,4 +1,4 @@
-/* Cabas — coquille de l'application : navigation, routeur, délégation des événements, démarrage. */
+/* Commis — coquille de l'application : navigation, routeur, délégation des événements, démarrage. */
 (function () {
   'use strict';
   const C = window.C;

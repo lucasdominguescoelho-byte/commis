@@ -1,9 +1,9 @@
-/* Cabas — générateur de recettes local (gratuit, hors ligne, sans IA).
+/* Commis — générateur de recettes local (gratuit, hors ligne, sans IA).
 
    Principe : une base d'ingrédients courants (portion par personne, prix habituel,
    façon de les cuire) et une douzaine de modèles de plats (poêlée, gratin, risotto,
    curry, soupe, salade, plaque au four, papillote, quiche, omelette, wok, pâtes).
-   Pour chaque idée, Cabas essaie de nombreuses combinaisons et garde celles qui
+   Pour chaque idée, Commis essaie de nombreuses combinaisons et garde celles qui
    utilisent le plus de produits en promotion (gros rabais d'abord) et d'aliments
    du frigo cochés, en respectant régime, allergies et aliments évités.
    Les recettes sont donc composées par règles : fiables et simples, mais moins

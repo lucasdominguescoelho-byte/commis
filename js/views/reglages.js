@@ -1,4 +1,4 @@
-/* Cabas — Réglages : foyer, magasins, budget, préférences alimentaires, sauvegarde des données. */
+/* Commis — Réglages : foyer, magasins, budget, préférences alimentaires, sauvegarde des données. */
 (function () {
   'use strict';
   const C = window.C;
@@ -44,7 +44,7 @@
 
         ${block('Aliments évités', 'Les recettes qui en contiennent ne sont jamais proposées.', tagBlock('avoided', 'Ex. champignons'))}
 
-        ${block('Données', C.noStorage ? 'Le stockage local est indisponible dans ce navigateur (navigation privée ?). Rien ne sera conservé à la fermeture.' : `Tout est enregistré dans ce navigateur, sur cet appareil (IndexedDB)${C.persisted ? ', en stockage persistant' : ''}. Rien n’est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts. Les recettes générées et la lecture des tickets se font sur l’appareil. Faites une sauvegarde de temps en temps : vider les données du navigateur efface aussi Cabas.`,
+        ${block('Données', C.noStorage ? 'Le stockage local est indisponible dans ce navigateur (navigation privée ?). Rien ne sera conservé à la fermeture.' : `Tout est enregistré dans ce navigateur, sur cet appareil (IndexedDB)${C.persisted ? ', en stockage persistant' : ''}. Rien n’est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts. Les recettes générées et la lecture des tickets se font sur l’appareil. Faites une sauvegarde de temps en temps : vider les données du navigateur efface aussi Commis.`,
           `<div class="head-a"><button class="btn" data-act="set.export">${icon('download', 18)} Exporter une sauvegarde</button><button class="btn btn--ghost" data-act="set.import">${icon('upload', 18)} Restaurer une sauvegarde</button></div>
            <p class="small muted">${total} recettes · ${C.S.promotions.length} promotions · ${Object.values(C.S.plans).filter((p) => Object.keys(p.slots).length).length} semaines planifiées · ${C.S.expenses.length} dépenses</p>
            ${demoR ? `<div class="head-a">${demoR ? `<button class="btn btn--ghost btn--sm" data-act="set.clearDemoRecipes">Retirer les ${demoR} recettes d’exemple</button>` : ''}</div>` : ''}
@@ -77,7 +77,7 @@
     'set.tagAdd': (el) => addTag(el.dataset.k, el.dataset.v),
     'set.tagDel': (el) => C.save.settings({ [el.dataset.k]: C.S.settings[el.dataset.k].filter((_, i) => i !== Number(el.dataset.i)) }),
     'set.export': () => {
-      C.download(`cabas-sauvegarde-${C.today()}.json`, JSON.stringify(C.exportData(), null, 2), 'application/json');
+      C.download(`commis-sauvegarde-${C.today()}.json`, JSON.stringify(C.exportData(), null, 2), 'application/json');
       C.toast('Sauvegarde exportée');
     },
     'set.import': async () => {
@@ -89,7 +89,7 @@
       } catch (e) {
         return C.toast('Fichier illisible : ce n’est pas du JSON valide.');
       }
-      if (!data || data.app !== 'cabas') return C.toast('Ce fichier n’est pas une sauvegarde Cabas.');
+      if (!data || data.app !== 'cabas') return C.toast('Ce fichier n’est pas une sauvegarde Commis.');
       if (!(await C.confirm('Restaurer cette sauvegarde ?', `Les données actuelles seront remplacées par celles du ${C.esc(new Date(data.exportedAt || Date.now()).toLocaleDateString('fr-CH'))} (${(data.recipes || []).length} recettes, ${(data.promotions || []).length} promotions).`, 'Restaurer'))) return;
       try {
         await C.importData(data);
