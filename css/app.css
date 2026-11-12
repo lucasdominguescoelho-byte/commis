@@ -745,7 +745,8 @@ html.is-cooking { overflow: hidden; }
 }
 .btn { border-radius: 999px; }
 @media (min-width: 761px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
+  /* barre en haut : sa rangée garde sa hauteur, l'espace libre va au contenu */
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); align-content: start; }
   .side {
     height: auto; flex-direction: row; align-items: center; gap: 28px; padding: 14px clamp(24px, 4vw, 56px);
     border-right: 0; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.92);
