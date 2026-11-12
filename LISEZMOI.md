@@ -12,7 +12,7 @@ Chaque appareil et chaque adresse a **ses propres données** (recettes, planning
 
 ## Où sont les données
 
-Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Cabas : exportez une sauvegarde de temps en temps.
+Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet, sauf ce que vous demandez à l'IA et les codes-barres cherchés dans Open Food Facts : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Cabas : exportez une sauvegarde de temps en temps.
 
 ## Les promotions
 
@@ -39,6 +39,34 @@ Lancer la mise à jour à la main :
 python3 outils/promotions.py
 ```
 
+## Recettes : validées, à tester, générées
+
+- **Mes recettes** ne montre que les recettes **testées et validées**. Une recette écrite à la main est validée par défaut (case à décocher dans l'éditeur).
+- **À tester** regroupe les recettes d'exemple et les idées générées. Après les avoir cuisinées : *Testée, je valide* sur leur fiche.
+- **Générer** invente des recettes sur le moment avec les promotions de la semaine et, si on le demande, les aliments du frigo (voir « Intelligence artificielle »).
+
+## Frigo
+
+Ce qu'il reste à la maison, ajouté de trois façons :
+
+- **Scanner** un code-barres avec la caméra (ZXing, ou le détecteur natif du navigateur). Le produit est cherché dans [Open Food Facts](https://world.openfoodfacts.org), base collaborative et gratuite : nom, marque, quantité, photo.
+- **Photo** du frigo ou des courses : l'IA liste les aliments reconnus, on vérifie avant d'ajouter.
+- **Saisie** à la main, avec une date « à consommer avant » facultative.
+
+Les aliments servent à la génération de recettes **uniquement quand on coche « Mon frigo »**. Dans la liste de courses, ce qui est déjà au frigo est signalé et n'est pas compté dans le total (case « Déduire le frigo »).
+
+La caméra demande que Cabas soit ouvert en HTTPS (l'adresse GitHub Pages) et l'autorisation du navigateur.
+
+## Intelligence artificielle
+
+La génération de recettes et la reconnaissance par photo utilisent **Claude (Anthropic)**, modèle `claude-opus-5-5`, via le SDK officiel chargé depuis jsDelivr (`js/ia.js`).
+
+- Il faut une **clé d'API Anthropic** (console.anthropic.com), payée à l'usage : environ 5 centimes par génération de recettes, 1 centime par photo. Le coût s'affiche après chaque appel.
+- La clé se saisit dans *Réglages → Intelligence artificielle*, **sur chaque appareil**. Elle reste dans le navigateur (IndexedDB), n'est jamais incluse dans les sauvegardes ni dans le dépôt GitHub.
+- Ce qui est envoyé à Anthropic : les promotions retenues, vos préférences (régime, allergies, aliments évités ou appréciés), les noms de vos recettes (pour éviter les doublons), les aliments du frigo cochés, et les photos analysées. Rien d'autre.
+- Sans clé, tout le reste de l'application fonctionne normalement.
+- Les recettes générées sont à relire : quantités et cuissons peuvent être imparfaites ; les prix sont estimés, les rabais viennent des vraies promotions.
+
 ## Ce qui reste une estimation
 
 - **Prix des recettes** : coût indiqué pour chaque ingrédient (prix habituel), auquel on applique le rabais de la promotion correspondante.
@@ -61,6 +89,7 @@ Aucune dépendance, aucune compilation : HTML, CSS et JavaScript simples ; Pytho
 | `js/seed.js` | Recettes d'exemple et leurs photos |
 | `js/engine.js` | Préférences, promotions ↔ ingrédients, coûts, planning, liste de courses, budget |
 | `js/sources.js` | Lecture de `data/promotions.json`, import JSON |
+| `js/ia.js` | Appels à Claude : génération de recettes, reconnaissance des aliments |
 | `js/ui.js`, `js/app.js` | Composants, navigation |
 | `js/views/*.js` | Une page par fichier |
 | `outils/promotions.py` | Récupération et traduction des promotions |

@@ -122,7 +122,9 @@
     const out = { regular: 0, cost: 0, savings: 0, lines: [], promoIngs: [], stores: [] };
     recipe.ingredients.forEach((ing) => {
       const reg = (Number(ing.price) || 0) * f;
-      const match = promos && promos.length ? E.promoFor(ing.name, promos) : null;
+      // Promotion désignée par l'IA à la génération (si elle est toujours valable), sinon correspondance par le nom.
+      const forced = ing.promoId && promos && promos.find((p) => p.id === ing.promoId);
+      const match = forced ? { promo: forced, ratio: ratio(forced), all: [forced] } : promos && promos.length ? E.promoFor(ing.name, promos) : null;
       const cost = match ? reg * match.ratio : reg;
       out.regular += reg;
       out.cost += cost;
@@ -249,7 +251,7 @@
         pool.forEach((r) => {
           const n = info.get(r.id);
           const shared = n.fresh.filter((x) => freshUsed.has(x.key));
-          let score = 2.2 * n.c.savings + 1.2 * n.c.promoIngs.length + Math.min(shared.length, 3) + (r.favorite ? 0.8 : 0) + 1.2 * n.liked;
+          let score = 2.2 * n.c.savings + 1.2 * n.c.promoIngs.length + Math.min(shared.length, 3) + (r.favorite ? 0.8 : 0) + 1.2 * n.liked + (r.validated ? 1.2 : 0);
           score -= 7 * (used[r.id] || 0);
           if (prev && prev.category === r.category) score -= 1.5;
           if (other && other.recipeId === r.id) score -= 100;
@@ -280,6 +282,16 @@
   };
 
   /* ---------- Liste de courses ---------- */
+  /* ---------- Frigo ----------
+     Un aliment du frigo correspond à un ingrédient si tous les mots de l'ingrédient se retrouvent
+     dans son nom (« Crème entière » ↔ « Crème entière UHT Valflora »). */
+  E.fridgeFor = (ingName) => {
+    const need = tk(ingName);
+    if (!need.length) return null;
+    return C.S.fridge.find((f) => hasAll(need, tk(`${f.name} ${f.generic || ''}`))) || null;
+  };
+  E.expiresIn = (f) => (f.expires ? Math.round((C.parse(f.expires) - C.parse(C.today())) / 864e5) : null);
+
   E.shopping = (wid) => {
     const plan = C.S.plans[wid];
     const list = C.S.lists[wid] || { checked: {}, manual: [] };
@@ -311,10 +323,19 @@
       items.push({ key: 'm:' + m.id, manual: m, name: m.name, qty: Number(m.qty) || 0, unit: m.unit || 'pièce', cat: m.cat || 'autre', regular: Number(m.price) || 0, cost: Number(m.price) || 0, recipes: [], stores: m.store ? [m.store] : [], match: null })
     );
     items.forEach((it) => (it.checked = !!list.checked[it.key]));
+    // Ce qui est déjà au frigo n'est pas compté dans le total (réglable sur la liste).
+    const deduct = list.deductFridge !== false;
+    items.forEach((it) => {
+      it.inFridge = it.manual ? null : E.fridgeFor(it.name);
+      if (it.inFridge && deduct) {
+        it.cost = 0;
+        it.regular = 0;
+      }
+    });
     items.sort((x, y) => x.name.localeCompare(y.name, 'fr'));
     const total = items.reduce((n, it) => n + it.cost, 0);
     const regular = items.reduce((n, it) => n + it.regular, 0);
-    return { items, total, regular, savings: regular - total, done: items.filter((it) => it.checked).length, left: items.filter((it) => !it.checked).reduce((n, it) => n + it.cost, 0) };
+    return { items, deduct, inFridge: items.filter((it) => it.inFridge).length, total, regular, savings: regular - total, done: items.filter((it) => it.checked).length, left: items.filter((it) => !it.checked).reduce((n, it) => n + it.cost, 0) };
   };
 
   /* ---------- Budget ---------- */

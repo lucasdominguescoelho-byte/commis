@@ -133,8 +133,8 @@
 
   /* ---------- IndexedDB ---------- */
   const DB_NAME = 'cabas'; // ne pas renommer : c'est sous ce nom que le navigateur retrouve les données existantes
-  const DB_VERSION = 1;
-  const TABLES = ['recipes', 'promotions', 'plans', 'lists', 'expenses', 'kv'];
+  const DB_VERSION = 2; // v2 : table « fridge » (le frigo)
+  const TABLES = ['recipes', 'promotions', 'plans', 'lists', 'expenses', 'kv', 'fridge'];
   let db = null;
 
   function openDb() {
@@ -184,7 +184,8 @@
     seeded: false,
     promoMeta: null, // dernière synchronisation des promotions (date, état de chaque source)
   };
-  const S = (C.S = { settings: { ...C.DEFAULT_SETTINGS }, recipes: [], promotions: [], plans: {}, lists: {}, expenses: [] });
+  const S = (C.S = { settings: { ...C.DEFAULT_SETTINGS }, recipes: [], promotions: [], plans: {}, lists: {}, expenses: [], fridge: [] });
+  let secrets = {}; // clé d'API : sur cet appareil uniquement, jamais dans les sauvegardes
   C.ui = { week: C.weekId() }; // état d'interface, non persistant
   C.noStorage = false;
   C.persisted = null;
@@ -194,7 +195,9 @@
   C.list = (wid) => S.lists[wid] || (S.lists[wid] = { id: wid, checked: {}, manual: [] });
 
   async function readAll() {
-    const [recipes, promotions, plans, lists, expenses, kv] = await Promise.all(TABLES.map((t) => C.db.all(t)));
+    const [recipes, promotions, plans, lists, expenses, kv, fridge] = await Promise.all(TABLES.map((t) => C.db.all(t)));
+    S.fridge = fridge || [];
+    secrets = (kv || []).find((k) => k.id === 'secrets') || {};
     S.recipes = recipes || [];
     S.promotions = promotions || [];
     S.plans = Object.fromEntries((plans || []).map((p) => [p.id, p]));
@@ -240,6 +243,14 @@
     }
     S.promotions.filter((p) => p.demo || !valid.includes(p.store)).forEach((p) => C.db.del('promotions', p.id));
     S.promotions = S.promotions.filter((p) => !p.demo && valid.includes(p.store));
+    // Novembre 2026 : l'onglet Recettes ne montre que les recettes testées et validées.
+    // Les exemples passent « à tester » ; les recettes écrites à la main sont considérées validées.
+    S.recipes.forEach((r) => {
+      if (typeof r.validated !== 'boolean') {
+        r.validated = !r.demo && r.source !== 'ia';
+        C.db.put('recipes', r);
+      }
+    });
     // Photos ajoutées aux recettes d'exemple : seulement si la recette n'en a pas déjà une.
     const photos = C.SEED_PHOTOS || {};
     S.recipes.forEach((r) => {
@@ -328,6 +339,37 @@
     },
   };
 
+  /* ---------- Frigo ---------- */
+  Object.assign(C.save, {
+    fridge(item) {
+      upsert(S.fridge, item);
+      C.db.put('fridge', item);
+      C.changed();
+    },
+    fridgeMany(items) {
+      items.forEach((it) => {
+        upsert(S.fridge, it);
+        C.db.put('fridge', it);
+      });
+      C.changed();
+    },
+    delFridge(id) {
+      S.fridge = S.fridge.filter((x) => x.id !== id);
+      C.db.del('fridge', id);
+      C.changed();
+    },
+  });
+
+  /* ---------- Secrets (clé d'API Claude) ---------- */
+  C.secret = {
+    get: (k) => secrets[k] || '',
+    set(k, v) {
+      secrets = { ...secrets, id: 'secrets', [k]: v };
+      if (!v) delete secrets[k];
+      return C.db.put('kv', secrets);
+    },
+  };
+
   /* ---------- Sauvegarde / restauration ---------- */
   C.exportData = () => ({
     app: 'cabas', // identifiant du format de sauvegarde
@@ -339,6 +381,7 @@
     plans: Object.values(S.plans),
     lists: Object.values(S.lists),
     expenses: S.expenses,
+    fridge: S.fridge,
   });
 
   C.importData = async (data) => {
@@ -351,6 +394,8 @@
       put('plans', data.plans),
       put('lists', data.lists),
       put('expenses', data.expenses),
+      put('fridge', data.fridge),
+      secrets.id ? C.db.put('kv', secrets) : null, // la clé d'API de cet appareil est conservée
       C.db.put('kv', { ...C.DEFAULT_SETTINGS, ...(data.settings || {}), id: 'settings', seeded: true }),
     ]);
     if (db) await readAll();
@@ -361,6 +406,7 @@
       S.plans = Object.fromEntries((data.plans || []).map((p) => [p.id, p]));
       S.lists = Object.fromEntries((data.lists || []).map((l) => [l.id, l]));
       S.expenses = data.expenses || [];
+      S.fridge = data.fridge || [];
       S.settings = { ...C.DEFAULT_SETTINGS, ...(data.settings || {}), seeded: true };
     }
     C.changed();

@@ -70,6 +70,12 @@
             : ''
         }
 
+        ${(() => {
+          const soon = C.S.fridge.filter((f) => E.expiresIn(f) != null && E.expiresIn(f) <= 2);
+          return soon.length
+            ? `<div class="note" style="margin-bottom:16px">${icon('fridge', 18)}<span><b>À consommer bientôt :</b> ${soon.map((f) => esc(f.name)).join(', ')}.</span><button class="btn btn--ghost btn--sm note-a" data-act="frigo.cook">Idées de recettes</button></div>`
+            : '';
+        })()}
         <section class="grid g3">
           <div class="card"><p class="stat-l">${icon('wallet', 17)} Budget estimé</p>
             <p class="stat-v">${C.chf(t.cost)}</p>

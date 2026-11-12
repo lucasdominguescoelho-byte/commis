@@ -3,12 +3,12 @@
    - Promotions (data/promotions.json) : réseau d'abord, dernière version connue sinon.
    - Images et icônes de l'app : copie locale d'abord.
    Les photos des produits (sites des magasins) ne passent pas par ici. */
-const CACHE = 'cabas-v1';
+const CACHE = 'cabas-v2';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/core.js', 'js/seed.js', 'js/engine.js', 'js/sources.js', 'js/ui.js', 'js/app.js',
+  'js/core.js', 'js/seed.js', 'js/engine.js', 'js/sources.js', 'js/ui.js', 'js/ia.js', 'js/app.js',
   'js/views/accueil.js', 'js/views/promotions.js', 'js/views/recettes.js', 'js/views/planning.js',
-  'js/views/courses.js', 'js/views/budget.js', 'js/views/reglages.js',
+  'js/views/courses.js', 'js/views/budget.js', 'js/views/reglages.js', 'js/views/generer.js', 'js/views/frigo.js',
   'assets/icons/icon-192.png', 'assets/icons/apple-touch-icon.png',
 ];
 

@@ -33,7 +33,7 @@
       : it.stores.map(C.storeChip).join('');
     return `<div class="si ${it.checked ? 'is-done' : ''}" data-act="shop.toggle" data-wid="${wid}" data-key="${esc(it.key)}" role="checkbox" aria-checked="${it.checked}" tabindex="0">
       <span class="si-x">${icon('check', 15)}</span>
-      <div style="min-width:0"><div class="si-n">${esc(it.name)}<small>${C.fmtQty(it.qty, it.unit)}</small></div>${it.recipes.length ? `<div class="si-s">${esc(it.recipes.join(' · '))}</div>` : it.manual ? '<div class="si-s">Ajout manuel</div>' : ''}</div>
+      <div style="min-width:0"><div class="si-n">${esc(it.name)}<small>${C.fmtQty(it.qty, it.unit)}</small>${it.inFridge ? `<span class="badge badge--frigo" title="${esc(it.inFridge.name)}">au frigo</span>` : ''}</div>${it.recipes.length ? `<div class="si-s">${esc(it.recipes.join(' · '))}</div>` : it.manual ? '<div class="si-s">Ajout manuel</div>' : ''}</div>
       <div class="si-w">${where}${it.manual ? `<button class="ibtn no-print" data-act="shop.edit" data-id="${it.manual.id}" aria-label="Modifier" style="width:32px;height:32px">${icon('edit', 16)}</button>` : ''}</div>
       <div class="si-p">${it.match && it.regular - it.cost >= 0.05 ? `<s>${C.money(it.regular)}</s>` : ''}${it.cost ? C.money(it.cost) : '—'}</div>
     </div>`;
@@ -63,7 +63,7 @@
               </div>
               <div class="toolbar no-print" style="justify-content:space-between;margin-bottom:0">
                 <div class="seg"><button class="${C.ui.shopBy === 'cat' ? 'is-on' : ''}" data-act="shop.by" data-v="cat">Par rayon</button><button class="${C.ui.shopBy === 'store' ? 'is-on' : ''}" data-act="shop.by" data-v="store">Par magasin</button></div>
-                ${shop.done ? `<button class="link" data-act="shop.uncheck">Tout décocher</button>` : ''}
+                <span class="chips" style="gap:14px">${shop.inFridge ? `<label class="check check--inline"><input type="checkbox" ${shop.deduct ? 'checked' : ''} data-change="shop.fridge"><span>Déduire le frigo (${shop.inFridge})</span></label>` : ''}${shop.done ? `<button class="link" data-act="shop.uncheck">Tout décocher</button>` : ''}</span>
               </div>
               <div class="shop-cols">${gs.map((g) => `<section class="shop-g"><div class="shop-gh"><h3>${esc(g.name)}</h3><span>${g.items.length} produit${g.items.length > 1 ? 's' : ''} · ${C.chf(g.total)}</span></div>${g.items.map((it) => itemHtml(it, wid)).join('')}</section>`).join('')}</div>
               <p class="small muted" style="margin-top:18px">Prix estimés d’après le coût indiqué dans vos recettes${shop.savings >= 0.05 ? ', promotions de la semaine déduites' : ''}. Les quantités identiques sont additionnées (g, kg, dl, l…).</p>`
@@ -134,6 +134,7 @@
       });
     },
     'shop.uncheck': () => C.save.list(C.ui.week, (l) => { l.checked = {}; }),
+    'shop.fridge': (el) => C.save.list(C.ui.week, (l) => { l.deductFridge = el.checked; }),
     'shop.by': (el) => { C.ui.shopBy = el.dataset.v; C.render(); },
     'shop.add': () => manualSheet(C.ui.week, null),
     'shop.edit': (el) => {

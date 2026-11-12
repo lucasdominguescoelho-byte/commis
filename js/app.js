@@ -8,11 +8,12 @@
     { id: 'accueil', label: 'Accueil', icon: 'home' },
     { id: 'planning', label: 'Planning', icon: 'calendar' },
     { id: 'recettes', label: 'Recettes', icon: 'book' },
+    { id: 'frigo', label: 'Frigo', icon: 'fridge' },
     { id: 'courses', label: 'Courses', icon: 'cart' },
-    { id: 'promotions', label: 'Promotions', icon: 'tag' },
+    { id: 'promotions', label: 'Promotions', short: 'Promos', icon: 'tag' },
     { id: 'budget', label: 'Budget', icon: 'wallet' },
   ];
-  const TITLES = { accueil: 'Accueil', planning: 'Planning', recettes: 'Recettes', courses: 'Courses', promotions: 'Promotions', budget: 'Budget', reglages: 'Réglages' };
+  const TITLES = { accueil: 'Accueil', planning: 'Planning', recettes: 'Recettes', frigo: 'Frigo', courses: 'Courses', promotions: 'Promotions', budget: 'Budget', reglages: 'Réglages' };
 
   C.views = C.views || {};
   C.acts = C.acts || {};
@@ -44,7 +45,7 @@
         <p class="side-note">${C.noStorage ? 'Stockage local indisponible : les données ne seront pas conservées.' : 'Données enregistrées sur cet appareil uniquement.'}</p>
       </div>`;
     document.getElementById('topbar').innerHTML = `${logo}<div><a class="ibtn ${route.view === 'budget' ? 'is-on' : ''}" href="#/budget" aria-label="Budget">${icon('wallet', 22)}</a><a class="ibtn ${route.view === 'reglages' ? 'is-on' : ''}" href="#/reglages" aria-label="Réglages">${icon('settings', 22)}</a></div>`;
-    document.getElementById('tabs').innerHTML = NAV.slice(0, 5).map((n) => link(n, 'tab')).join('');
+    document.getElementById('tabs').innerHTML = NAV.slice(0, 6).map((n) => link({ ...n, label: n.short || n.label }, 'tab')).join('');
   }
 
   let last = '';
