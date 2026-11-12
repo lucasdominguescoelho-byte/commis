@@ -22,9 +22,9 @@
     const c = E.recipeCost(r, s.servings, promos);
     const n = c.promoIngs.length;
     return `<div class="slot meal${cls}" ${pos} draggable="${mv ? 'false' : 'true'}" tabindex="0" role="button" data-key="${key}" data-act="${act}" aria-label="${slotName(key)} : ${esc(r.name)}">
-      <span class="slot-l">${C.SLOT_LABEL[slot]}</span><strong class="meal-n">${esc(r.name)}</strong>
-      ${n ? `<span class="badge badge--promo">${n} promo${n > 1 ? 's' : ''}</span>` : ''}
-      <span class="meal-m">${C.chf(c.cost)} · ${s.servings} pers.</span></div>`;
+      <span class="meal-v">${C.recipeVisual(r, 'ph--sm')}${n ? `<span class="badge badge--promo">${n} promo${n > 1 ? 's' : ''}</span>` : ''}</span>
+      <span class="meal-t"><span class="slot-l">${C.SLOT_LABEL[slot]}</span><strong class="meal-n">${esc(r.name)}</strong>
+      <span class="meal-m">${C.chf(c.cost)} · ${s.servings} pers.</span></span></div>`;
   }
 
   C.views.planning = {
@@ -54,7 +54,13 @@
           <a class="link" href="#/courses">Liste de courses ${icon('arrow', 15)}</a>
         </div>
         ${C.ui.moving ? `<div class="movebar"><span>${icon('move', 18)}</span><span>Choisissez la case où déplacer <b>${esc((C.recipe((slotOf(wid, C.ui.moving) || {}).recipeId) || {}).name || 'ce repas')}</b>.</span><button class="btn btn--sm" data-act="plan.cancelMove">Annuler</button></div>` : ''}
-        <div class="plan">${grid}</div>
+        ${(() => {
+          const past = [0, 1, 2, 3, 4, 5, 6].filter((d) => C.dayIso(wid, d) < today);
+          if (!past.length || past.length === 7) return '';
+          const label = past.length === 1 ? C.DAYS[0].toLowerCase() : `${C.DAYS[0].toLowerCase()} – ${C.DAYS[past.length - 1].toLowerCase()}`;
+          return `<button class="past-t" data-act="plan.past" aria-expanded="${!!C.ui.showPast}">${icon(C.ui.showPast ? 'minus' : 'plus', 16)} ${C.ui.showPast ? 'Masquer' : 'Afficher'} les jours passés <span class="muted">(${label})</span></button>`;
+        })()}
+        <div class="plan ${C.ui.showPast ? 'show-past' : ''}">${grid}</div>
         <p class="small muted" style="margin-top:16px">Cliquez sur une case pour ajouter un repas, sur un repas pour voir ses ingrédients. Sur ordinateur, glissez un repas pour le déplacer ; ailleurs, utilisez « Déplacer ».</p>`;
     },
   };
@@ -132,6 +138,10 @@
   }
 
   Object.assign(C.acts, {
+    'plan.past': () => {
+      C.ui.showPast = !C.ui.showPast;
+      C.render();
+    },
     'pick.search': (el) => {
       C.ui.pick.q = el.value;
       document.getElementById('pick-list').innerHTML = C.ui.pick.list();

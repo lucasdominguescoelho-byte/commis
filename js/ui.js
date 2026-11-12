@@ -36,6 +36,7 @@
     fridge: '<rect x="5.5" y="3" width="13" height="18" rx="2.5"/><path d="M5.5 10h13M8.5 6v1.5M8.5 13v3"/>',
     barcode: '<path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17M8 8v8M11 8v8M14 8v8M16.5 8v8"/>',
     receipt: '<path d="M6 3.5h12v17l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/>',
+    chef: '<path d="M7.5 16.5V20h9v-3.5M7.5 16.5h9M7.5 16.5A3.8 3.8 0 0 1 6 9.4 4.4 4.4 0 0 1 12 5a4.4 4.4 0 0 1 6 4.4 3.8 3.8 0 0 1-1.5 7.1"/>',
     camera: '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2.5h6L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/>',
   };
   C.icon = (name, size) =>
@@ -49,7 +50,7 @@
   };
   // Visuel : la photo si elle existe, sinon une « assiette » typographique teintée selon la catégorie.
   C.visual = (item, hue, cls) => {
-    if (item.photo) return `<img class="ph-img${item.auto ? ' ph-img--produit' : ''}" src="${esc(item.photo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`;
+    if (item.photo) return `<img class="ph-img${item.auto ? ' ph-img--produit' : ''}" src="${esc(item.photo)}" alt="" loading="lazy" decoding="async" draggable="false" referrerpolicy="no-referrer" onload="this.classList.add('is-in')" onerror="this.remove()">`;
     const letter = (C.norm(item.name)[0] || '·').toUpperCase();
     return `<div class="ph ${cls || ''}" style="--h:${hue}"><span>${esc(letter)}</span></div>`;
   };

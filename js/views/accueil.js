@@ -44,7 +44,7 @@
         const cell = (slot) => {
           const s = plan && plan.slots[`${d}-${slot}`];
           const r = s && C.recipe(s.recipeId);
-          return `<span class="strip-m ${r ? '' : 'is-empty'}"><small>${C.SLOT_LABEL[slot]}</small>${r ? esc(r.name) : '—'}</span>`;
+          return `<span class="strip-m ${r ? '' : 'is-empty'}"><small>${C.SLOT_LABEL[slot]}</small>${r ? `<span class="strip-p">${C.recipeVisual(r, 'ph--sm')}</span><span class="strip-t">${esc(r.name)}</span>` : '—'}</span>`;
         };
         return `<a class="strip-d ${iso === today ? 'is-today' : ''} ${iso < today ? 'is-past' : ''}" href="#/planning" data-act="home.week"><span class="strip-h">${name} <b>${C.parse(iso).getDate()}</b></span>${cell('midi')}${cell('soir')}</a>`;
       }).join('');
@@ -69,6 +69,18 @@
                 <ol class="hero-steps"><li><span><b>${promos.length}</b> promotion${promos.length > 1 ? 's' : ''} en cours dans vos magasins</span></li><li><span><b>${pool}</b> recette${pool > 1 ? 's' : ''} compatible${pool > 1 ? 's' : ''} avec vos préférences</span></li><li><span>Une liste de courses regroupée et chiffrée, prête à cocher</span></li></ol></section>`
             : ''
         }
+
+        ${(() => {
+          const x = next[0];
+          if (!x) return '';
+          const nu = C.nutri(x.r);
+          const c = E.recipeCost(x.r, x.s.servings, E.activePromos(wid));
+          return `<section class="card nextm"><a class="nextm-v" href="#/recettes/${x.r.id}" aria-label="${esc(x.r.name)}">${C.recipeVisual(x.r)}</a>
+            <div class="nextm-b"><p class="eyebrow">Prochain repas · ${esc(x.when)}</p><h2 class="nextm-n">${esc(x.r.name)}</h2>
+              <div class="meta"><span>${icon('clock', 16)}${x.r.prepTime} min</span><span>${icon('users', 16)}${x.s.servings} pers.</span><span>${C.chf(c.cost)}</span>${c.promoIngs.length ? `<span class="badge badge--promo">${c.promoIngs.length} en promo</span>` : ''}</div>
+              ${C.nutriChips(nu)}
+              <div class="head-a" style="margin-top:auto;padding-top:18px">${x.r.steps.length ? `<button class="btn btn--citron" data-act="cook.open" data-id="${x.r.id}" data-people="${x.s.servings}">${icon('chef', 18)} Cuisiner</button>` : ''}<a class="btn btn--ghost" href="#/recettes/${x.r.id}">Voir la recette</a></div></div></section>`;
+        })()}
 
         ${(() => {
           const soon = C.S.fridge.filter((f) => E.expiresIn(f) != null && E.expiresIn(f) <= 2);
@@ -97,7 +109,7 @@
 
         <section class="sec grid g3">
           <div class="card"><div class="sec-h"><h2 class="h3">Prochains repas</h2></div>
-            ${next.length ? `<div class="rows">${next.map((x) => `<a class="row" href="#/recettes/${x.r.id}"><span class="thumb">${C.recipeVisual(x.r, 'ph--sm')}</span><span class="row-b"><span class="row-t">${esc(x.r.name)}</span><span class="row-s">${x.when} · ${x.r.prepTime} min</span></span></a>`).join('')}</div>` : '<p class="muted small">Aucun repas à venir pour l’instant.</p>'}
+            ${next.length > 1 ? `<div class="rows">${next.slice(1).map((x) => `<a class="row" href="#/recettes/${x.r.id}"><span class="thumb">${C.recipeVisual(x.r, 'ph--sm')}</span><span class="row-b"><span class="row-t">${esc(x.r.name)}</span><span class="row-s">${x.when} · ${x.r.prepTime} min</span></span></a>`).join('')}</div>` : `<p class="muted small">${next.length ? 'Rien d’autre de prévu pour l’instant.' : 'Aucun repas à venir pour l’instant.'}</p>`}
           </div>
           <div class="card"><div class="sec-h"><h2 class="h3">À acheter</h2><a class="link" href="#/courses" data-act="home.week">${shop.items.length ? `${shop.items.length - shop.done} restant${shop.items.length - shop.done > 1 ? 's' : ''}` : 'Liste'} ${icon('arrow', 15)}</a></div>
             ${toBuy.length ? `<div class="rows">${toBuy.map((i) => `<div class="row" style="padding:9px 0"><span class="row-b"><span class="row-t">${esc(i.name)}</span></span>${i.match ? `<span class="badge badge--promo">${C.storeById(i.match.promo.store).name}</span>` : ''}<span class="row-p muted" style="font-weight:400">${C.fmtQty(i.qty, i.unit)}</span></div>`).join('')}</div>${shop.items.length - shop.done > toBuy.length ? `<p class="small muted" style="margin-top:12px">et ${shop.items.length - shop.done - toBuy.length} autres produits · total estimé ${C.chf(shop.total)}</p>` : `<p class="small muted" style="margin-top:12px">Total estimé ${C.chf(shop.total)}</p>`}` : `<p class="muted small">${shop.items.length ? 'Tout est acheté. Bien joué.' : 'La liste se remplit dès qu’un repas est planifié.'}</p>`}

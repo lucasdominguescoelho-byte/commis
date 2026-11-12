@@ -43,9 +43,10 @@ python3 outils/promotions.py
 
 - **Mes recettes** ne montre que les recettes **testées et validées**. Une recette écrite à la main est validée par défaut (case à décocher dans l'éditeur).
 - **À tester** ne contient que les recettes qu'on y met soi-même : *Ajouter à « À tester »* sur une fiche, une idée générée gardée, ou une nouvelle recette non validée. Après les avoir cuisinées : *Testée, je valide*.
+- **Cuisiner** (fiche recette ou prochain repas sur l'Accueil) ouvre le mode cuisine : ingrédients à cocher, puis une étape par écran en grand avec les quantités utiles, écran maintenu allumé (flèches, balayage ou clavier).
 - **Toutes** montre toute la bibliothèque (recettes d'exemple, importées, validées ou non).
 - **Générer** compose des recettes sur le moment avec les promotions de la semaine et, si on le demande, les aliments du frigo (voir « Génération de recettes »).
-- **Importer** (en haut de Recettes) ajoute des recettes depuis un fichier `.json` (format `commis-recettes` ou une sauvegarde Commis) sans rien effacer : les recettes déjà présentes sont ignorées, les nouvelles arrivent dans « Toutes ». Les recettes tirées d'un livre du commerce restent dans ce fichier privé et ne sont jamais publiées dans ce dépôt public.
+- **Importer** (en haut de Recettes) ajoute des recettes depuis un fichier `.json` (format `commis-recettes` ou une sauvegarde Commis) sans rien effacer : les recettes déjà présentes ne reçoivent que leur nouvelle photo (validations, favoris et modifications conservés), les nouvelles arrivent dans « Toutes ». Les recettes tirées d'un livre du commerce restent dans ce fichier privé et ne sont jamais publiées dans ce dépôt public.
 
 ## Frigo
 

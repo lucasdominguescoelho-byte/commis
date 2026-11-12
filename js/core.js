@@ -400,21 +400,33 @@
     fridge: S.fridge,
   });
 
-  // Ajoute des recettes (fichier « commis-recettes » ou sauvegarde) sans rien effacer :
-  // celles déjà présentes (même identifiant) sont laissées telles quelles.
+  // Ajoute des recettes (fichier « commis-recettes » ou sauvegarde) sans rien effacer.
+  // Une recette déjà présente (même identifiant, même origine) ne reçoit que sa nouvelle photo :
+  // validation, favori, « à tester » et modifications sont conservés.
   C.recipesIn = (data) => (data && (data.app === 'commis-recettes' || data.app === 'cabas') && Array.isArray(data.recipes) ? data.recipes : null);
+  C.photoUpdates = (list) =>
+    list.filter((r) => {
+      const cur = r && r.id && r.photo && C.recipe(r.id);
+      return cur && cur.source === r.source && cur.photo !== r.photo;
+    });
   C.importRecipes = async (data) => {
     const list = C.recipesIn(data);
     if (!list) throw new Error("Ce fichier ne contient pas de recettes Commis.");
     const have = new Set(S.recipes.map((r) => r.id));
     const fresh = list.filter((r) => r && r.id && r.name && Array.isArray(r.ingredients) && Array.isArray(r.steps) && !have.has(r.id));
+    const photos = C.photoUpdates(list);
     for (const r of fresh) {
       const rec = { favorite: false, validated: false, demo: false, createdAt: Date.now(), ...r, toTest: false };
       upsert(S.recipes, rec);
       await C.db.put('recipes', rec);
     }
-    if (fresh.length) C.changed();
-    return { added: fresh.length, skipped: list.length - fresh.length };
+    for (const r of photos) {
+      const rec = { ...C.recipe(r.id), photo: r.photo };
+      upsert(S.recipes, rec);
+      await C.db.put('recipes', rec);
+    }
+    if (fresh.length || photos.length) C.changed();
+    return { added: fresh.length, photos: photos.length, skipped: list.length - fresh.length - photos.length };
   };
 
   C.importData = async (data) => {

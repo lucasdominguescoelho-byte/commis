@@ -60,7 +60,7 @@
             <div class="rc-tags">${testing(r) ? `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>` : r.validated && C.ui.rtab === 'toutes' ? `<span class="badge badge--soft">${icon('check', 13)} validée</span>` : ''}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
           </div>
           <div class="rc-b"><span class="eyebrow">${esc(r.category)}</span><h3 class="rc-n">${esc(r.name)}</h3>
-            <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${r.prepTime} min</span><span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
+            <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${r.prepTime} min</span>${(C.nutri(r) || {}).kcal ? `<span>${C.nutri(r).kcal} kcal</span>` : ''}<span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
         </article>`;
       })
       .join('')}</div>`;
@@ -112,15 +112,20 @@
     const fromIa = r.source === 'cabas' || r.source === 'ia';
     const fromLib = r.source === 'wikilivres';
     const fromBook = r.source === 'livre-perso';
+    const nu = C.nutri(r);
+    const testBox =
+      r.validated ? '' : !testing(r) ? `<div class="note note--test note--soft">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`;
+    const lede = nu ? '' : r.description;
     const back = r.validated ? 'mes' : testing(r) ? 'tester' : 'toutes';
     root.innerHTML = `
       <a class="back" href="#/recettes" data-act="rec.back" data-v="${back}">${icon('left', 16)} ${{ mes: 'Mes recettes', tester: 'À tester', toutes: 'Toutes les recettes' }[back]}</a>
-      ${r.validated ? '' : !testing(r) ? `<div class="note note--test">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`}
       <div class="rd">
         <div>
           <div class="rd-v">${C.recipeVisual(r)}</div>
           <section class="sec"><h2 class="h2" style="margin-bottom:18px">Préparation</h2>
-            ${r.steps.length ? `<ol class="steps">${r.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : '<p class="muted">Aucune étape renseignée.</p>'}
+            ${r.steps.length ? `<ol class="steps">${r.steps.map((s) => `<li data-act="step.toggle" tabindex="0" role="button" title="Toucher pour marquer l’étape comme faite"><span>${esc(s)}</span></li>`).join('')}</ol>
+              <button class="btn btn--ghost" style="margin-top:22px" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner étape par étape</button>` : '<p class="muted">Aucune étape renseignée.</p>'}
+            ${nu && nu.rest ? `<p class="small muted" style="margin-top:20px">${esc(nu.rest)}</p>` : ''}
             ${r.sourceUrl ? `<p class="small muted" style="margin-top:20px">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
           </section>
         </div>
@@ -128,15 +133,18 @@
           <div>
             <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : fromBook ? ' · votre livre de recettes' : ''}${r.validated ? ' · validée' : ''}</p>
             <h1 class="title" style="font-size:clamp(32px,3.6vw,46px)">${esc(r.name)}</h1>
-            ${r.description ? `<p class="lede">${esc(r.description)}</p>` : ''}
+            ${lede ? `<p class="lede">${esc(lede)}</p>` : ''}
+            ${C.nutriChips(nu, true)}
             <div class="meta" style="margin-top:14px"><span>${icon('clock', 16)}${r.prepTime} min</span><span>${icon('users', 16)}${r.servings} portions de base</span></div>
             ${bad.length ? `<p style="margin-top:12px"><span class="badge badge--warn">Ne respecte pas vos préférences : ${esc(bad.map((b) => `${b.label} (${b.ing.toLowerCase()})`).join(', '))}</span></p>` : ''}
             <div class="head-a" style="margin-top:18px">
+              ${r.steps.length ? `<button class="btn" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner</button>` : ''}
               <button class="btn btn--citron" data-act="rec.plan" data-id="${r.id}">${icon('calendar', 18)} Planifier</button>
               <button class="ibtn ibtn--line ${r.favorite ? 'is-on' : ''}" data-act="rec.fav" data-id="${r.id}" aria-label="Favori" aria-pressed="${!!r.favorite}">${icon('heart')}</button>
               <button class="ibtn ibtn--line" data-act="rec.edit" data-id="${r.id}" aria-label="Modifier">${icon('edit')}</button>
               <button class="ibtn ibtn--line" data-act="rec.del" data-id="${r.id}" aria-label="Supprimer">${icon('trash')}</button>
             </div>
+            ${testBox}
           </div>
           <div class="card">
             <div class="sec-h" style="align-items:center"><h2 class="h3">Ingrédients</h2>
@@ -286,14 +294,18 @@
       if (!list) return C.toast('Ce fichier ne contient pas de recettes Commis.');
       const have = new Set(C.S.recipes.map((r) => r.id));
       const n = list.filter((r) => r && r.id && !have.has(r.id)).length;
-      if (!n) return C.toast('Ces recettes sont déjà dans Commis.');
-      if (!(await C.confirm(`Ajouter ${n} recette${n > 1 ? 's' : ''} ?`, `Elles arrivent dans « Toutes » ; vos recettes actuelles ne changent pas.${list.length > n ? ` ${list.length - n} déjà présente${list.length - n > 1 ? 's' : ''} ser${list.length - n > 1 ? 'ont' : 'a'} ignorée${list.length - n > 1 ? 's' : ''}.` : ''}`, 'Ajouter'))) return;
+      const p = C.photoUpdates(list).length;
+      if (!n && !p) return C.toast('Ces recettes sont déjà dans Commis.');
+      const s = (k) => (k > 1 ? 's' : '');
+      const title = n ? `Ajouter ${n} recette${s(n)} ?` : `Mettre à jour ${p} photo${s(p)} ?`;
+      const body = [n ? `Les nouvelles recettes arrivent dans « Toutes ».` : '', p ? `${p} recette${s(p)} déjà présente${s(p)} reçoi${p > 1 ? 'vent' : 't'} une nouvelle photo ; vos validations, favoris et modifications sont conservés.` : '', 'Rien n’est effacé.'].filter(Boolean).join(' ');
+      if (!(await C.confirm(title, body, n ? 'Ajouter' : 'Mettre à jour'))) return;
       try {
         const res = await C.importRecipes(data);
         C.ui.rtab = 'toutes';
         C.ui.rf.cat = '';
         C.render();
-        C.toast(`${res.added} recette${res.added > 1 ? 's' : ''} ajoutée${res.added > 1 ? 's' : ''} dans « Toutes »`);
+        C.toast([res.added ? `${res.added} recette${s(res.added)} ajoutée${s(res.added)}` : '', res.photos ? `${res.photos} photo${s(res.photos)} mise${s(res.photos)} à jour` : ''].filter(Boolean).join(' · '));
       } catch (e) {
         C.toast(e.message);
       }
