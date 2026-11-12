@@ -41,7 +41,7 @@ python3 outils/promotions.py
 
 ## Accueil : la cuisine 3D
 
-L'accueil est une cuisine en maquette 3D (`js/cuisine3d.js`, Three.js 0.160 chargé depuis jsDelivr puis gardé hors ligne par le service worker). Chaque objet ouvre une page : frigo → Frigo, livre → Recettes, ardoise → Planning, cabas → Courses, prospectus → Promotions, tirelire → Budget, cuisinière → le prochain repas. L'ardoise affiche le plat du soir, le post-it du frigo les aliments à consommer, le prospectus la meilleure promotion. « Vue résumé » affiche l'accueil classique ; sans WebGL ou si Three.js ne charge pas, c'est lui qui s'affiche automatiquement.
+L'accueil est une cuisine en maquette 3D (`js/cuisine3d.js`, Three.js 0.160 chargé depuis jsDelivr puis gardé hors ligne par le service worker). La pièce reproduit la vraie cuisine (d'après photos) : cuisine en ligne vert d'eau, crédence métro taupe, porte d'entrée bleue, portemanteau et banc, carrelage rosé en diagonale, table en chêne. Chaque objet ouvre une page : frigo → Frigo, livre sur le plan de travail → Recettes, table (chevalet « Ce soir ») → Planning, cabas à feuillage → Courses, courrier sur le banc → Promotions, tirelire sur l'étagère → Budget, casserole → le prochain repas. Le post-it du frigo, le chevalet et le prospectus affichent des informations en direct. « Vue résumé » affiche l'accueil classique ; sans WebGL ou si Three.js ne charge pas, c'est lui qui s'affiche automatiquement.
 
 ## Premier lancement
 
