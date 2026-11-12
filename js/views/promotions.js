@@ -94,7 +94,7 @@
           <div class="search">${icon('search', 18)}<input class="inp" type="search" placeholder="Rechercher : saumon, gruyère, pâtes…" value="${esc(f.q)}" data-input="promo.search" aria-label="Rechercher une promotion"></div>
           ${chip('Pour mes recettes', f.linked, 'data-act="promo.linked"')}
         </div>
-        <div class="chips scroll-x" style="margin-bottom:8px">${chip('Tous les magasins', !f.store, 'data-act="promo.store" data-v=""')}${C.STORES.map((s) => chip(`<i style="background:${s.color}"></i>${s.name}`, f.store === s.id, `data-act="promo.store" data-v="${s.id}"`)).join('')}</div>
+        <div class="chips store-row" style="margin-bottom:8px">${chip('<span class="lg-only">Tous les magasins</span><span class="sm-only">Tous</span>', !f.store, 'data-act="promo.store" data-v=""')}${C.STORES.map((s) => chip(`<i style="background:${s.color}"></i>${s.name}`, f.store === s.id, `data-act="promo.store" data-v="${s.id}"`)).join('')}</div>
         <div class="chips scroll-x" style="margin-bottom:22px">${chip('Tous les rayons', !f.cat, 'data-act="promo.cat" data-v=""')}${C.CATS.filter((c) => all.some((p) => p.category === c.id)).map((c) => chip(esc(c.name), f.cat === c.id, `data-act="promo.cat" data-v="${c.id}"`)).join('')}${expired ? chip(`Expirées (${expired})`, f.expired, 'data-act="promo.expired"') : ''}</div>
         <div id="promo-grid">${grid()}</div>
         <p class="small muted" style="margin-top:22px">Sources : site de Lidl Suisse ; Migros et Coop via aktionis.ch (noms traduits de l’allemand). Les prix et dates viennent de ces pages${off.length ? ` · ${esc(off.join(', '))} exclu${off.length > 1 ? 's' : ''} des calculs (<a class="link" href="#/reglages">Réglages</a>)` : ''}.</p>`;

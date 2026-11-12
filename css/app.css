@@ -781,3 +781,12 @@ html.is-cooking { overflow: hidden; }
   .seg--tabs::-webkit-scrollbar { display: none; }
   .seg--tabs button { flex: none; }
 }
+/* Libellés courts sur téléphone */
+.sm-only { display: none; }
+@media (max-width: 760px) {
+  .lg-only { display: none; }
+  .sm-only { display: inline; }
+  /* Promotions : les magasins tiennent sur une ligne */
+  .store-row { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .store-row .chip { height: 36px; padding: 0 10px; justify-content: center; font-size: 13.5px; }
+}
