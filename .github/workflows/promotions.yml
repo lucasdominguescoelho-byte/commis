@@ -1,0 +1,55 @@
+# Cabas — met à jour les promotions chaque matin, puis publie le site sur GitHub Pages.
+# Réglage requis une seule fois : Settings → Pages → Source : « GitHub Actions ».
+name: Promotions et publication
+
+on:
+  schedule:
+    - cron: '23 4 * * *'   # chaque jour vers 5 h 30 (heure suisse)
+  workflow_dispatch:       # bouton « Run workflow » pour lancer à la main
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: github.event_name != 'push'
+        with:
+          python-version: '3.12'
+
+      - name: Récupérer les promotions (Lidl, Migros, Coop)
+        if: github.event_name != 'push'
+        continue-on-error: true   # en cas de panne d'une source, on publie quand même la version précédente
+        run: python3 outils/promotions.py
+
+      - name: Enregistrer le fichier des promotions
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/promotions.json
+          git diff --cached --quiet || { git commit -m "Promotions du $(date +%F)"; git push; }
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deploiement
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,21 @@
+{
+  "name": "Cabas — repas & courses",
+  "short_name": "Cabas",
+  "description": "Planifier ses repas avec les promotions de Migros, Coop et Lidl, et générer la liste de courses.",
+  "lang": "fr-CH",
+  "start_url": "./#/accueil",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F2F0EA",
+  "theme_color": "#F2F0EA",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Liste de courses", "url": "./#/courses", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Planning", "url": "./#/planning", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
