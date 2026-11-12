@@ -57,6 +57,7 @@
     last = id;
     shell(route);
     root.classList.toggle('fade', changed);
+    root.dataset.view = route.view; // dispositions propres à une page (ex. accueil)
     C.views[route.view].render(root, route.param);
     document.title = `${TITLES[route.view]} — ${C.APP}`;
     if (changed) window.scrollTo(0, 0);

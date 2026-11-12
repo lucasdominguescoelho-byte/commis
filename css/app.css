@@ -1,28 +1,29 @@
-/* Commis — identité « encre & citron » sur papier chaud.
+/* Commis — identité « Marché » : blanc, encre brune et rouge tomate (les variables gardent le nom « citron »).
    Serif d'affichage (Instrument Serif) + grotesque de travail (Instrument Sans). */
 
 :root {
-  --paper: #f2f0ea;
-  --card: #fbfaf6;
+  --paper: #ffffff;
+  --card: #ffffff;
   --raise: #ffffff;
-  --wash: #eae7de;
-  --ink: #17191c;
-  --ink-2: #4a4d52;
-  --ink-3: #7d8085;
-  --line: #dcd8cd;
-  --line-2: #e8e5dc;
-  --citron: #ddf24f;
-  --citron-d: #cbe336;
-  --citron-ink: #283000;
-  --citron-wash: #f0f7c4;
+  --wash: #f6f2ed;
+  --ink: #241f1b;
+  --ink-2: #5b534c;
+  --ink-3: #91887f;
+  --line: #ece5dd;
+  --line-2: #f4efe9;
+  --citron: #e4572e;
+  --citron-d: #c8441d;
+  --citron-ink: #ffffff;
+  --citron-wash: #fdeee7;
+  --citron-text: #a8381a; /* texte d'accent sur fond clair */
   --danger: #b42318;
   --danger-wash: #fbe9e6;
   --s1: #2a78d6; /* graphiques : série 1 */
   --s2: #eb6834; /* graphiques : série 2 */
   --serif: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --r: 16px;
-  --r-sm: 10px;
+  --r: 20px;
+  --r-sm: 12px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --side: 244px;
@@ -141,7 +142,7 @@ img { display: block; max-width: 100%; }
 .store { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
 .badge { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: var(--wash); color: var(--ink-2); white-space: nowrap; }
 .badge--promo { background: var(--citron); color: var(--citron-ink); }
-.badge--soft { background: var(--citron-wash); color: var(--citron-ink); }
+.badge--soft { background: var(--citron-wash); color: var(--citron-text); }
 .badge--warn { background: var(--danger-wash); color: var(--danger); }
 .badge--demo { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-3); font-weight: 500; }
 
@@ -159,7 +160,7 @@ img { display: block; max-width: 100%; }
 .bar > i { display: block; height: 100%; border-radius: 3px; background: var(--ink); transition: width 400ms var(--ease-out); }
 .bar.is-over > i { background: var(--danger); }
 .card--citron { background: var(--citron); border-color: var(--citron-d); color: var(--citron-ink); }
-.card--citron .stat-l, .card--citron .stat-s { color: rgba(40, 48, 0, 0.72); }
+.card--citron .stat-l, .card--citron .stat-s { color: rgba(255, 255, 255, 0.85); }
 
 .note { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-sm); border: 1px dashed var(--line); background: transparent; color: var(--ink-2); font-size: 13.5px; }
 .note .ic { flex: none; margin-top: 1px; color: var(--ink-3); }
@@ -225,7 +226,7 @@ select.inp { padding-right: 30px; background-image: url("data:image/svg+xml,%3Cs
 .strip-h { display: flex; align-items: baseline; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .strip-h b { font: 400 22px/1 var(--serif); letter-spacing: 0; color: var(--ink); text-transform: none; }
 .strip-d.is-today { background: var(--citron-wash); }
-.strip-d.is-today .strip-h { color: var(--citron-ink); }
+.strip-d.is-today .strip-h { color: var(--citron-text); }
 .strip-d.is-past { opacity: 0.55; }
 .strip-m { font-size: 13px; line-height: 1.3; min-height: 34px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .strip-m small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
@@ -318,7 +319,7 @@ a.row, .row[data-act] { text-decoration: none; cursor: pointer; }
 .slot.is-over { border-color: var(--ink); border-style: solid; background: var(--citron-wash); }
 .slot.is-src { box-shadow: 0 0 0 2px var(--ink); }
 .slot.is-target { border: 1px dashed var(--ink); background: var(--citron-wash); cursor: pointer; }
-.slot.is-target::after { content: 'Déposer ici'; position: absolute; right: 8px; bottom: 8px; font-size: 11px; font-weight: 600; color: var(--citron-ink); }
+.slot.is-target::after { content: 'Déposer ici'; position: absolute; right: 8px; bottom: 8px; font-size: 11px; font-weight: 600; color: var(--citron-text); }
 .slot.is-past { opacity: 0.6; }
 .movebar { position: sticky; top: 12px; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 12px; background: var(--ink); color: #fff; margin-bottom: 14px; font-size: 14px; }
 .movebar .btn { margin-left: auto; background: #fff; color: var(--ink); border-color: #fff; }
@@ -412,7 +413,7 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .sheet-f .sp { margin-right: auto; }
 .pick { display: flex; align-items: center; gap: 12px; padding: 10px; margin: 0 -10px; border-radius: 12px; cursor: pointer; width: calc(100% + 20px); text-align: left; }
 .pick.is-off { opacity: 0.5; }
-.why { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--citron-wash); color: var(--citron-ink); font-size: 13.5px; }
+.why { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--citron-wash); color: var(--citron-text); font-size: 13.5px; }
 .why li { display: flex; gap: 8px; align-items: baseline; }
 .why li::before { content: '—'; opacity: 0.5; }
 .slotgrid { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 6px; align-items: stretch; }
@@ -464,7 +465,7 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
   .topbar .logo-name { display: block; font-size: 26px; }
   .tabs {
     display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    background: rgba(242, 240, 234, 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
   }
   .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 0 5px; border-radius: 10px; font-size: 10.5px; font-weight: 500; color: var(--ink-3); text-decoration: none; }
@@ -582,8 +583,8 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .seg--tabs { display: flex; width: max-content; max-width: 100%; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
 .seg--tabs button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; height: 36px; }
 .seg--tabs em { font-style: normal; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.note--test { margin-bottom: 22px; background: var(--citron-wash); border: 1px solid var(--citron-d); color: var(--citron-ink); align-items: center; flex-wrap: wrap; }
-.note--test .ic { color: var(--citron-ink); }
+.note--test { margin-bottom: 22px; background: var(--citron-wash); border: 1px solid #f6cdbd; color: var(--citron-text); align-items: center; flex-wrap: wrap; }
+.note--test .ic { color: var(--citron-text); }
 .note--err { border: 1px solid #f0c4be; background: var(--danger-wash); color: var(--danger); margin-top: 16px; }
 .note--err .ic { color: var(--danger); }
 .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--raise); cursor: pointer; }
@@ -659,7 +660,7 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .steps li { cursor: pointer; border-radius: 10px; padding: 4px 6px; margin: -4px -6px; transition: background-color 150ms ease, color 150ms ease; }
 .steps li.is-done { color: var(--ink-3); }
 .steps li.is-done span { text-decoration: line-through; text-decoration-color: var(--ink-3); }
-.steps li.is-done::before { content: '✓'; font-style: normal; color: var(--citron-ink); }
+.steps li.is-done::before { content: '✓'; font-style: normal; color: var(--citron-text); }
 @media (hover: hover) and (pointer: fine) { .steps li:hover { background: var(--wash); } }
 
 /* Accueil : prochain repas en grand */
@@ -736,4 +737,46 @@ html.is-cooking { overflow: hidden; }
   .head-a > .btn { flex: 1 1 auto; }
   .note--test .note-a { margin-left: 0; width: 100%; }
   .note--test .note-a .btn { flex: 1 1 auto; }
+}
+
+/* ---------- Novembre 2026 : « Marché » — cartes flottantes, navigation en haut sur ordinateur ---------- */
+.card, .rc, .pc, .meal, .sum {
+  border-color: transparent; box-shadow: 0 1px 2px rgba(36, 31, 27, 0.05), 0 10px 30px -6px rgba(36, 31, 27, 0.1);
+}
+.btn { border-radius: 999px; }
+@media (min-width: 761px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    height: auto; flex-direction: row; align-items: center; gap: 28px; padding: 14px clamp(24px, 4vw, 56px);
+    border-right: 0; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 25;
+  }
+  .side .nav { flex-direction: row; gap: 2px; }
+  .side-foot { margin: 0 0 0 auto; flex-direction: row; align-items: center; }
+  .side-note, .nav-i.is-on::after { display: none; }
+  .nav-i { width: auto; height: 38px; padding: 0 14px; border-radius: 999px; }
+  .nav-i span, .logo-name, .nav-n { display: inline; }
+  .nav-i.is-on { background: var(--ink); color: #fff; box-shadow: none; }
+  .nav-i.is-on .ic { color: var(--citron); }
+  .logo { padding: 0; }
+  .view { padding-top: 36px; }
+  .rd-side { top: 96px; }
+}
+@media (min-width: 761px) and (max-width: 1120px) {
+  .nav-i span, .nav-n { display: none; }
+  .nav-i { width: 42px; padding: 0; justify-content: center; }
+}
+/* Accueil A : le prochain repas en très grand, chiffres sur une bande */
+@media (min-width: 1121px) {
+  [data-view='accueil'] .nextm { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  [data-view='accueil'] .nextm-v { min-height: 360px; }
+  [data-view='accueil'] .nextm-b { padding: 36px; justify-content: center; }
+  [data-view='accueil'] .nextm-n { font-size: 44px; }
+  [data-view='accueil'] .head { text-align: left; }
+}
+@media (max-width: 760px) {
+  /* Onglets des recettes : défilent au lieu de déborder */
+  .seg--tabs { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .seg--tabs::-webkit-scrollbar { display: none; }
+  .seg--tabs button { flex: none; }
 }
