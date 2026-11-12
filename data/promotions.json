@@ -1,25 +1,25 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-12T08:24:37+00:00",
+ "generatedAt": "2026-11-12T08:36:02+00:00",
  "sources": {
   "lidl": {
    "ok": true,
    "count": 57,
    "origine": "lidl.ch",
-   "updatedAt": "2026-11-12T08:24:37+00:00"
+   "updatedAt": "2026-11-12T08:35:09+00:00"
   },
   "migros": {
    "ok": true,
    "count": 68,
    "origine": "aktionis.ch",
-   "updatedAt": "2026-11-12T08:24:37+00:00"
+   "updatedAt": "2026-11-12T08:35:32+00:00"
   },
   "coop": {
    "ok": true,
    "count": 271,
    "origine": "aktionis.ch",
-   "updatedAt": "2026-11-12T08:24:37+00:00"
+   "updatedAt": "2026-11-12T08:36:02+00:00"
   }
  },
  "promotions": [
