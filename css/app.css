@@ -908,3 +908,93 @@ html.is-cooking { overflow: hidden; }
   .ob-f .btn--ghost[data-act='ob.back'] { flex: 0 0 auto; }
 }
 .ob-hint { margin-top: 10px; max-width: 52ch; }
+
+/* ---------- Accueil, disposition inspirée de miamz.ch ----------
+   En-tête partagé texte + photo, bande des magasins, bande des économies teintée,
+   « on mange ça » en cartes photo, puis courses et bonnes affaires sans boîtes. */
+.btn--lg { height: 52px; padding: 0 26px; font-size: 15.5px; }
+[data-view='accueil'] { max-width: 1320px; }
+/* 1. En-tête */
+.hh { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr); gap: clamp(28px, 4vw, 64px); align-items: center; padding: 8px 0 40px; }
+.hh-t { font: 400 clamp(42px, 5.2vw, 70px) / 1.02 var(--serif); letter-spacing: -0.02em; margin: 12px 0 18px; }
+.hh-t em { color: var(--citron); font-style: italic; }
+.hh-sub { font-size: 17px; color: var(--ink-2); max-width: 40ch; line-height: 1.55; }
+.hh-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 28px; }
+.hh-micro { margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+.hh-v { position: relative; padding-bottom: 28px; }
+.hh-img { display: block; aspect-ratio: 5 / 4; border-radius: 28px; overflow: hidden; background: var(--wash); }
+.hh-img .ph-img, .hh-img .ph { width: 100%; height: 100%; object-fit: cover; }
+.hh-img .ph span { font-size: 96px; }
+.hh-card { position: absolute; left: -28px; bottom: 0; max-width: min(340px, 80%); background: #fff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 2px 4px rgba(120, 60, 30, 0.06), 0 22px 44px -16px rgba(120, 60, 30, 0.3); }
+.hh-k { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--citron); }
+.hh-n { font-weight: 600; font-size: 16px; line-height: 1.3; margin-top: 4px; }
+.hh-s { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.hh-a { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+@media (hover: hover) and (pointer: fine) { .hh-img:hover .ph-img { transform: scale(1.03); } }
+.hh-img .ph-img { transition: opacity 260ms ease, transform 600ms var(--ease-out); }
+/* 2. Bande des magasins */
+.hs-strip { display: flex; align-items: center; gap: 28px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 36px; }
+.hs-l { font-size: 12.5px; color: var(--ink-3); max-width: 13ch; line-height: 1.35; flex: none; }
+.hs-list { display: flex; flex-wrap: wrap; gap: 10px 40px; align-items: baseline; }
+.hs-s { display: inline-flex; align-items: baseline; gap: 10px; text-decoration: none; }
+.hs-s b { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--c); }
+.hs-s span { font-size: 13px; color: var(--ink-3); }
+@media (hover: hover) and (pointer: fine) { .hs-s:hover span { color: var(--ink); } }
+.hn { margin: -12px 0 32px; }
+/* 3. Bande des économies */
+.he-band { background: var(--peche); border-radius: 32px; padding: clamp(28px, 4vw, 52px); text-align: center; margin-bottom: 56px; }
+.he-t { font: 400 clamp(30px, 3.4vw, 44px) / 1.1 var(--serif); letter-spacing: -0.01em; }
+.he-t em { color: var(--citron); }
+.he-sentence { font: 400 clamp(20px, 2.2vw, 26px) / 1.35 var(--serif); margin: 22px auto 0; max-width: 40ch; color: var(--ink); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 10px; }
+.he-step { display: inline-flex; background: #fff; border: 0; height: 44px; }
+.he-step b { font: 400 26px var(--serif); min-width: 30px; text-align: center; color: var(--citron); }
+.he-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 30px; }
+.he-tile { background: #fff; border-radius: 20px; padding: 22px 18px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.he-tile b { font: 400 clamp(30px, 3vw, 40px) / 1 var(--serif); color: var(--citron); letter-spacing: -0.01em; }
+.he-tile span { font-size: 13.5px; color: var(--ink-2); max-width: 24ch; }
+.he-note { font-size: 12.5px; color: var(--ink-3); max-width: 70ch; margin: 22px auto 0; }
+/* 4. On mange ça */
+.hm { margin-bottom: 56px; }
+.hm-h { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 6px 0 22px; }
+.hm-t { font: 400 clamp(32px, 3.6vw, 46px) / 1.05 var(--serif); letter-spacing: -0.01em; }
+.hm-t em { color: var(--citron); }
+.hm-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 18px; }
+.hm-c { display: flex; flex-direction: column; gap: 6px; text-decoration: none; min-width: 0; }
+.hm-v { display: block; aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; background: var(--wash); margin-bottom: 8px; transition: box-shadow 260ms ease, transform 260ms var(--ease-out); }
+.hm-v .ph-img { transition: opacity 260ms ease, transform 500ms var(--ease-out); }
+.hm-v .ph span { font-size: 48px; }
+.hm-d { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--citron); }
+.hm-n { font-weight: 600; font-size: 15.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hm-p { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-3); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-p em { font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--citron-text); background: var(--citron-wash); border-radius: 6px; padding: 3px 7px; flex: none; }
+.hm-c:active .hm-v { transform: scale(0.98); }
+@media (hover: hover) and (pointer: fine) { .hm-c:hover .hm-v { box-shadow: var(--shadow-2); transform: translateY(-3px); } .hm-c:hover .ph-img { transform: scale(1.04); } }
+/* 5. Courses et bonnes affaires */
+.hd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 56px; padding-top: 28px; border-top: 1px solid var(--line); }
+.hd-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+
+@media (max-width: 1120px) {
+  .hm-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .hh { grid-template-columns: 1fr; gap: 26px; padding: 0 0 28px; }
+  .hh-t { font-size: 40px; }
+  .hh-sub { font-size: 16px; }
+  .hh-cta .btn--lg { flex: 1 1 100%; }
+  .hh-cta .link { margin: 0 auto; }
+  .hh-micro { text-align: center; }
+  .hh-v { padding-bottom: 0; }
+  .hh-img { aspect-ratio: 4 / 3; border-radius: 22px; }
+  .hh-card { position: relative; left: auto; bottom: auto; max-width: none; margin: -40px 14px 0; }
+  .hs-strip { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 0; margin-bottom: 26px; }
+  .hs-l { max-width: none; }
+  .hs-list { gap: 6px 24px; }
+  .hs-s b { font-size: 20px; }
+  .he-band { border-radius: 24px; padding: 26px 18px; margin-bottom: 40px; }
+  .he-tiles { grid-template-columns: 1fr; gap: 10px; }
+  .hm-h { flex-direction: column; gap: 8px; }
+  .hm-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; gap: 14px; margin: 0 -16px; padding: 0 16px 6px; scrollbar-width: none; }
+  .hm-row::-webkit-scrollbar { display: none; }
+  .hm-c { flex: 0 0 72%; scroll-snap-align: start; }
+  .hd { grid-template-columns: 1fr; gap: 32px; }
+}
