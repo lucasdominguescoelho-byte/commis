@@ -94,3 +94,9 @@ Aucune dépendance, aucune compilation : HTML, CSS et JavaScript simples ; Pytho
 | `js/views/*.js` | Une page par fichier |
 | `outils/promotions.py` | Récupération et traduction des promotions |
 | `.github/workflows/promotions.yml` | Mise à jour quotidienne et publication |
+
+## Livre de recettes (Wikilivres)
+
+`data/recettes.json` (environ 550 plats salés) est importé par `outils/recettes.py` depuis le [Livre de cuisine de Wikilivres](https://fr.wikibooks.org/wiki/Livre_de_cuisine). Auteurs : contributeurs de Wikilivres. Licence : [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr). Modifications : texte simplifié, quantités extraites, prix estimés. Ce fichier est diffusé sous la même licence. Chaque recette garde le lien vers sa page d'origine, affiché dans l'app ; les photos viennent de Wikimedia Commons.
+
+« Générer » pioche d'abord dans ce livre (promotions en priorité, articles habituels sinon), complété par quelques plats composés par Commis. On peut aussi chercher une recette par nom ou ingrédient. Pour mettre le livre à jour : `python3 outils/recettes.py`.

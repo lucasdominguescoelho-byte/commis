@@ -1,13 +1,13 @@
-/* Commis — Recettes › Générer : idées de recettes composées sur le moment, gratuitement et
-   sur l'appareil (js/generateur.js), à partir des promotions de la semaine et, sur demande,
-   des aliments du frigo. Les idées retenues partent dans « À tester ». */
+/* Commis — Recettes › Générer : idées de recettes tirées du Livre de cuisine de Wikilivres
+   (plus de 500 recettes libres) ou composées par Commis, choisies selon les promotions de la
+   semaine, les articles habituels et, sur demande, le frigo. Les idées retenues partent dans « À tester ». */
 (function () {
   'use strict';
   const C = window.C;
   const { esc, icon } = C;
   const E = C.eng;
 
-  const G = (C.ui.gen = { count: 3, people: 0, maxTime: 0, wish: '', promos: true, fridge: false, fridgeIds: null, results: [], saved: {}, note: '', unused: [] });
+  const G = (C.ui.gen = { count: 3, people: 0, maxTime: 0, wish: '', promos: true, fridge: false, fridgeIds: null, results: [], saved: {}, note: '', unused: [], q: '', busy: false });
   const people = () => G.people || C.S.settings.household || 2;
   const soon = (f) => E.expiresIn(f) != null && E.expiresIn(f) <= 3;
 
@@ -34,19 +34,26 @@
             : `<p class="small muted">Votre frigo est vide. <a class="link" href="#/frigo">Ajouter des aliments</a></p>`
           : ''
       }
-      ${C.field('Envie particulière', `<input class="inp" value="${esc(G.wish)}" data-input="gen.wish" placeholder="ex. soupe, salade, four, pâtes, curry, rapide, végétarien…" maxlength="80">`, 'Facultatif. Vos régime, allergies et aliments évités (Réglages) sont toujours respectés.')}
+      ${C.field('Envie particulière', `<input class="inp" value="${esc(G.wish)}" data-input="gen.wish" placeholder="ex. soupe, poisson, gratin, curry, rapide, végétarien, poireaux…" maxlength="80">`, 'Facultatif. Vos régime, allergies et aliments évités (Réglages) sont toujours respectés.')}
       <div class="gen-go">
-        <button class="btn btn--citron" data-act="gen.go" ${can ? '' : 'disabled'}>${icon('wand', 18)} ${G.results.length ? 'Autres idées' : `Générer ${G.count} idée${G.count > 1 ? 's' : ''}`}</button>
-        <span class="small muted">Gratuit, sur votre appareil : rien n’est envoyé sur Internet.</span>
+        <button class="btn btn--citron" data-act="gen.go" ${can && !G.busy ? '' : 'disabled'}>${icon('wand', 18)} ${G.results.length ? 'Autres idées' : `Générer ${G.count} idée${G.count > 1 ? 's' : ''}`}</button>
+        <span class="small muted">Promotions en priorité, articles habituels de vos magasins sinon. Gratuit, rien n’est envoyé sur Internet.</span>
       </div>
-    </div>`;
+    </div>
+    <form class="card gen-search" id="gen-search">
+      <label class="field"><span>Ou chercher dans le livre de recettes${C.cuisine.size() ? ` (${C.cuisine.size()} recettes)` : ''}</span>
+        <div class="tag-add"><div class="search" style="max-width:none;flex:1">${icon('search', 18)}<input class="inp" type="search" name="q" value="${esc(G.q)}" placeholder="ex. lasagnes, curry, poireaux, aligot…"></div><button class="btn btn--ghost" type="submit">Chercher</button></div>
+      </label>
+    </form>`;
   }
 
   function idea(r) {
     const saved = G.saved[r.id];
     const c = E.recipeCost(r, r.servings, E.activePromos(C.weekId()));
     const fromFridge = r.ingredients.filter((i) => i.frigo).length;
+    const src = r.sourceUrl ? `<p class="idea-src">Recette : <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">${esc(r.name)}, Wikilivres</a> · CC BY-SA 4.0${r.photo ? ' · photo Wikimedia Commons' : ''}</p>` : '<p class="idea-src">Composée par Commis</p>';
     return `<article class="card idea">
+      ${r.photo ? `<div class="idea-v"><img src="${esc(r.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></div>` : ''}
       <div class="idea-h"><div><p class="eyebrow">${esc(r.category)}</p><h3 class="rc-n">${esc(r.name)}</h3></div>
         <div class="meta"><span>${icon('clock', 15)}${r.prepTime} min</span><span>${icon('users', 15)}${r.servings}</span><span>${C.chf(c.cost)}</span></div></div>
       <div class="chips" style="gap:6px">${c.promoIngs.length ? `<span class="badge badge--promo">${c.promoIngs.length} en promo${c.savings >= 0.05 ? ` · −${C.chf(c.savings)}` : ''}</span>` : ''}${fromFridge ? `<span class="badge badge--frigo">${fromFridge} du frigo</span>` : ''}${c.stores.map(C.storeChip).join('')}</div>
@@ -55,6 +62,7 @@
         <div style="margin-top:8px">${C.ingLines(c)}</div>
         <ol class="steps" style="margin-top:18px">${r.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
       </details>
+      ${src}
       <div class="idea-a">${
         saved
           ? `<span class="badge badge--soft">${icon('check', 14)} Dans « À tester »</span><a class="link" href="#/recettes/${r.id}">Ouvrir</a>`
@@ -69,14 +77,33 @@
       G.unused.length ? `<p class="small muted" style="margin-top:12px">Pas utilisé cette fois : ${esc(G.unused.join(', '))} (pas encore dans les modèles de Commis, ou incompatible avec vos préférences).</p>` : '',
     ].join('');
     if (!G.results.length) return notes;
-    return `<div class="sec-h" style="margin-top:28px"><h2 class="h2">Idées</h2><span class="small muted">Composées par Commis à partir de modèles de plats</span></div>
+    if (G.busy) return `<div class="gen-wait"><span class="spin"></span><div><b>Ouverture du livre de recettes…</b></div></div>`;
+    return `<div class="sec-h" style="margin-top:28px"><h2 class="h2">${G.searched ? `Recettes « ${esc(G.searched)} »` : 'Idées'}</h2><span class="small muted">Livre de cuisine de Wikilivres et plats composés par Commis</span></div>
       <div class="ideas">${G.results.map(idea).join('')}</div>${notes}
-      <p class="small muted" style="margin-top:14px">Les prix sont estimés, les rabais viennent des promotions réelles. Pas convaincu ? « Autres idées » tire de nouvelles combinaisons.</p>`;
+      <p class="small muted" style="margin-top:14px">Les prix sont estimés, les rabais viennent des promotions réelles. Les recettes du livre sont écrites par des bénévoles : relisez quantités et cuissons. Pas convaincu ? « Autres idées » en propose d’autres.</p>`;
   }
 
   C.generator = {
     render(root) {
       root.innerHTML = form() + `<div id="gen-out">${results()}</div>`;
+      root.querySelector('#gen-search').onsubmit = async (e) => {
+        e.preventDefault();
+        const q = e.target.elements.q.value.trim();
+        if (!q) return;
+        G.q = q;
+        G.busy = true;
+        C.render();
+        G.results = await C.cuisine.search(q, { people: people(), usePromos: G.promos, fridgeIds: G.fridge ? G.fridgeIds : [] });
+        G.saved = {};
+        G.searched = q;
+        G.unused = [];
+        G.note = G.results.length ? '' : `Rien trouvé pour « ${q} » dans le livre (ou incompatible avec vos préférences).`;
+        G.busy = false;
+        C.render();
+        const out = document.getElementById('gen-out');
+        if (out) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      if (C.cuisine.size() == null) C.cuisine.loadLibrary().then(() => C.ui.rtab === 'generer' && C.route().view === 'recettes' && !C.route().param && C.render());
     },
     // Ouvre le générateur avec le frigo activé (depuis la page Frigo ou l'accueil).
     withFridge(ids) {
@@ -107,12 +134,17 @@
       G.fridgeIds = G.fridgeIds.includes(id) ? G.fridgeIds.filter((x) => x !== id) : [...G.fridgeIds, id];
       C.render();
     },
-    'gen.go': () => {
-      const res = C.cuisine.generate({ count: G.count, people: people(), maxTime: G.maxTime, wish: G.wish.trim(), usePromos: G.promos, fridgeIds: G.fridge ? G.fridgeIds : [], avoid: G.results });
+    'gen.go': async () => {
+      if (G.busy) return;
+      G.busy = C.cuisine.size() == null;
+      if (G.busy) C.render();
+      const res = await C.cuisine.generate({ count: G.count, people: people(), maxTime: G.maxTime, wish: G.wish.trim(), usePromos: G.promos, fridgeIds: G.fridge ? G.fridgeIds : [], avoid: G.results });
       G.results = res.recipes;
       G.saved = {};
       G.note = res.note || '';
       G.unused = G.fridge ? res.unusedFridge || [] : [];
+      G.searched = '';
+      G.busy = false;
       C.render();
       const out = document.getElementById('gen-out');
       if (out && G.results.length) out.scrollIntoView({ behavior: 'smooth', block: 'start' });

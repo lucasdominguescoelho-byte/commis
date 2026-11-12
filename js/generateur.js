@@ -374,12 +374,112 @@
     };
   }
 
+  /* ---------- Livre de cuisine (Wikilivres, licence CC BY-SA 4.0) ----------
+     data/recettes.json est produit par outils/recettes.py. Chaque recette garde le lien
+     vers sa page d'origine, affiché avec la recette. */
+  let LIB = null;
+  async function loadLibrary() {
+    if (LIB) return LIB;
+    try {
+      const res = await fetch('data/recettes.json');
+      const d = await res.json();
+      LIB = (d.recettes || []).map((r) => ({ ...r, _t: C.norm([r.name, r.category, ...(r.tags || []), ...r.ingredients.map((i) => i.name)].join(' ')) }));
+    } catch (e) {
+      LIB = [];
+    }
+    return LIB;
+  }
+
+  const sameFood = (a, b) => {
+    const ta = C.tokens(a);
+    const tb = C.tokens(b);
+    return (ta.length && ta.every((t) => tb.includes(t))) || (tb.length && tb.every((t) => ta.includes(t)));
+  };
+  // Intérêt d'une recette du livre : promotions (gros rabais d'abord), frigo, envie, simplicité.
+  function scoreLib(r, ctx) {
+    if (E.conflicts(r).length) return null;
+    let score = 1 + Math.random() * 4;
+    const uses = [];
+    r.ingredients.forEach((i) => {
+      const m = ctx.promos.length ? E.promoFor(i.name, ctx.promos) : null;
+      if (m) {
+        const pct = Math.round((1 - m.ratio) * 100);
+        score += (['vp', 'fl', 'lait'].includes(i.cat) ? 1.5 : 0.5) + pct / 12;
+        uses.push({ ing: i, promo: m.promo, pct });
+      }
+      const f = ctx.fridge.find((x) => sameFood(i.name, `${x.name} ${x.generic || ''}`.trim()) || sameFood(i.name, x.name));
+      if (f) {
+        score += 5 + (E.expiresIn(f) != null && E.expiresIn(f) <= 3 ? 3 : 0);
+        uses.push({ ing: i, fridge: f });
+      }
+    });
+    if (r.ingredients.length > 12) score -= 1.5;
+    if (r.prepTime > 90) score -= 2;
+    return { r, score, uses, lib: true };
+  }
+
+  // Recette du livre adaptée au nombre de personnes, avec promotions et frigo repérés.
+  function fromLib(x, people) {
+    const r = x.r;
+    const k = people / (r.servings || 4);
+    const promoTxt = x.uses.filter((u) => u.promo).map((u) => `${u.ing.name.toLowerCase()} (${C.storeById(u.promo.store).name}${u.pct ? ` −${u.pct} %` : ''})`);
+    const frigoTxt = x.uses.filter((u) => u.fridge).map((u) => u.fridge.name.toLowerCase());
+    const why = [promoTxt.length ? `En promotion : ${et(promoTxt.slice(0, 5))}.` : 'Avec des articles habituels.', frigoTxt.length ? `Du frigo : ${et(frigoTxt)}.` : ''].filter(Boolean).join(' ');
+    return {
+      id: C.uid(),
+      name: r.name,
+      description: r.description || '',
+      why,
+      category: r.category,
+      prepTime: r.prepTime,
+      servings: people,
+      ingredients: r.ingredients.map((i) => {
+        const u = x.uses.find((y) => y.ing === i);
+        return {
+          name: i.name,
+          qty: i.qty ? roundQty(i.qty * k, i.unit) : 0,
+          unit: i.unit,
+          cat: i.cat,
+          price: Math.round(i.price * k * 20) / 20,
+          ...(u && u.promo ? { promoId: u.promo.id } : {}),
+          ...(x.uses.some((y) => y.ing === i && y.fridge) ? { frigo: true } : {}),
+        };
+      }),
+      steps: r.steps,
+      favorite: false,
+      photo: r.photo || '',
+      validated: false,
+      source: 'wikilivres',
+      sourceUrl: r.url,
+      license: 'CC BY-SA 4.0',
+      demo: false,
+      createdAt: Date.now(),
+    };
+  }
+
   /* ---------- API ---------- */
   C.cuisine = {
     // Aliments connus (sert aussi à reconnaître les articles d'un ticket de caisse).
     foods: [...P, ...L, ...F, ...Object.values(X)].filter((x, i, a) => a.findIndex((y) => y.n === x.n) === i),
     // Renvoie des idées de recettes différentes, sans rien envoyer sur Internet.
-    generate({ count: n = 3, people = 2, maxTime = 0, wish = '', usePromos = true, fridgeIds = [], avoid = [] }) {
+    loadLibrary,
+    // Recherche par nom ou ingrédient dans le livre (« lasagnes », « poireaux »…).
+    async search(q, { people = 2, usePromos = true, fridgeIds = [] } = {}) {
+      const library = await loadLibrary();
+      const words = C.tokens(q).filter((x) => x.length > 1);
+      if (!words.length) return [];
+      const ctx = context({ usePromos, fridgeIds });
+      return library
+        .filter((r) => words.every((x) => r._t.includes(x)))
+        .map((r) => scoreLib(r, ctx))
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 12)
+        .map((x) => fromLib(x, people));
+    },
+    size: () => (LIB ? LIB.length : null),
+    async generate({ count: n = 3, people = 2, maxTime = 0, wish = '', usePromos = true, fridgeIds = [], avoid = [] }) {
+      const library = await loadLibrary();
       // avoid : idées affichées juste avant (on change de plat et de protéine principale)
       const key = (name) => C.tokens(name).sort().join(' ');
       const prevT = new Set(avoid.map((r) => r.tpl));
@@ -388,47 +488,70 @@
       const w = C.norm(wish);
       let tpls = T.filter((t) => !maxTime || t.time <= maxTime);
       const vege = /vege|sans viande/.test(w);
+      const fast = /rapide|vite|express/.test(w);
+      const words = C.tokens(w).filter((x) => x.length > 2 && !/vege|rapide|vite|express|sans|viande|recette|plat/.test(x));
       if (vege) {
         ctx.P = ctx.P.filter((p) => p.g === 'vege');
       }
+      if (fast) tpls = tpls.filter((t) => t.time <= 30);
       const wanted = tpls.filter((t) => t.mots.some((m) => w.includes(m)) || w.includes(t.id));
       if (wanted.length) tpls = wanted;
-      if (!tpls.length) return { recipes: [], note: 'Aucun type de plat ne tient dans ce temps : essayez « Peu importe ».' };
+      else if (words.length) tpls = []; // envie précise : on cherche d'abord dans le livre
 
       const known = new Set([...C.S.recipes.map((r) => r.name), ...avoid.map((r) => r.name)].map(key));
       const tries = [];
-      for (let i = 0; i < 400; i++) {
+      // Recettes du livre
+      const limit = maxTime || (fast ? 30 : 0);
+      library.forEach((rec) => {
+        if (limit && rec.prepTime > limit) return;
+        if (vege && E.hasMeat(rec)) return;
+        if (words.length && !words.some((x) => rec._t.includes(x))) return;
+        if (known.has(key(rec.name))) return;
+        const x = scoreLib(rec, ctx);
+        if (!x) return;
+        if (prevT.has('lib:' + rec.category)) x.score -= 2;
+        tries.push(x);
+      });
+      for (let i = 0; i < (tpls.length ? 400 : 0); i++) {
         const r = attempt(rnd(tpls), ctx);
-        if (!r || !r.uses.length) continue;
+        if (!r) continue;
         if (prevT.has(r.tpl.id)) r.score -= 4;
         if (r.P && prevP.has(r.P.court)) r.score -= 6;
+        r.score -= 4; // le livre de recettes passe avant les plats composés
         tries.push(r);
       }
       tries.sort((a, b) => b.score - a.score);
-      // Variété : un type de plat et une protéine principale différents par idée, si possible.
+      // Variété : des catégories de plats et des protéines différentes d'une idée à l'autre.
       const out = [];
-      const usedT = new Set();
+      const usedC = new Set();
       const usedP = new Set();
       const usedName = new Set();
+      const cat = (x) => (x.lib ? x.r.category : x.tpl.cat(x));
+      const nm = (x) => key(x.lib ? x.r.name : x.tpl.name(x));
+      const hasLib = tries.some((x) => x.lib);
       for (const pass of [0, 1, 2]) {
-        for (const r of tries) {
+        for (const x of tries) {
           if (out.length >= n) break;
-          const name = key(r.tpl.name(r));
+          const name = nm(x);
+          // au plus un plat composé par série (sauf frigo coché, où ils utilisent mieux les restes)
+          if (pass < 2 && hasLib && !x.lib && out.filter((y) => !y.lib).length >= (ctx.fridge.length ? 2 : 1)) continue;
           if (usedName.has(name) || known.has(name)) continue;
-          if (pass < 2 && usedT.has(r.tpl.id)) continue;
-          if (pass < 1 && r.P && usedP.has(r.P.court)) continue;
-          out.push(r);
-          usedT.add(r.tpl.id);
-          if (r.P) usedP.add(r.P.court);
+          if (pass < 2 && usedC.has(cat(x))) continue;
+          if (pass < 1 && !x.lib && x.P && usedP.has(x.P.court)) continue;
+          out.push(x);
+          usedC.add(cat(x));
+          if (!x.lib && x.P) usedP.add(x.P.court);
           usedName.add(name);
         }
       }
-      const recipes = out.map((r) => ({ ...build(r, people), tpl: r.tpl.id, main: r.P ? r.P.court : '' })).filter((rec) => !E.conflicts(rec).length);
+      const recipes = out
+        .map((x) => (x.lib ? { ...fromLib(x, people), tpl: 'lib:' + x.r.category, main: '' } : { ...build(x, people), tpl: x.tpl.id, main: x.P ? x.P.court : '' }))
+        .filter((rec) => !E.conflicts(rec).length);
       const unused = ctx.fridge.filter((f) => !recipes.some((rec) => rec.ingredients.some((i) => i.frigo && C.tokens(i.name).every((t) => C.tokens(f.name).includes(t)))));
       return {
         recipes,
         unusedFridge: unused.map((f) => f.name),
-        note: recipes.length ? '' : 'Pas assez de produits compatibles avec vos préférences. Ajoutez des aliments au frigo ou assouplissez l’envie particulière.',
+        note: recipes.length ? '' : 'Aucune recette ne correspond. Essayez une autre envie, un autre temps, ou cochez plus d’aliments.',
       };
     },
   };

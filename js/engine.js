@@ -68,6 +68,7 @@
     });
     return out;
   };
+  E.hasMeat = (recipe) => recipe.ingredients.some((i) => tk(i.name).some((t) => MEAT.includes(t) || FISH.includes(t) || SHELL.includes(t)));
   E.compatible = () => C.S.recipes.filter((r) => E.conflicts(r).length === 0);
   const likedCount = (recipe) =>
     C.S.settings.liked.filter((l) => {

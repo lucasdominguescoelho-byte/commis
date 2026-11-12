@@ -55,7 +55,7 @@
         return `<article class="rc" data-act="go" data-href="#/recettes/${r.id}" tabindex="0" role="link" aria-label="${esc(r.name)}">
           <div class="rc-v">${C.recipeVisual(r)}
             <button class="ibtn rc-fav ${r.favorite ? 'is-on' : ''}" data-act="rec.fav" data-id="${r.id}" aria-label="Favori" aria-pressed="${!!r.favorite}">${icon('heart', 18)}</button>
-            <div class="rc-tags">${r.validated ? '' : `<span class="badge badge--soft">${r.source === 'cabas' || r.source === 'ia' ? 'Idée · ' : ''}à tester</span>`}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
+            <div class="rc-tags">${r.validated ? '' : `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>`}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
           </div>
           <div class="rc-b"><span class="eyebrow">${esc(r.category)}</span><h3 class="rc-n">${esc(r.name)}</h3>
             <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${r.prepTime} min</span><span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
@@ -107,19 +107,21 @@
     const c = E.recipeCost(r, people, E.activePromos(C.weekId()));
     const bad = E.conflicts(r);
     const fromIa = r.source === 'cabas' || r.source === 'ia';
+    const fromLib = r.source === 'wikilivres';
     root.innerHTML = `
       <a class="back" href="#/recettes" data-act="rec.back" data-v="${r.validated ? 'mes' : 'tester'}">${icon('left', 16)} ${r.validated ? 'Mes recettes' : 'À tester'}</a>
-      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
+      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
       <div class="rd">
         <div>
           <div class="rd-v">${C.recipeVisual(r)}</div>
           <section class="sec"><h2 class="h2" style="margin-bottom:18px">Préparation</h2>
             ${r.steps.length ? `<ol class="steps">${r.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : '<p class="muted">Aucune étape renseignée.</p>'}
+            ${r.sourceUrl ? `<p class="small muted" style="margin-top:20px">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
           </section>
         </div>
         <div class="rd-side">
           <div>
-            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : ''}${r.validated ? ' · validée' : ''}</p>
+            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : ''}${r.validated ? ' · validée' : ''}</p>
             <h1 class="title" style="font-size:clamp(32px,3.6vw,46px)">${esc(r.name)}</h1>
             ${r.description ? `<p class="lede">${esc(r.description)}</p>` : ''}
             <div class="meta" style="margin-top:14px"><span>${icon('clock', 16)}${r.prepTime} min</span><span>${icon('users', 16)}${r.servings} portions de base</span></div>
