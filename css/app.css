@@ -737,9 +737,3 @@ html.is-cooking { overflow: hidden; }
   .note--test .note-a { margin-left: 0; width: 100%; }
   .note--test .note-a .btn { flex: 1 1 auto; }
 }
-/* Accueil simplifié : un seul résumé chiffré */
-.home-sum { margin-bottom: 0; gap: 10px 36px; }
-.sum-a { text-decoration: none; color: inherit; padding: 4px 10px; margin: -4px -10px; border-radius: 10px; transition: background-color 150ms ease; }
-.sum-a b::after { content: ' →'; font: 500 15px var(--sans); color: var(--ink-3); }
-@media (hover: hover) and (pointer: fine) { .sum-a:hover { background: var(--wash); } }
-@media (max-width: 760px) { .home-sum { display: grid; grid-template-columns: 1fr 1fr; } }
