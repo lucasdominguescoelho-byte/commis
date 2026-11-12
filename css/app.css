@@ -867,3 +867,43 @@ html.is-cooking { overflow: hidden; }
 .nav-i.is-on .ic { color: #fff; }
 .side { background: rgba(255, 250, 246, 0.92); }
 @media (hover: hover) and (pointer: fine) { :is(.rc, .meal):hover { box-shadow: 0 16px 30px -18px rgba(120, 60, 30, 0.45); } }
+
+/* ---------- Questionnaire de bienvenue (premier lancement) ---------- */
+.ob { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 24px; background: rgba(36, 31, 27, 0.32); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity 220ms ease; }
+.ob.is-open { opacity: 1; }
+.ob-p { width: 100%; max-width: 580px; max-height: min(720px, calc(100dvh - 48px)); display: flex; flex-direction: column; background: var(--paper); border-radius: 28px; box-shadow: 0 30px 80px -24px rgba(80, 40, 20, 0.45); overflow: hidden; transform: translateY(12px) scale(0.98); transition: transform 320ms var(--ease-out); }
+.ob.is-open .ob-p { transform: none; }
+.ob-bar { height: 4px; margin: 22px 28px 0; border-radius: 2px; background: var(--wash); overflow: hidden; }
+.ob-bar i { display: block; height: 100%; background: var(--citron); border-radius: 2px; transition: width 320ms var(--ease-out); }
+.ob-b { flex: 1; overflow-y: auto; padding: 26px 28px 8px; }
+.ob-in { animation: cookIn 260ms var(--ease-out); }
+.ob-in.from-left { animation-name: cookInL; }
+.ob-t { font: 400 clamp(30px, 4vw, 38px) / 1.08 var(--serif); letter-spacing: -0.01em; margin: 6px 0 10px; }
+.ob-s { color: var(--ink-2); margin-top: 8px; max-width: 46ch; }
+.ob-q { font-size: 15px; font-weight: 600; margin: 26px 0 10px; }
+.ob-row { margin-top: 16px; }
+.ob-step { height: 52px; }
+.ob-step button { width: 46px; height: 46px; }
+.ob-step b { font: 400 30px var(--serif); min-width: 38px; text-align: center; }
+.ob-other { margin-top: 12px; max-width: 320px; }
+.ob .chips { gap: 8px; }
+.ob-big .chip { height: 46px; padding: 0 18px; font-size: 15px; }
+.ob-hello { text-align: center; padding: 18px 0 6px; display: flex; flex-direction: column; align-items: center; }
+.ob-hello .ob-s { margin-left: auto; margin-right: auto; }
+.ob-mark { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 14px; }
+.ob-mark svg { width: 34px; height: 34px; }
+.ob-check { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--sauge); color: #2f5b2a; margin-bottom: 14px; }
+.ob-f { display: flex; align-items: center; gap: 10px; padding: 16px 28px 22px; }
+.ob-f [data-act='ob.next'] { margin-left: auto; }
+.ob-f .btn { height: 46px; }
+.ob-f .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ob-skip { font-size: 14px; }
+@media (max-width: 760px) {
+  .ob { padding: 0; place-items: stretch; }
+  .ob-p { max-width: none; max-height: none; height: 100dvh; border-radius: 0; padding-top: env(safe-area-inset-top); }
+  .ob-bar { margin: 18px 18px 0; }
+  .ob-b { padding: 22px 18px 8px; }
+  .ob-f { padding: 12px 18px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--card); }
+  .ob-f .btn { flex: 1; }
+  .ob-f .btn--ghost[data-act='ob.back'] { flex: 0 0 auto; }
+}

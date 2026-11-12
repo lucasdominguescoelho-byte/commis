@@ -39,6 +39,10 @@ Lancer la mise à jour à la main :
 python3 outils/promotions.py
 ```
 
+## Premier lancement
+
+La première fois que Commis s'ouvre sur un appareil, un court questionnaire règle le foyer, le budget, les magasins, le régime, les allergies et les ustensiles (rien n'est enregistré avant la fin ; « Passer » garde les réglages par défaut). On peut le relancer depuis **Réglages › Revoir le questionnaire**. Il n'y a pas de compte : les réglages restent sur l'appareil.
+
 ## Recettes : validées, à tester, générées
 
 - **Mes recettes** ne montre que les recettes **testées et validées**. Une recette écrite à la main est validée par défaut (case à décocher dans l'éditeur).

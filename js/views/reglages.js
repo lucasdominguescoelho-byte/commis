@@ -23,7 +23,8 @@
       const demoP = C.S.promotions.filter((p) => p.demo).length;
       root.innerHTML = `
         <header class="head"><div><p class="eyebrow">Personnalisation</p><h1 class="title">Réglages</h1>
-          <p class="lede">Ces choix orientent les suggestions de recettes, la proposition de planning et les calculs de budget. <b style="color:var(--ink)">${pool} recette${pool > 1 ? 's' : ''} sur ${total}</b> ${pool > 1 ? 'respectent' : 'respecte'} actuellement vos préférences.</p></div></header>
+          <p class="lede">Ces choix orientent les suggestions de recettes, la proposition de planning et les calculs de budget. <b style="color:var(--ink)">${pool} recette${pool > 1 ? 's' : ''} sur ${total}</b> ${pool > 1 ? 'respectent' : 'respecte'} actuellement vos préférences.</p></div>
+          <div class="head-a"><button class="btn btn--ghost" data-act="set.onboard">${icon('wand', 18)} Revoir le questionnaire</button></div></header>
 
         ${block('Foyer', 'Nombre de personnes à table. Les quantités et les coûts des nouveaux repas planifiés sont calculés pour ce nombre.',
           `<div><div class="step"><button data-act="set.people" data-d="-1" aria-label="Moins">${icon('minus', 16)}</button><b>${st.household}</b><button data-act="set.people" data-d="1" aria-label="Plus">${icon('plus', 16)}</button><span>personne${st.household > 1 ? 's' : ''}</span></div></div>`)}

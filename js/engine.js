@@ -42,8 +42,7 @@
   };
   E.ALLERGEN_SUGGESTIONS = ['Gluten', 'Lactose', 'Œufs', 'Fruits à coque', 'Arachides', 'Poisson', 'Crustacés', 'Soja'];
 
-  function rules() {
-    const st = C.S.settings;
+  function rules(st = C.S.settings) {
     const out = [];
     st.diets.forEach((d) => E.DIETS[d] && out.push({ kind: 'régime', label: E.DIETS[d].label, any: E.DIETS[d].words }));
     st.allergies.forEach((a) => {
@@ -59,8 +58,9 @@
     return t.some((x) => rule.any.includes(x) && !(plant && DAIRY.includes(x)));
   };
   // Raisons pour lesquelles une recette ne respecte pas les préférences (tableau vide = compatible).
-  E.conflicts = (recipe) => {
-    const rs = rules();
+  // st : réglages à tester (par défaut ceux enregistrés), utile pour le questionnaire de bienvenue.
+  E.conflicts = (recipe, st) => {
+    const rs = rules(st);
     const out = [];
     rs.forEach((rule) => {
       const ing = recipe.ingredients.find((x) => hitRule(rule, tk(x.name)));

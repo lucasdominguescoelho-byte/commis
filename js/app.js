@@ -20,6 +20,7 @@
 
   // Marque : un cabas de marché en paille — corps évasé, deux bandes tressées en réserve, anse fine.
   const mark = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 9.2c0-3.3 1.3-5 3.5-5s3.5 1.7 3.5 5" stroke="currentColor" stroke-width="1.7"/><path d="M3.9 9.4h16.2l-2.5 8.9a2.6 2.6 0 0 1-2.5 1.9H8.9a2.6 2.6 0 0 1-2.5-1.9z" fill="currentColor" stroke="currentColor" stroke-width="1.2"/><path d="M3.2 12.5q8.8 1.8 17.6 0M4.3 15.9q7.7 1.7 15.4 0" stroke="var(--ink)" stroke-width="1.35" stroke-linecap="butt"/></svg>';
+  C.logoMark = mark; // repris par le questionnaire de bienvenue
   const logo = `<a class="logo" href="#/accueil" aria-label="${C.APP} — accueil"><span class="logo-mark">${mark}</span><span class="logo-name">${C.APP}</span></a>`;
 
   C.route = () => {
@@ -118,6 +119,8 @@
       C.eng.refreshEstimates();
       C.render();
       syncPromos();
+      // Premier lancement sur cet appareil : questionnaire de réglages
+      if (!C.S.settings.onboarded && !C.noStorage) C.onboard();
     })
     .catch((e) => {
       console.error(e);
