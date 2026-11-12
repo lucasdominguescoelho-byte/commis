@@ -15,11 +15,17 @@
 
   /* ---------- Préférences alimentaires ----------
      Détection par mots-clés dans le nom des ingrédients (formes normalisées, au singulier). */
-  const MEAT = ['poulet', 'boeuf', 'porc', 'lard', 'lardon', 'jambon', 'saucisse', 'viande', 'dinde', 'veau', 'agneau', 'bacon', 'chorizo', 'cervela', 'salami', 'canard', 'lapin', 'steak', 'volaille', 'merguez'];
-  const FISH = ['saumon', 'thon', 'cabillaud', 'poisson', 'truite', 'anchoi', 'colin', 'sardine', 'perche', 'fera', 'dorade', 'lieu'];
-  const SHELL = ['crevette', 'moule', 'crabe', 'homard', 'langoustine', 'calamar', 'crustace'];
-  const PORK = ['porc', 'lard', 'lardon', 'jambon', 'saucisse', 'bacon', 'chorizo', 'cervela', 'salami'];
-  const DAIRY = ['lait', 'creme', 'beurre', 'fromage', 'gruyere', 'parmesan', 'mozzarella', 'yogourt', 'yaourt', 'feta', 'ricotta', 'mascarpone', 'raclette', 'emmental', 'sere', 'vacherin', 'cheddar'];
+  const PORK = ['porc', 'lard', 'lardon', 'jambon', 'saucisse', 'bacon', 'chorizo', 'cervela', 'salami', 'pepperoni', 'pancetta', 'prosciutto', 'speck', 'mortadelle'];
+  const BEEF = ['boeuf', 'steak', 'entrecote', 'aloyau', 'rumsteck', 'bavette'];
+  const RED = [...PORK, ...BEEF, 'veau', 'agneau', 'mouton', 'gigot', 'jarret', 'chevreuil', 'cerf', 'merguez'];
+  const POULTRY = ['poulet', 'dinde', 'canard', 'volaille', 'pintade', 'caille'];
+  const MEAT = [...RED, ...POULTRY, 'viande', 'lapin', 'escalope', 'kebab'];
+  const FISH = ['saumon', 'thon', 'cabillaud', 'poisson', 'truite', 'anchoi', 'colin', 'sardine', 'perche', 'fera', 'dorade', 'lieu', 'eglefin', 'haddock', 'merlu', 'maquereau', 'hareng', 'espadon', 'tilapia', 'pangasius', 'sole', 'turbot', 'fletan', 'lotte', 'rouget', 'morue', 'surimi', 'bar'];
+  const SHELL = ['crevette', 'moule', 'crabe', 'homard', 'langoustine', 'calamar', 'crustace', 'gamba', 'scampi', 'palourde', 'huitre', 'poulpe', 'seiche', 'ecrevisse', 'jacque', 'coquillage'];
+  const CHEESE = ['fromage', 'gruyere', 'parmesan', 'mozzarella', 'feta', 'ricotta', 'mascarpone', 'raclette', 'emmental', 'vacherin', 'cheddar', 'halloumi', 'boursin', 'comte', 'tomme', 'brie', 'camembert', 'chevre', 'gorgonzola', 'appenzeller'];
+  const DAIRY = ['lait', 'creme', 'beurre', 'yogourt', 'yaourt', 'sere', ...CHEESE];
+  const MUSH = ['champignon', 'bolet', 'chanterelle', 'morille', 'shiitake', 'pleurote', 'cepe', 'girolle'];
+  const SPICY = ['piment', 'sriracha', 'jalapeno', 'chipotle', 'harissa', 'cajun', 'tabasco', 'gochujang', 'cayenne'];
   const PLANT = ['coco', 'soja', 'avoine', 'vegetal', 'amande'];
   const EGG = ['oeuf'];
   const GLUTEN = ['farine', 'pate', 'spaghetti', 'penne', 'tagliatelle', 'lasagne', 'pain', 'semoule', 'ble', 'chapelure', 'couscou', 'boulgour', 'nouille', 'gnocchi', 'orge', 'seigle', 'tortilla', 'baguette', 'macaroni', 'cornette', 'spatzli', 'knopfli', 'crouton'];
@@ -27,7 +33,10 @@
   const PEANUT = ['arachide', 'cacahuete'];
   const SOY = ['soja', 'tofu', 'edamame'];
 
+  // « soft » : pas d'exclusion, mais une préférence prise en compte par le planning et les idées.
   E.DIETS = {
+    flexitarien: { label: 'Moins de viande', soft: true, words: [] },
+    'sans-viande-rouge': { label: 'Sans viande rouge', words: RED },
     vegetarien: { label: 'Végétarien', words: [...MEAT, ...FISH, ...SHELL] },
     vegan: { label: 'Végan', words: [...MEAT, ...FISH, ...SHELL, ...DAIRY, ...EGG, 'miel'] },
     pescetarien: { label: 'Pescétarien', words: MEAT },
@@ -40,16 +49,31 @@
     arachide: PEANUT, arachides: PEANUT, cacahuete: PEANUT, cacahuetes: PEANUT, poisson: FISH, poissons: FISH,
     crustaces: SHELL, 'fruits de mer': SHELL, soja: SOY,
   };
+  // Catégories d'aliments évités : « poisson » écarte tous les poissons, « volaille » toutes les volailles…
+  const GROUPS = {
+    ...ALLERGENS,
+    viande: MEAT, viandes: MEAT, 'viande rouge': RED, 'viandes rouges': RED, porc: PORK, boeuf: BEEF, volaille: POULTRY, volailles: POULTRY,
+    crustace: SHELL, 'fruit de mer': SHELL, coquillages: SHELL, 'produits laitiers': DAIRY, laitages: DAIRY,
+    fromage: CHEESE, fromages: CHEESE, champignon: MUSH, champignons: MUSH, epice: SPICY, epices: SPICY, piquant: SPICY, 'plats epices': SPICY,
+  };
+  // Choisir un régime : « Moins de viande », végétarien, végan et pescétarien s'excluent entre eux.
+  const EXCLUSIVE = ['flexitarien', 'vegetarien', 'vegan', 'pescetarien'];
+  E.toggleDiet = (list, v) => (list.includes(v) ? list.filter((x) => x !== v) : [...list.filter((x) => !(EXCLUSIVE.includes(v) && EXCLUSIVE.includes(x))), v]);
+  E.groupFor = (label) => GROUPS[C.norm(String(label)).trim()] || null;
+  E.AVOID_SUGGESTIONS = ['Poisson', 'Fruits de mer', 'Viande rouge', 'Porc', 'Volaille', 'Fromage', 'Œufs', 'Champignons', 'Épicé'];
   E.ALLERGEN_SUGGESTIONS = ['Gluten', 'Lactose', 'Œufs', 'Fruits à coque', 'Arachides', 'Poisson', 'Crustacés', 'Soja'];
 
   function rules(st = C.S.settings) {
     const out = [];
-    st.diets.forEach((d) => E.DIETS[d] && out.push({ kind: 'régime', label: E.DIETS[d].label, any: E.DIETS[d].words }));
+    st.diets.forEach((d) => E.DIETS[d] && !E.DIETS[d].soft && out.push({ kind: 'régime', label: E.DIETS[d].label, any: E.DIETS[d].words }));
     st.allergies.forEach((a) => {
-      const preset = ALLERGENS[C.norm(a)];
+      const preset = E.groupFor(a);
       out.push(preset ? { kind: 'allergie', label: a, any: preset } : { kind: 'allergie', label: a, all: tk(a) });
     });
-    st.avoided.forEach((a) => out.push({ kind: 'évité', label: a, all: tk(a) }));
+    (st.avoided || []).forEach((a) => {
+      const group = E.groupFor(a);
+      out.push(group ? { kind: 'évité', label: a, any: group } : { kind: 'évité', label: a, all: tk(a) });
+    });
     return out;
   }
   const hitRule = (rule, t) => {
@@ -68,6 +92,8 @@
     });
     return out;
   };
+  E.hasRealMeat = (recipe) => recipe.ingredients.some((i) => tk(i.name).some((t) => MEAT.includes(t)));
+  E.flexi = () => C.S.settings.diets.includes('flexitarien');
   E.hasMeat = (recipe) => recipe.ingredients.some((i) => tk(i.name).some((t) => MEAT.includes(t) || FISH.includes(t) || SHELL.includes(t)));
   E.compatible = () => C.S.recipes.filter((r) => E.conflicts(r).length === 0);
   const likedCount = (recipe) =>
@@ -237,6 +263,10 @@
     });
 
     const perMeal = st.weeklyBudget > 0 ? st.weeklyBudget / 14 : 0;
+    // « Moins de viande » : quelques repas avec viande par semaine, le reste en poisson, œufs, légumineuses…
+    const flexi = E.flexi();
+    const MEAT_MAX = 5;
+    let meatMeals = Object.values(plan.slots).filter((s) => C.recipe(s.recipeId) && E.hasRealMeat(C.recipe(s.recipeId))).length;
     let filled = 0;
     let prev = null;
     for (let d = firstDay; d < 7; d++) {
@@ -258,6 +288,8 @@
           if (other && other.recipeId === r.id) score -= 100;
           if (slot === 'midi') score += r.prepTime <= 30 ? 0.8 : r.prepTime > 45 ? -0.8 : 0;
           if (perMeal) score -= pressure * (n.c.cost / perMeal);
+          if (flexi && E.hasRealMeat(r)) score -= meatMeals >= MEAT_MAX ? 50 : 1 + meatMeals * 0.6;
+          if (flexi && other && E.hasRealMeat(r) && C.recipe(other.recipeId) && E.hasRealMeat(C.recipe(other.recipeId))) score -= 25; // pas de viande midi et soir
           score += Math.random() * 0.6; // léger aléa : relancer donne une variante
           if (!best || score > best.score) best = { r, n, shared, score };
         });
@@ -268,7 +300,9 @@
         if (r.favorite) why.push('recette favorite');
         if (n.liked) why.push('contient un aliment apprécié');
         if (slot === 'midi' && r.prepTime <= 30) why.push(`rapide (${r.prepTime} min)`);
+        if (flexi && !E.hasRealMeat(r) && !why.length) why.push('sans viande (moins de viande)');
         plan.slots[key] = { recipeId: r.id, servings: people, why, auto: true };
+        if (E.hasRealMeat(r)) meatMeals++;
         used[r.id] = (used[r.id] || 0) + 1;
         n.fresh.forEach((x) => freshUsed.add(x.key));
         running += n.c.cost;

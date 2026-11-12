@@ -39,7 +39,7 @@
         ${block('Budget hebdomadaire', 'Sert de repère sur l’accueil, le planning et la page Budget. La proposition de planning évite les repas chers lorsque le budget est sous pression.',
           `<div class="form-2" style="max-width:420px">${C.field('Montant par semaine (CHF)', `<input class="inp" inputmode="decimal" value="${st.weeklyBudget || ''}" placeholder="Ex. 160" data-change="set.budget">`)}<div class="field"><span>Équivalent mensuel</span><div class="inp" style="display:flex;align-items:center;background:transparent;color:var(--ink-2)">${st.weeklyBudget > 0 ? C.chf((st.weeklyBudget * 52) / 12) : '—'}</div></div></div>`)}
 
-        ${block('Régime alimentaire', 'Les recettes contenant un ingrédient exclu sont signalées dans la bibliothèque et écartées du planning proposé.',
+        ${block('Régime alimentaire', 'Les recettes contenant un ingrédient exclu sont signalées dans la bibliothèque et écartées du planning proposé. « Moins de viande » n’exclut rien : il limite la viande à quelques repas par semaine.',
           `<div class="chips">${Object.entries(E.DIETS).map(([id, d]) => `<button class="chip ${st.diets.includes(id) ? 'is-on' : ''}" data-act="set.diet" data-v="${id}" aria-pressed="${st.diets.includes(id)}">${d.label}</button>`).join('')}</div>`)}
 
         ${block('Allergies et restrictions', 'Écartées strictement des suggestions.', tagBlock('allergies', 'Ex. arachides', E.ALLERGEN_SUGGESTIONS) +
@@ -47,7 +47,7 @@
 
         ${block('Aliments appréciés', 'Les recettes qui en contiennent remontent dans la proposition de planning.', tagBlock('liked', 'Ex. courge, saumon'))}
 
-        ${block('Aliments évités', 'Les recettes qui en contiennent ne sont jamais proposées.', tagBlock('avoided', 'Ex. champignons'))}
+        ${block('Aliments évités', 'Les recettes qui en contiennent ne sont jamais proposées. Une catégorie compte pour tout ce qu’elle contient : « Poisson » écarte saumon, thon, cabillaud…, « Volaille » le poulet, la dinde…', tagBlock('avoided', 'Ex. poisson, champignons', E.AVOID_SUGGESTIONS))}
 
         ${block('Données', C.noStorage ? 'Le stockage local est indisponible dans ce navigateur (navigation privée ?). Rien ne sera conservé à la fermeture.' : `Tout est enregistré dans ce navigateur, sur cet appareil (IndexedDB)${C.persisted ? ', en stockage persistant' : ''}. Rien n’est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts. Les recettes générées et la lecture des tickets se font sur l’appareil. Faites une sauvegarde de temps en temps : vider les données du navigateur efface aussi Commis.`,
           `<div class="head-a"><button class="btn" data-act="set.export">${icon('download', 18)} Exporter une sauvegarde</button><button class="btn btn--ghost" data-act="set.import">${icon('upload', 18)} Restaurer une sauvegarde</button></div>
@@ -77,7 +77,7 @@
   Object.assign(C.acts, {
     'set.people': (el) => C.save.settings({ household: Math.max(1, Math.min(12, C.S.settings.household + Number(el.dataset.d))) }),
     'set.store': (el) => toggle('stores', el.dataset.v),
-    'set.diet': (el) => toggle('diets', el.dataset.v),
+    'set.diet': (el) => C.save.settings({ diets: E.toggleDiet(C.S.settings.diets, el.dataset.v) }),
     'set.tool': (el) => toggle('tools', el.dataset.v),
     'set.budget': (el) => C.save.settings({ weeklyBudget: Math.max(0, Math.round(C.toNum(el.value) * 100) / 100) }),
     'set.tagAdd': (el) => addTag(el.dataset.k, el.dataset.v),

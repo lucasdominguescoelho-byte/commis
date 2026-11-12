@@ -336,7 +336,8 @@
       const pct = m ? Math.round((1 - m.ratio) * 100) : 0;
       return { promo: m ? m.promo : null, pct, fridge: f || null, score: (f ? 5 + (E.expiresIn(f) != null && E.expiresIn(f) <= 3 ? 3 : 0) : 0) + (m ? 1.5 + pct / 10 : 0) };
     };
-    const tag = (arr) => arr.filter((x) => allowed(x.n)).map((x) => ({ ...x, ...info(x) }));
+    const flexi = E.flexi && E.flexi();
+    const tag = (arr) => arr.filter((x) => allowed(x.n)).map((x) => ({ ...x, ...info(x), w: flexi && x.g === 'viande' ? 0.25 : 1 }));
     const extras = Object.fromEntries(Object.entries(X).map(([k, x]) => [k, { ...x, ...info(x) }]));
     return { P: tag(P), L: tag(L), F: tag(F), X: extras, fridge, promos };
   }
@@ -346,7 +347,7 @@
     const out = [];
     const pool = list.filter((x) => !avoid.includes(x.n));
     while (out.length < n && pool.length) {
-      const w = pool.map((x) => 0.6 + x.score * x.score);
+      const w = pool.map((x) => (0.6 + x.score * x.score) * (x.w || 1));
       let r = Math.random() * w.reduce((a, b) => a + b, 0);
       let i = 0;
       while ((r -= w[i]) > 0) i++;
@@ -483,6 +484,11 @@
       const boost = (r) => [r.P, r.P2, r.F, ...r.L].filter(Boolean).some((x) => C.tokens(x.n).some((t) => words.includes(t)));
 
       const known = new Set([...C.S.recipes.map((r) => r.name), ...avoid.map((r) => r.name)].map(key));
+      // « Moins de viande » : les idées avec viande baissent et restent au plus un tiers du lot.
+      const flexi = E.flexi();
+      const meaty = (r) => [r.P, r.P2, ...(r.X || [])].filter(Boolean).some((x) => E.hasRealMeat({ ingredients: [{ name: x.n }] }));
+      const meatCap = Math.max(1, Math.round(n / 3));
+      let meatOut = 0;
       const tries = [];
       for (let i = 0; i < 500; i++) {
         const r = attempt(rnd(tpls), ctx);
@@ -490,6 +496,7 @@
         if (prevT.has(r.tpl.id)) r.score -= 4;
         if (r.P && prevP.has(r.P.court)) r.score -= 6;
         if (words.length && boost(r)) r.score += 12;
+        if (flexi && meaty(r)) r.score -= 2;
         tries.push(r);
       }
       tries.sort((a, b) => b.score - a.score);
@@ -505,6 +512,8 @@
           if (usedName.has(name) || known.has(name)) continue;
           if (pass < 2 && usedT.has(r.tpl.id)) continue;
           if (pass < 1 && r.P && usedP.has(r.P.court)) continue;
+          if (flexi && pass < 2 && meaty(r) && meatOut >= meatCap) continue;
+          if (meaty(r)) meatOut++;
           out.push(r);
           usedT.add(r.tpl.id);
           if (r.P) usedP.add(r.P.court);

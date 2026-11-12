@@ -907,3 +907,4 @@ html.is-cooking { overflow: hidden; }
   .ob-f .btn { flex: 1; }
   .ob-f .btn--ghost[data-act='ob.back'] { flex: 0 0 auto; }
 }
+.ob-hint { margin-top: 10px; max-width: 52ch; }

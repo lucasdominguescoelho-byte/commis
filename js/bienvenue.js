@@ -36,9 +36,13 @@
       case 3:
         return `<p class="eyebrow">Ce que vous mangez</p><h2 class="ob-t">Un régime particulier ?</h2>
           <div class="chips">${chip(!D.diets.length, 'Je mange de tout', 'ob.dietNone', '')}${Object.entries(E.DIETS).map(([id, d]) => chip(D.diets.includes(id), esc(d.label), 'ob.diet', id)).join('')}</div>
+          ${D.diets.includes('flexitarien') ? '<p class="small muted ob-hint">Moins de viande : de la viande quelques fois par semaine (jamais midi et soir le même jour), le reste en poisson, œufs, légumineuses ou plats végétariens.</p>' : ''}
           <h3 class="ob-q">Allergies ou intolérances</h3>
           <div class="chips">${E.ALLERGEN_SUGGESTIONS.map((a) => chip(D.allergies.some((x) => C.norm(x) === C.norm(a)), esc(a), 'ob.allergy', a)).join('')}${D.allergies.filter((x) => !E.ALLERGEN_SUGGESTIONS.some((a) => C.norm(a) === C.norm(x))).map((x) => chip(true, esc(x), 'ob.allergy', x)).join('')}</div>
-          <form class="tag-add ob-other" id="ob-allergy"><input class="inp" name="v" placeholder="Autre, ex. céleri" aria-label="Autre allergie" autocomplete="off"><button class="btn btn--ghost" type="submit">Ajouter</button></form>`;
+          <form class="tag-add ob-other" id="ob-allergy"><input class="inp" name="v" placeholder="Autre, ex. céleri" aria-label="Autre allergie" autocomplete="off"><button class="btn btn--ghost" type="submit">Ajouter</button></form>
+          <h3 class="ob-q">Ce que vous préférez éviter</h3>
+          <div class="chips">${E.AVOID_SUGGESTIONS.map((a) => chip(D.avoided.some((x) => C.norm(x) === C.norm(a)), esc(a), 'ob.avoid', a)).join('')}</div>
+          <p class="small muted ob-hint">Une catégorie compte pour tout ce qu’elle contient : « Poisson » écarte tous les poissons.</p>`;
       case 4:
         return `<p class="eyebrow">Votre cuisine</p><h2 class="ob-t">Qu’avez-vous comme ustensiles ?</h2>
           <p class="ob-s">Les recettes proposées n’utiliseront que ce que vous avez.</p>
@@ -48,7 +52,7 @@
         const pool = C.S.recipes.filter((r) => !C.eng.conflicts(r, { ...C.S.settings, ...D }).length).length;
         return `<div class="ob-hello"><span class="ob-check">${icon('check', 30)}</span>
           <h2 class="ob-t">C’est prêt</h2>
-          <p class="ob-s">${D.household} personne${D.household > 1 ? 's' : ''}${D.weeklyBudget ? `, ${D.weeklyBudget} CHF par semaine` : ''}, ${D.stores.map((s) => C.storeById(s).name).join(', ')}${D.diets.length ? `, ${D.diets.map((d) => C.eng.DIETS[d].label.toLowerCase()).join(', ')}` : ''}${D.allergies.length ? `, sans ${D.allergies.map((a) => a.toLowerCase()).join(', ')}` : ''}.</p>
+          <p class="ob-s">${D.household} personne${D.household > 1 ? 's' : ''}${D.weeklyBudget ? `, ${D.weeklyBudget} CHF par semaine` : ''}, ${D.stores.map((s) => C.storeById(s).name).join(', ')}${D.diets.length ? `, ${D.diets.map((d) => C.eng.DIETS[d].label.toLowerCase()).join(', ')}` : ''}${D.allergies.length ? `, sans ${D.allergies.map((a) => a.toLowerCase()).join(', ')}` : ''}${D.avoided.length ? `, en évitant ${D.avoided.map((a) => a.toLowerCase()).join(', ')}` : ''}.</p>
           <p class="ob-s">${pool} recette${pool > 1 ? 's' : ''} de votre bibliothèque correspond${pool > 1 ? 'ent' : ''} à vos choix. Vous pourrez tout changer dans Réglages.</p></div>`;
       }
     }
@@ -100,7 +104,7 @@
   // Ouvre le questionnaire (au premier lancement, ou depuis Réglages)
   C.onboard = () => {
     const st = C.S.settings;
-    D = { household: st.household, weeklyBudget: st.weeklyBudget, stores: [...st.stores], diets: [...st.diets], allergies: [...st.allergies], tools: [...st.tools] };
+    D = { household: st.household, weeklyBudget: st.weeklyBudget, stores: [...st.stores], diets: [...st.diets], allergies: [...st.allergies], avoided: [...(st.avoided || [])], tools: [...st.tools] };
     step = 0;
     dir = '';
     document.getElementById('ob')?.remove();
@@ -167,7 +171,10 @@
       });
     },
     'ob.store': (el) => toggle('stores', el.dataset.v),
-    'ob.diet': (el) => toggle('diets', el.dataset.v),
+    'ob.diet': (el) => {
+      D.diets = C.eng.toggleDiet(D.diets, el.dataset.v);
+      draw();
+    },
     'ob.dietNone': () => {
       D.diets = [];
       draw();
@@ -178,6 +185,11 @@
       draw();
     },
     'ob.tool': (el) => toggle('tools', el.dataset.v),
+    'ob.avoid': (el) => {
+      const v = el.dataset.v;
+      D.avoided = D.avoided.some((x) => C.norm(x) === C.norm(v)) ? D.avoided.filter((x) => C.norm(x) !== C.norm(v)) : [...D.avoided, v];
+      draw();
+    },
     'set.onboard': () => C.onboard(),
   });
 })();
