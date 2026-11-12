@@ -44,38 +44,12 @@
 
         ${block('Aliments évités', 'Les recettes qui en contiennent ne sont jamais proposées.', tagBlock('avoided', 'Ex. champignons'))}
 
-        ${block('Intelligence artificielle', 'Pour générer des recettes et reconnaître les aliments sur une photo, Cabas utilise Claude, l’IA d’Anthropic, avec votre propre clé d’API. Payé à l’usage sur votre compte Anthropic : environ 5 centimes par génération de recettes, 1 centime par photo.',
-          C.ia.ready()
-            ? `<div class="sync" style="margin:0"><span>${icon('check', 16)} Clé enregistrée sur cet appareil · modèle ${esc(C.ia.model)}</span><button class="link" data-act="set.aiDel" style="color:var(--danger)">Retirer la clé</button></div>
-               <p class="small muted">La clé n’est jamais incluse dans les sauvegardes ni envoyée ailleurs qu’à Anthropic. À saisir sur chaque appareil (ordinateur, téléphone).</p>`
-            : `<form class="tag-add" id="ai-form"><input class="inp" name="key" type="password" autocomplete="off" placeholder="sk-ant-…" aria-label="Clé d’API Anthropic"><button class="btn" type="submit">Enregistrer</button></form>
-               <p class="small muted">Créez une clé sur <a class="link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (avec un peu de crédit et, si vous voulez, une limite de dépense). Elle reste sur cet appareil, hors sauvegardes.</p>`)}
-
-        ${block('Données', C.noStorage ? 'Le stockage local est indisponible dans ce navigateur (navigation privée ?). Rien ne sera conservé à la fermeture.' : `Tout est enregistré dans ce navigateur, sur cet appareil (IndexedDB)${C.persisted ? ', en stockage persistant' : ''}. Rien n’est envoyé sur Internet, sauf ce que vous demandez à l’IA (promotions, préférences, aliments choisis, photos) et les codes-barres cherchés dans Open Food Facts. Faites une sauvegarde de temps en temps : vider les données du navigateur efface aussi Cabas.`,
+        ${block('Données', C.noStorage ? 'Le stockage local est indisponible dans ce navigateur (navigation privée ?). Rien ne sera conservé à la fermeture.' : `Tout est enregistré dans ce navigateur, sur cet appareil (IndexedDB)${C.persisted ? ', en stockage persistant' : ''}. Rien n’est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts. Les recettes générées et la lecture des tickets se font sur l’appareil. Faites une sauvegarde de temps en temps : vider les données du navigateur efface aussi Cabas.`,
           `<div class="head-a"><button class="btn" data-act="set.export">${icon('download', 18)} Exporter une sauvegarde</button><button class="btn btn--ghost" data-act="set.import">${icon('upload', 18)} Restaurer une sauvegarde</button></div>
            <p class="small muted">${total} recettes · ${C.S.promotions.length} promotions · ${Object.values(C.S.plans).filter((p) => Object.keys(p.slots).length).length} semaines planifiées · ${C.S.expenses.length} dépenses</p>
            ${demoR ? `<div class="head-a">${demoR ? `<button class="btn btn--ghost btn--sm" data-act="set.clearDemoRecipes">Retirer les ${demoR} recettes d’exemple</button>` : ''}</div>` : ''}
            <div><button class="link" style="color:var(--danger)" data-act="set.reset">Tout effacer et repartir de zéro</button></div>`)}`;
 
-      const ai = root.querySelector('#ai-form');
-      if (ai)
-        ai.onsubmit = async (e) => {
-          e.preventDefault();
-          const key = ai.elements.key.value.trim();
-          if (!/^sk-ant-/.test(key)) return C.toast('Une clé Anthropic commence par « sk-ant- ».');
-          const btn = ai.querySelector('button');
-          btn.disabled = true;
-          btn.textContent = 'Vérification…';
-          const res = await C.ia.testKey(key);
-          if (!res.ok) {
-            btn.disabled = false;
-            btn.textContent = 'Enregistrer';
-            return C.toast(res.error);
-          }
-          await C.secret.set('anthropic', key);
-          C.toast('Clé vérifiée et enregistrée');
-          C.render();
-        };
       root.querySelectorAll('form[data-tag]').forEach((form) => {
         form.onsubmit = (e) => {
           e.preventDefault();
@@ -102,12 +76,6 @@
     'set.budget': (el) => C.save.settings({ weeklyBudget: Math.max(0, Math.round(C.toNum(el.value) * 100) / 100) }),
     'set.tagAdd': (el) => addTag(el.dataset.k, el.dataset.v),
     'set.tagDel': (el) => C.save.settings({ [el.dataset.k]: C.S.settings[el.dataset.k].filter((_, i) => i !== Number(el.dataset.i)) }),
-    'set.aiDel': async () => {
-      if (!(await C.confirm('Retirer la clé d’API ?', 'La génération de recettes et la reconnaissance par photo seront désactivées sur cet appareil. La clé reste valable sur votre compte Anthropic.', 'Retirer'))) return;
-      await C.secret.set('anthropic', '');
-      C.toast('Clé retirée');
-      C.render();
-    },
     'set.export': () => {
       C.download(`cabas-sauvegarde-${C.today()}.json`, JSON.stringify(C.exportData(), null, 2), 'application/json');
       C.toast('Sauvegarde exportée');

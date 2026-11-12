@@ -12,7 +12,7 @@ Chaque appareil et chaque adresse a **ses propres données** (recettes, planning
 
 ## Où sont les données
 
-Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet, sauf ce que vous demandez à l'IA et les codes-barres cherchés dans Open Food Facts : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Cabas : exportez une sauvegarde de temps en temps.
+Dans le navigateur de chaque appareil (IndexedDB). Rien de personnel n'est envoyé sur Internet, sauf les codes-barres cherchés dans Open Food Facts : le site publié ne contient que le code, les recettes d'exemple et les promotions. Vider les données de navigation efface aussi Cabas : exportez une sauvegarde de temps en temps.
 
 ## Les promotions
 
@@ -43,29 +43,29 @@ python3 outils/promotions.py
 
 - **Mes recettes** ne montre que les recettes **testées et validées**. Une recette écrite à la main est validée par défaut (case à décocher dans l'éditeur).
 - **À tester** regroupe les recettes d'exemple et les idées générées. Après les avoir cuisinées : *Testée, je valide* sur leur fiche.
-- **Générer** invente des recettes sur le moment avec les promotions de la semaine et, si on le demande, les aliments du frigo (voir « Intelligence artificielle »).
+- **Générer** compose des recettes sur le moment avec les promotions de la semaine et, si on le demande, les aliments du frigo (voir « Génération de recettes »).
 
 ## Frigo
 
 Ce qu'il reste à la maison, ajouté de trois façons :
 
 - **Scanner** un code-barres avec la caméra (ZXing, ou le détecteur natif du navigateur). Le produit est cherché dans [Open Food Facts](https://world.openfoodfacts.org), base collaborative et gratuite : nom, marque, quantité, photo.
-- **Photo** du frigo ou des courses : l'IA liste les aliments reconnus, on vérifie avant d'ajouter.
+- **Ticket de caisse** photographié : le texte est lu sur l'appareil par [Tesseract.js](https://tesseract.projectnaptha.com) (gratuit, sans compte), les articles alimentaires sont reconnus et proposés, on vérifie avant d'ajouter. Le module de lecture (quelques Mo) se télécharge à la première utilisation.
 - **Saisie** à la main, avec une date « à consommer avant » facultative.
 
 Les aliments servent à la génération de recettes **uniquement quand on coche « Mon frigo »**. Dans la liste de courses, ce qui est déjà au frigo est signalé et n'est pas compté dans le total (case « Déduire le frigo »).
 
 La caméra demande que Cabas soit ouvert en HTTPS (l'adresse GitHub Pages) et l'autorisation du navigateur.
 
-## Intelligence artificielle
+## Génération de recettes (gratuite, sans IA)
 
-La génération de recettes et la reconnaissance par photo utilisent **Claude (Anthropic)**, modèle `claude-opus-5-5`, via le SDK officiel chargé depuis jsDelivr (`js/ia.js`).
+`js/generateur.js` compose les recettes sur l'appareil, sans rien envoyer sur Internet et sans clé :
 
-- Il faut une **clé d'API Anthropic** (console.anthropic.com), payée à l'usage : environ 5 centimes par génération de recettes, 1 centime par photo. Le coût s'affiche après chaque appel.
-- La clé se saisit dans *Réglages → Intelligence artificielle*, **sur chaque appareil**. Elle reste dans le navigateur (IndexedDB), n'est jamais incluse dans les sauvegardes ni dans le dépôt GitHub.
-- Ce qui est envoyé à Anthropic : les promotions retenues, vos préférences (régime, allergies, aliments évités ou appréciés), les noms de vos recettes (pour éviter les doublons), les aliments du frigo cochés, et les photos analysées. Rien d'autre.
-- Sans clé, tout le reste de l'application fonctionne normalement.
-- Les recettes générées sont à relire : quantités et cuissons peuvent être imparfaites ; les prix sont estimés, les rabais viennent des vraies promotions.
+- une base d'environ 60 ingrédients courants (portion par personne, prix habituel, cuisson) ;
+- 12 modèles de plats : poêlée, pâtes, gratin, risotto, curry, soupe, salade, plaque au four, papillote, quiche, omelette, wok ;
+- pour chaque idée, Cabas essaie des centaines de combinaisons et garde celles qui utilisent le plus de produits en promotion (gros rabais d'abord) et d'aliments du frigo cochés, en respectant régime, allergies et aliments évités. « Autres idées » change de plat et de protéine principale.
+
+C'est fiable et simple, mais moins inventif qu'un chef : pour élargir le répertoire, ajouter des ingrédients (tableaux `P`, `L`, `F`) ou des modèles (tableau `T`).
 
 ## Ce qui reste une estimation
 
@@ -89,7 +89,7 @@ Aucune dépendance, aucune compilation : HTML, CSS et JavaScript simples ; Pytho
 | `js/seed.js` | Recettes d'exemple et leurs photos |
 | `js/engine.js` | Préférences, promotions ↔ ingrédients, coûts, planning, liste de courses, budget |
 | `js/sources.js` | Lecture de `data/promotions.json`, import JSON |
-| `js/ia.js` | Appels à Claude : génération de recettes, reconnaissance des aliments |
+| `js/generateur.js` | Générateur de recettes local (ingrédients, modèles de plats) |
 | `js/ui.js`, `js/app.js` | Composants, navigation |
 | `js/views/*.js` | Une page par fichier |
 | `outils/promotions.py` | Récupération et traduction des promotions |

@@ -185,7 +185,6 @@
     promoMeta: null, // dernière synchronisation des promotions (date, état de chaque source)
   };
   const S = (C.S = { settings: { ...C.DEFAULT_SETTINGS }, recipes: [], promotions: [], plans: {}, lists: {}, expenses: [], fridge: [] });
-  let secrets = {}; // clé d'API : sur cet appareil uniquement, jamais dans les sauvegardes
   C.ui = { week: C.weekId() }; // état d'interface, non persistant
   C.noStorage = false;
   C.persisted = null;
@@ -197,7 +196,7 @@
   async function readAll() {
     const [recipes, promotions, plans, lists, expenses, kv, fridge] = await Promise.all(TABLES.map((t) => C.db.all(t)));
     S.fridge = fridge || [];
-    secrets = (kv || []).find((k) => k.id === 'secrets') || {};
+    if ((kv || []).some((k) => k.id === 'secrets')) C.db.del('kv', 'secrets'); // ancienne clé d'API (fonction retirée)
     S.recipes = recipes || [];
     S.promotions = promotions || [];
     S.plans = Object.fromEntries((plans || []).map((p) => [p.id, p]));
@@ -360,16 +359,6 @@
     },
   });
 
-  /* ---------- Secrets (clé d'API Claude) ---------- */
-  C.secret = {
-    get: (k) => secrets[k] || '',
-    set(k, v) {
-      secrets = { ...secrets, id: 'secrets', [k]: v };
-      if (!v) delete secrets[k];
-      return C.db.put('kv', secrets);
-    },
-  };
-
   /* ---------- Sauvegarde / restauration ---------- */
   C.exportData = () => ({
     app: 'cabas', // identifiant du format de sauvegarde
@@ -395,7 +384,6 @@
       put('lists', data.lists),
       put('expenses', data.expenses),
       put('fridge', data.fridge),
-      secrets.id ? C.db.put('kv', secrets) : null, // la clé d'API de cet appareil est conservée
       C.db.put('kv', { ...C.DEFAULT_SETTINGS, ...(data.settings || {}), id: 'settings', seeded: true }),
     ]);
     if (db) await readAll();

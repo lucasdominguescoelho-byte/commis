@@ -636,3 +636,4 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .check--inline { padding: 0; border: 0; background: none; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
 .check--inline input { margin-top: 0; }
 .fr-d { display: block; margin-top: 4px; }
+.shot--ticket { max-height: 200px; object-fit: contain; background: #fff; }

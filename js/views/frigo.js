@@ -1,5 +1,5 @@
 /* Cabas — Frigo : ce qu'il reste à la maison.
-   Ajout par code-barres (caméra → Open Food Facts), par photo (reconnaissance par l'IA)
+   Ajout par code-barres (caméra → Open Food Facts), par ticket de caisse (texte lu sur l'appareil)
    ou à la main. Les aliments servent, sur demande, à générer des recettes, et sont
    déduits de la liste de courses. */
 (function () {
@@ -36,7 +36,7 @@
         <header class="head"><div><p class="eyebrow">${items.length ? `${items.length} aliment${items.length > 1 ? 's' : ''}` : 'Ce qu’il reste à la maison'}</p><h1 class="title">Frigo</h1></div>
           <div class="head-a">
             <button class="btn btn--ghost" data-act="frigo.scan">${icon('barcode', 18)} Scanner</button>
-            <button class="btn btn--ghost" data-act="frigo.photo">${icon('camera', 18)} Photo</button>
+            <button class="btn btn--ghost" data-act="frigo.photo">${icon('receipt', 18)} Ticket</button>
             <button class="btn" data-act="frigo.add">${icon('plus', 18)} Ajouter</button></div></header>
         ${
           items.length
@@ -45,7 +45,7 @@
                <div class="card card--citron frigo-cta"><div><p class="stat-l">${icon('wand', 17)} Cuisiner avec ce qu’il reste</p><p class="small" style="margin-top:6px">Des recettes inventées autour de vos aliments${soon.length ? ', en commençant par ceux à consommer vite' : ''}, complétées par les promotions de la semaine.</p></div><button class="btn" data-act="frigo.cook">Proposer des recettes</button></div>
                <p class="small muted" style="margin-top:14px">Les aliments du frigo sont aussi signalés « au frigo » dans la liste de courses et ne sont pas comptés dans son total.</p>`
             : `<div class="empty"><h2 class="h2">Le frigo est vide</h2><p>Notez ce qu’il vous reste : Cabas le proposera dans des recettes et ne vous le fera pas racheter.</p>
-                <div class="head-a" style="justify-content:center;margin-top:18px"><button class="btn" data-act="frigo.scan">${icon('barcode', 18)} Scanner un code-barres</button><button class="btn btn--ghost" data-act="frigo.photo">${icon('camera', 18)} Photographier le frigo</button><button class="btn btn--ghost" data-act="frigo.add">${icon('plus', 18)} Saisir</button></div></div>`
+                <div class="head-a" style="justify-content:center;margin-top:18px"><button class="btn" data-act="frigo.scan">${icon('barcode', 18)} Scanner un code-barres</button><button class="btn btn--ghost" data-act="frigo.photo">${icon('receipt', 18)} Lire un ticket de caisse</button><button class="btn btn--ghost" data-act="frigo.add">${icon('plus', 18)} Saisir</button></div></div>`
         }`;
     },
   };
@@ -220,35 +220,88 @@
     });
   }
 
-  /* ---------- Photo du frigo (IA) ---------- */
-  function photoSheet() {
-    if (!C.ia.ready()) {
-      return C.sheet({
-        title: 'Photographier le frigo',
-        size: 'small',
-        body: `<p style="color:var(--ink-2)">La reconnaissance des aliments sur une photo utilise Claude, l’IA d’Anthropic. Ajoutez d’abord votre clé d’API dans les réglages (environ 1 centime par photo).</p>`,
-        foot: `<button class="btn btn--ghost" data-close>Plus tard</button><a class="btn" href="#/reglages">Réglages</a>`,
+  /* ---------- Ticket de caisse : lecture du texte sur l'appareil (Tesseract.js, gratuit) ---------- */
+  const TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
+  const loadTesseract = () =>
+    window.Tesseract
+      ? Promise.resolve(window.Tesseract)
+      : new Promise((ok, ko) => {
+          const s = document.createElement('script');
+          s.src = TESSERACT;
+          s.onload = () => ok(window.Tesseract);
+          s.onerror = () => ko(new Error('Module de lecture indisponible (connexion ?)'));
+          document.head.appendChild(s);
+        });
+
+  // Lignes à ignorer : totaux, paiement, fidélité, en-têtes.
+  const SKIP = /\b(total|sous total|tva|mwst|cumulus|supercard|carte|twint|maestro|visa|rendu|especes?|bon|rabais|montant|merci|caisse|ticket|date|heure|tel|www|points?|recu|quittance|change|arrondi|filiale)\b/;
+
+  // Transforme le texte du ticket en aliments probables, reconnus grâce à la base du générateur.
+  function parseTicket(text) {
+    const foods = C.cuisine.foods;
+    const out = [];
+    const seen = new Set();
+    text.split('\n').forEach((raw) => {
+      const line = raw.trim();
+      if (!/\d+[.,]\d{2}/.test(line)) return; // une ligne d'article porte un prix
+      if (SKIP.test(C.norm(line))) return;
+      const label = line
+        .replace(/\s+-?\d+[.,]\d{2}.*$/, '')
+        .replace(/^\d+\s*[x×*]\s*/i, '')
+        .replace(/[^A-Za-zÀ-ÿ0-9 '%.-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!/[A-Za-zÀ-ÿ]{3}/.test(label)) return;
+      const toks = C.tokens(label);
+      let best = null;
+      let bestScore = 0;
+      foods.forEach((f) => {
+        const ft = C.tokens(f.n);
+        const hit = ft.filter((t) => toks.includes(t)).length;
+        const sc = hit / ft.length;
+        if (hit && sc >= 0.5 && sc > bestScore) {
+          best = f;
+          bestScore = sc;
+        }
       });
-    }
-    const st = { img: '', busy: false, items: null, keep: {}, error: '', cost: null };
+      const kg = line.match(/(\d+(?:[.,]\d{1,3})?)\s*kg\b/i);
+      const gr = !kg && line.match(/\b(\d{2,4})\s*g\b/i);
+      const w = kg ? Math.round(C.toNum(kg[1]) * 1000) : gr ? Number(gr[1]) : 0;
+      const name = best ? best.n : label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+      const k = C.norm(name);
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ name, qty: w || 1, unit: w ? 'g' : best ? (best.u === 'g' ? 'pièce' : best.u) : 'pièce', cat: best ? best.c : 'autre', confidence: best ? 'sure' : 'incertain', raw: label });
+    });
+    return out;
+  }
+
+  C.ticket = { parse: parseTicket, load: loadTesseract };
+
+  function photoSheet() {
+    const st = { img: '', busy: false, progress: 0, step: '', items: null, keep: {}, error: '' };
     const body = () => {
-      if (!st.img) return `<p style="color:var(--ink-2)">Prenez le frigo ouvert, ou les courses posées sur la table. L’IA liste ce qu’elle reconnaît, vous vérifiez avant d’ajouter.</p><button class="btn btn--citron btn--block" data-act="frigo.shoot" style="margin-top:16px">${icon('camera', 18)} Prendre ou choisir une photo</button>`;
-      const head = `<img class="shot" src="${st.img}" alt="Photo analysée">`;
-      if (st.busy) return `${head}<div class="gen-wait"><span class="spin"></span><div><b>Analyse de la photo…</b><p class="small muted">Quelques secondes.</p></div></div>`;
+      if (!st.img)
+        return `<p style="color:var(--ink-2)">Photographiez le ticket de caisse bien à plat, sans pli, avec une bonne lumière. Cabas lit le texte directement sur votre appareil, gratuitement, et propose les aliments reconnus : vous vérifiez avant d’ajouter.</p>
+          <p class="small muted" style="margin-top:8px">La première fois, le module de lecture (quelques Mo) est téléchargé puis gardé en mémoire.</p>
+          <button class="btn btn--citron btn--block" data-act="frigo.shoot" style="margin-top:16px">${icon('receipt', 18)} Photographier le ticket</button>`;
+      const head = `<img class="shot shot--ticket" src="${st.img}" alt="Ticket analysé">`;
+      if (st.busy) return `${head}<div class="gen-wait"><span class="spin"></span><div><b>${esc(st.step || 'Lecture du ticket…')}</b><div class="bar" style="width:180px"><i style="width:${Math.round(st.progress * 100)}%"></i></div></div></div>`;
       if (st.error) return `${head}<div class="note note--err">${icon('info', 18)}<span>${esc(st.error)}</span></div><button class="btn btn--ghost" data-act="frigo.shoot" style="margin-top:12px">Autre photo</button>`;
-      if (!st.items.length) return `${head}<p class="muted">Aucun aliment reconnu. Essayez une photo plus nette, plus proche.</p><button class="btn btn--ghost" data-act="frigo.shoot" style="margin-top:12px">Autre photo</button>`;
-      return `${head}<p class="small muted" style="margin:12px 0 6px">${st.items.length} aliment${st.items.length > 1 ? 's' : ''} reconnu${st.items.length > 1 ? 's' : ''} · ${C.ia.fmtCost(st.cost)} · décochez les erreurs, corrigez si besoin.</p>
+      if (!st.items.length) return `${head}<p class="muted">Aucun article lisible. Reprenez la photo de plus près, bien droite et éclairée.</p><button class="btn btn--ghost" data-act="frigo.shoot" style="margin-top:12px">Autre photo</button>`;
+      const ok = st.items.filter((it) => it.confidence === 'sure').length;
+      return `${head}<p class="small muted" style="margin:12px 0 6px">${st.items.length} article${st.items.length > 1 ? 's' : ''} lu${st.items.length > 1 ? 's' : ''}, dont ${ok} reconnu${ok > 1 ? 's' : ''} comme aliment${ok > 1 ? 's' : ''}. Cochez ce qui va au frigo, corrigez les noms si besoin.</p>
         <div class="detect">${st.items.map((it, n) => `<div class="detect-r ${st.keep[n] ? '' : 'is-off'}">
             <input type="checkbox" ${st.keep[n] ? 'checked' : ''} data-change="frigo.pick" data-n="${n}" aria-label="Garder ${esc(it.name)}">
-            <input class="inp" value="${esc(it.name)}" data-input="frigo.rename" data-n="${n}" aria-label="Nom">
+            <input class="inp" value="${esc(it.name)}" data-input="frigo.rename" data-n="${n}" aria-label="Nom" title="${esc(it.raw)}">
             <input class="inp" value="${it.qty}" inputmode="decimal" data-input="frigo.reqty" data-n="${n}" aria-label="Quantité">
             <select class="inp" data-change="frigo.reunit" data-n="${n}" aria-label="Unité">${C.options(C.UNITS, it.unit)}</select>
-            ${it.confidence === 'sure' ? '' : `<span class="badge">${it.confidence === 'incertain' ? 'incertain' : 'probable'}</span>`}
+            ${it.confidence === 'sure' ? '' : '<span class="badge">à vérifier</span>'}
           </div>`).join('')}</div>`;
     };
     C.ui.photo = st;
     const sheet = C.sheet({
-      title: 'Photographier le frigo',
+      title: 'Lire un ticket de caisse',
       size: 'wide',
       body,
       foot: `<button class="btn btn--ghost" data-close>Fermer</button><button class="btn" data-act="frigo.addDetected">Ajouter au frigo</button>`,
@@ -300,20 +353,32 @@
       });
       if (!file) return;
       try {
-        st.img = await C.readImage(file);
+        st.img = await C.readImage(file, 2000); // assez de détails pour lire les petites lettres
       } catch (e) {
         return C.toast('Image illisible.');
       }
-      Object.assign(st, { busy: true, error: '', items: null });
+      Object.assign(st, { busy: true, error: '', items: null, progress: 0, step: 'Préparation du module de lecture…' });
       st.refresh();
+      let worker = null;
       try {
-        const res = await C.ia.recognize(st.img);
-        st.items = res.items;
-        st.cost = res.cost;
-        st.keep = Object.fromEntries(res.items.map((it, n) => [n, it.confidence !== 'incertain']));
+        const T = await loadTesseract();
+        worker = await T.createWorker('fra', 1, {
+          logger: (m) => {
+            st.step = m.status === 'recognizing text' ? 'Lecture du ticket…' : 'Préparation du module de lecture…';
+            st.progress = m.progress || 0;
+            const bar = document.querySelector('.gen-wait .bar i');
+            const lbl = document.querySelector('.gen-wait b');
+            if (bar) bar.style.width = Math.round(st.progress * 100) + '%';
+            if (lbl) lbl.textContent = st.step;
+          },
+        });
+        const { data } = await worker.recognize(st.img);
+        st.items = parseTicket(data.text || '');
+        st.keep = Object.fromEntries(st.items.map((it, n) => [n, it.confidence === 'sure']));
       } catch (e) {
-        st.error = e.message;
+        st.error = `Lecture impossible : ${e.message || e}`;
       }
+      if (worker) worker.terminate();
       st.busy = false;
       st.refresh();
     },
@@ -326,7 +391,7 @@
       const picked = (st.items || []).filter((it, n) => st.keep[n] && it.name.trim());
       if (!picked.length) return C.toast('Aucun aliment sélectionné.');
       C.closeSheet();
-      C.save.fridgeMany(picked.map((it) => ({ id: C.uid(), name: it.name.trim(), qty: it.qty, unit: it.unit, cat: it.cat, expires: '', source: 'photo', addedAt: C.today() })));
+      C.save.fridgeMany(picked.map((it) => ({ id: C.uid(), name: it.name.trim(), qty: it.qty, unit: it.unit, cat: it.cat, expires: '', source: 'ticket', addedAt: C.today() })));
       C.toast(`${picked.length} aliment${picked.length > 1 ? 's' : ''} ajouté${picked.length > 1 ? 's' : ''} au frigo`);
     },
   });
