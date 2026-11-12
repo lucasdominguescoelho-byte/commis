@@ -1,6 +1,6 @@
 /* Commis — Recettes › Générer : idées de recettes composées sur le moment par Commis
    (js/generateur.js), selon les promotions de la semaine, les articles habituels, vos ustensiles
-   et, sur demande, le frigo. Les idées retenues partent dans « À tester ». */
+   et, sur demande, le frigo. Les idées gardées partent dans « À tester ». */
 (function () {
   'use strict';
   const C = window.C;
@@ -95,7 +95,7 @@
     const r = G.results.find((x) => x.id === id);
     if (!r || G.saved[id]) return r;
     const { why, tpl, main, ...rest } = r;
-    C.save.recipe(rest);
+    C.save.recipe({ ...rest, toTest: true });
     G.saved[id] = true;
     return r;
   };

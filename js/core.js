@@ -269,6 +269,14 @@
         C.db.put('recipes', r);
       }
     });
+    // Novembre 2026 : « À tester » ne contient que les recettes qu'on y met soi-même (toTest).
+    // Exemples et recettes importées d'un livre n'y sont pas : on les trouve dans « Toutes ».
+    S.recipes.forEach((r) => {
+      if (typeof r.toTest !== 'boolean') {
+        r.toTest = !r.validated && !r.demo && !['livre-perso', 'wikilivres'].includes(r.source);
+        C.db.put('recipes', r);
+      }
+    });
     // Photos ajoutées aux recettes d'exemple : seulement si la recette n'en a pas déjà une.
     const photos = C.SEED_PHOTOS || {};
     S.recipes.forEach((r) => {
@@ -401,7 +409,7 @@
     const have = new Set(S.recipes.map((r) => r.id));
     const fresh = list.filter((r) => r && r.id && r.name && Array.isArray(r.ingredients) && Array.isArray(r.steps) && !have.has(r.id));
     for (const r of fresh) {
-      const rec = { favorite: false, validated: false, demo: false, createdAt: Date.now(), ...r };
+      const rec = { favorite: false, validated: false, demo: false, createdAt: Date.now(), ...r, toTest: false };
       upsert(S.recipes, rec);
       await C.db.put('recipes', rec);
     }

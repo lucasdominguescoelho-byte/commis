@@ -6,8 +6,9 @@
   const E = C.eng;
 
   C.ui.rf = { q: '', cat: '', time: 0, fav: false, promo: false };
-  C.ui.rtab = 'mes'; // mes (validées) | tester | generer
-  const inTab = (r) => (C.ui.rtab === 'tester' ? !r.validated : !!r.validated);
+  C.ui.rtab = 'mes'; // mes (validées) | tester (mises de côté par l'utilisateur) | toutes | generer
+  const testing = (r) => !!r.toTest && !r.validated;
+  const inTab = (r) => (C.ui.rtab === 'toutes' ? true : C.ui.rtab === 'tester' ? testing(r) : !!r.validated);
   C.ui.serv = {};
 
   // Lignes d'ingrédients (quantité, nom, promotion éventuelle, coût) — partagé avec le planning.
@@ -46,8 +47,9 @@
     if (!rows.length) {
       if (C.S.recipes.some(inTab)) return `<div class="empty"><h2 class="h2">Aucune recette ne correspond</h2><p>Modifiez la recherche ou les filtres.</p></div>`;
       if (C.ui.rtab === 'tester')
-        return `<div class="empty"><h2 class="h2">Rien à tester pour le moment</h2><p>Générez des idées avec les promotions de la semaine : elles attendent ici que vous les cuisiniez.</p><button class="btn btn--citron" data-act="rec.tab" data-v="generer">${icon('wand', 18)} Générer des recettes</button></div>`;
-      return `<div class="empty"><h2 class="h2">Aucune recette validée</h2><p>Ici n’apparaissent que les recettes que vous avez cuisinées et approuvées. Testez celles de l’onglet « À tester », puis validez-les depuis leur fiche.</p><button class="btn" data-act="rec.tab" data-v="tester">Voir les recettes à tester</button></div>`;
+        return `<div class="empty"><h2 class="h2">Rien à tester pour le moment</h2><p>Ouvrez une recette dans « Toutes » et touchez « Ajouter à À tester », ou gardez une idée générée : elle attendra ici que vous la cuisiniez.</p><div class="head-a" style="justify-content:center"><button class="btn" data-act="rec.tab" data-v="toutes">Voir toutes les recettes</button><button class="btn btn--citron" data-act="rec.tab" data-v="generer">${icon('wand', 18)} Générer des recettes</button></div></div>`;
+      if (C.ui.rtab === 'toutes') return `<div class="empty"><h2 class="h2">Aucune recette</h2><p>Ajoutez-en une, importez un fichier ou générez des idées.</p></div>`;
+      return `<div class="empty"><h2 class="h2">Aucune recette validée</h2><p>Ici n’apparaissent que les recettes que vous avez cuisinées et approuvées. Une fois une recette testée, validez-la depuis sa fiche.</p><button class="btn" data-act="rec.tab" data-v="toutes">Voir toutes les recettes</button></div>`;
     }
     return `<div class="cards">${rows
       .map(({ r, c, bad }) => {
@@ -55,7 +57,7 @@
         return `<article class="rc" data-act="go" data-href="#/recettes/${r.id}" tabindex="0" role="link" aria-label="${esc(r.name)}">
           <div class="rc-v">${C.recipeVisual(r)}
             <button class="ibtn rc-fav ${r.favorite ? 'is-on' : ''}" data-act="rec.fav" data-id="${r.id}" aria-label="Favori" aria-pressed="${!!r.favorite}">${icon('heart', 18)}</button>
-            <div class="rc-tags">${r.validated ? '' : `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>`}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
+            <div class="rc-tags">${testing(r) ? `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>` : r.validated && C.ui.rtab === 'toutes' ? `<span class="badge badge--soft">${icon('check', 13)} validée</span>` : ''}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
           </div>
           <div class="rc-b"><span class="eyebrow">${esc(r.category)}</span><h3 class="rc-n">${esc(r.name)}</h3>
             <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${r.prepTime} min</span><span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
@@ -67,11 +69,12 @@
   function list(root) {
     const f = C.ui.rf;
     const nMes = C.S.recipes.filter((r) => r.validated).length;
-    const nTest = C.S.recipes.length - nMes;
+    const nTest = C.S.recipes.filter(testing).length;
+    const nAll = C.S.recipes.length;
     const tab = C.ui.rtab;
     const tabBtn = (v, label) => `<button role="tab" class="${tab === v ? 'is-on' : ''}" aria-selected="${tab === v}" data-act="rec.tab" data-v="${v}">${label}</button>`;
-    const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
-    const sub = { mes: 'Testées et validées', tester: 'Pas encore cuisinées', generer: 'Idées avec les promotions du moment' }[tab];
+    const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
+    const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque', generer: 'Idées avec les promotions du moment' }[tab];
     const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
         <div class="head-a"><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
     if (tab === 'generer') {
@@ -109,9 +112,10 @@
     const fromIa = r.source === 'cabas' || r.source === 'ia';
     const fromLib = r.source === 'wikilivres';
     const fromBook = r.source === 'livre-perso';
+    const back = r.validated ? 'mes' : testing(r) ? 'tester' : 'toutes';
     root.innerHTML = `
-      <a class="back" href="#/recettes" data-act="rec.back" data-v="${r.validated ? 'mes' : 'tester'}">${icon('left', 16)} ${r.validated ? 'Mes recettes' : 'À tester'}</a>
-      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
+      <a class="back" href="#/recettes" data-act="rec.back" data-v="${back}">${icon('left', 16)} ${{ mes: 'Mes recettes', tester: 'À tester', toutes: 'Toutes les recettes' }[back]}</a>
+      ${r.validated ? '' : !testing(r) ? `<div class="note note--test">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`}
       <div class="rd">
         <div>
           <div class="rd-v">${C.recipeVisual(r)}</div>
@@ -175,7 +179,7 @@
           ${C.field('Portions', `<input class="inp" name="servings" type="number" min="1" max="24" value="${r.servings}">`)}
         </div>
         ${C.photoField()}
-        <label class="check"><input type="checkbox" name="validated" ${r.validated !== false ? 'checked' : ''}><span><b>Je l’ai testée et je la valide</b><small>Décochée, la recette reste dans « À tester ».</small></span></label>
+        <label class="check"><input type="checkbox" name="validated" ${r.validated !== false ? 'checked' : ''}><span><b>Je l’ai testée et je la valide</b><small>Décochée, une nouvelle recette va dans « À tester ».</small></span></label>
         <div class="field"><span>Ingrédients</span>
           <div class="ed-rows" id="ed-rows">
             <div class="ed-row ed-head"><span>Nom</span><span>Quantité</span><span>Unité</span><span>Rayon</span><span>Coût (CHF)</span><span></span></div>
@@ -214,6 +218,7 @@
             ingredients,
             steps: String(fd.get('steps')).split('\n').map((s) => s.trim()).filter(Boolean),
             validated: fd.get('validated') === 'on',
+            toTest: fd.get('validated') === 'on' ? false : isNew ? true : !!r.toTest,
             demo: false,
           };
           sheet.close();
@@ -282,13 +287,13 @@
       const have = new Set(C.S.recipes.map((r) => r.id));
       const n = list.filter((r) => r && r.id && !have.has(r.id)).length;
       if (!n) return C.toast('Ces recettes sont déjà dans Commis.');
-      if (!(await C.confirm(`Ajouter ${n} recette${n > 1 ? 's' : ''} ?`, `Elles arrivent dans « À tester » ; vos recettes actuelles ne changent pas.${list.length > n ? ` ${list.length - n} déjà présente${list.length - n > 1 ? 's' : ''} ser${list.length - n > 1 ? 'ont' : 'a'} ignorée${list.length - n > 1 ? 's' : ''}.` : ''}`, 'Ajouter'))) return;
+      if (!(await C.confirm(`Ajouter ${n} recette${n > 1 ? 's' : ''} ?`, `Elles arrivent dans « Toutes » ; vos recettes actuelles ne changent pas.${list.length > n ? ` ${list.length - n} déjà présente${list.length - n > 1 ? 's' : ''} ser${list.length - n > 1 ? 'ont' : 'a'} ignorée${list.length - n > 1 ? 's' : ''}.` : ''}`, 'Ajouter'))) return;
       try {
         const res = await C.importRecipes(data);
-        C.ui.rtab = 'tester';
+        C.ui.rtab = 'toutes';
         C.ui.rf.cat = '';
         C.render();
-        C.toast(`${res.added} recette${res.added > 1 ? 's' : ''} ajoutée${res.added > 1 ? 's' : ''} à « À tester »`);
+        C.toast(`${res.added} recette${res.added > 1 ? 's' : ''} ajoutée${res.added > 1 ? 's' : ''} dans « Toutes »`);
       } catch (e) {
         C.toast(e.message);
       }
@@ -305,8 +310,20 @@
     'rec.validate': (el) => {
       const r = C.recipe(el.dataset.id);
       if (!r) return;
-      C.save.recipe({ ...r, validated: true, validatedAt: C.today() });
+      C.save.recipe({ ...r, validated: true, toTest: false, validatedAt: C.today() });
       C.toast('Recette validée : elle rejoint « Mes recettes »', { label: 'Annuler', run: () => C.save.recipe({ ...r }) });
+    },
+    'rec.totest': (el) => {
+      const r = C.recipe(el.dataset.id);
+      if (!r) return;
+      C.save.recipe({ ...r, toTest: true });
+      C.toast('Ajoutée à « À tester »', { label: 'Annuler', run: () => C.save.recipe({ ...r }) });
+    },
+    'rec.untest': (el) => {
+      const r = C.recipe(el.dataset.id);
+      if (!r) return;
+      C.save.recipe({ ...r, toTest: false });
+      C.toast('Retirée d’« À tester » (toujours dans « Toutes »)', { label: 'Annuler', run: () => C.save.recipe({ ...r }) });
     },
     'rec.edit': (el) => editor(C.recipe(el.dataset.id)),
     'rec.del': async (el) => {
