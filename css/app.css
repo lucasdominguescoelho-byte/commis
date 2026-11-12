@@ -1,4 +1,4 @@
-/* Commis — identité « Marché » : blanc, encre brune et rouge tomate (les variables gardent le nom « citron »).
+/* Commis — identité « Marché » (encre brune, rouge tomate) avec les surfaces « Cuisine » en aplats colorés (les variables gardent le nom « citron »).
    Serif d'affichage (Instrument Serif) + grotesque de travail (Instrument Sans). */
 
 :root {
@@ -790,3 +790,79 @@ html.is-cooking { overflow: hidden; }
   .store-row { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 6px; }
   .store-row .chip { height: 36px; padding: 0 10px; justify-content: center; font-size: 13.5px; }
 }
+
+/* ---------- Novembre 2026 : « Cuisine » — aplats colorés, retours au toucher et survols ----------
+   Principes : léger enfoncement au toucher (scale .97, 160 ms), survols seulement à la souris,
+   animations courtes en ease-out sur transform/opacity, cascade d'apparition, mouvements réduits respectés. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --shadow-1: 0 1px 2px rgba(120, 60, 30, 0.06), 0 6px 18px -6px rgba(120, 60, 30, 0.12);
+  --shadow-2: 0 2px 4px rgba(120, 60, 30, 0.07), 0 18px 40px -12px rgba(120, 60, 30, 0.22);
+}
+/* Tout ce qui se presse répond : léger enfoncement, rapide au relâché */
+:is(.btn, .chip, .ibtn, .nav-i, .tab, .seg button, .si-x, .step button, .wk button) {
+  transition: transform 160ms var(--ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+}
+:is(.btn, .chip, .ibtn, .seg button, .step button, .wk button):active { transform: scale(0.97); }
+:is(.nav-i, .tab):active { transform: scale(0.95); }
+/* Cartes cliquables : légère montée, la photo se rapproche */
+:is(.rc, .pc, .meal, .nextm) { transition: transform 260ms var(--ease-out), box-shadow 260ms ease, background-color 200ms ease; }
+:is(.rc-v, .pc-v, .meal-v, .nextm-v, .strip-p, .thumb) .ph-img { transition: opacity 260ms ease, transform 500ms var(--ease-out); }
+:is(.rc, .pc, .meal):active { transform: scale(0.985); }
+.row { transition: background-color 160ms ease; border-radius: 12px; }
+.link { transition: color 160ms ease, text-decoration-color 160ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(.btn--ghost):not(.btn--citron):hover { background: #3a332d; border-color: #3a332d; }
+  .btn--ghost:hover { background: var(--wash); border-color: var(--wash); }
+  .btn--citron:hover { background: var(--citron-d); box-shadow: 0 6px 16px -6px rgba(228, 87, 46, 0.55); }
+  .chip:not(.is-on):hover { background: var(--wash); border-color: var(--wash); color: var(--ink); }
+  .ibtn:hover { background: var(--wash); color: var(--ink); }
+  .nav-i:not(.is-on):hover { background: var(--wash); color: var(--ink); }
+  :is(.rc, .pc, .meal):hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+  :is(.rc, .pc, .meal, .nextm):hover .ph-img { transform: scale(1.04); }
+  a.row:hover, .row[role='button']:hover { background: var(--wash); box-shadow: -10px 0 0 var(--wash), 10px 0 0 var(--wash); }
+  .strip-d:hover .ph-img { transform: scale(1.06); }
+  .steps li:hover { background: var(--wash); }
+}
+/* Apparition en cascade des cartes à l'ouverture d'une page (courte, jamais bloquante) */
+.fade :is(.cards, .plan, .rows) > * { animation: rise 340ms var(--ease-out) both; }
+.fade :is(.cards, .plan, .rows) > :nth-child(2) { animation-delay: 40ms; }
+.fade :is(.cards, .plan, .rows) > :nth-child(3) { animation-delay: 80ms; }
+.fade :is(.cards, .plan, .rows) > :nth-child(4) { animation-delay: 120ms; }
+.fade :is(.cards, .plan, .rows) > :nth-child(5) { animation-delay: 160ms; }
+.fade :is(.cards, .plan, .rows) > :nth-child(n + 6) { animation-delay: 200ms; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation: none !important; }
+}
+
+/* Surfaces « Cuisine » : pêche, sauge, beurre, ciel */
+:root {
+  --paper: #fffaf6; --card: #ffffff; --wash: #f7ede4;
+  --line: #f0e3d7; --line-2: #f5ebe1;
+  --peche: #fde6d8; --sauge: #e6eddc; --beurre: #fbf0cf; --ciel: #e3ecf3;
+  --r: 26px;
+}
+:is(.card, .rc, .pc, .sum, .meal, .nextm) { border: 0; box-shadow: none; }
+/* Chaque bloc de l'accueil a sa couleur */
+[data-view='accueil'] > .grid:not(.sec) > .card:nth-child(1) { background: var(--peche); }
+[data-view='accueil'] > .grid:not(.sec) > .card:nth-child(3) { background: var(--sauge); }
+[data-view='accueil'] > .sec.grid > .card:nth-child(1) { background: var(--beurre); }
+[data-view='accueil'] > .sec.grid > .card:nth-child(2) { background: var(--sauge); }
+[data-view='accueil'] > .sec.grid > .card:nth-child(3) { background: var(--ciel); }
+.nextm { background: var(--peche); }
+.card--flush, .sum { background: #fff4ec; }
+.card .bar { background: rgba(36, 31, 27, 0.1); }
+.strip-d { border-right-color: rgba(36, 31, 27, 0.06); }
+/* Cartes recettes : fonds pastel en alternance, coins généreux */
+.cards > :nth-child(4n + 1) { background: var(--peche); }
+.cards > :nth-child(4n + 2) { background: var(--sauge); }
+.cards > :nth-child(4n + 3) { background: var(--beurre); }
+.cards > :nth-child(4n + 4) { background: var(--ciel); }
+:is(.rc-v, .pc-v) { margin: 8px 8px 0; border-radius: 20px; }
+.pc-v { background: #fff; }
+.meal { background: #fff4ec; }
+.meal-v { margin: 6px 6px 0; border-radius: 14px; }
+.nav-i.is-on { background: var(--citron); color: #fff; }
+.nav-i.is-on .ic { color: #fff; }
+.side { background: rgba(255, 250, 246, 0.92); }
+@media (hover: hover) and (pointer: fine) { :is(.rc, .pc, .meal):hover { box-shadow: 0 16px 30px -18px rgba(120, 60, 30, 0.45); } }
