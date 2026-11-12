@@ -73,7 +73,7 @@
     const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
     const sub = { mes: 'Testées et validées', tester: 'Pas encore cuisinées', generer: 'Idées avec les promotions du moment' }[tab];
     const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
-        <div class="head-a"><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
+        <div class="head-a"><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
     if (tab === 'generer') {
       root.innerHTML = head + tabs + '<div id="gen-root"></div>';
       C.generator.render(document.getElementById('gen-root'));
@@ -108,9 +108,10 @@
     const bad = E.conflicts(r);
     const fromIa = r.source === 'cabas' || r.source === 'ia';
     const fromLib = r.source === 'wikilivres';
+    const fromBook = r.source === 'livre-perso';
     root.innerHTML = `
       <a class="back" href="#/recettes" data-act="rec.back" data-v="${r.validated ? 'mes' : 'tester'}">${icon('left', 16)} ${r.validated ? 'Mes recettes' : 'À tester'}</a>
-      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
+      ${r.validated ? '' : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou supprimez-la si elle ne vous a pas plu.</span><button class="btn btn--citron btn--sm note-a" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></div>`}
       <div class="rd">
         <div>
           <div class="rd-v">${C.recipeVisual(r)}</div>
@@ -121,7 +122,7 @@
         </div>
         <div class="rd-side">
           <div>
-            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : ''}${r.validated ? ' · validée' : ''}</p>
+            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : fromBook ? ' · votre livre de recettes' : ''}${r.validated ? ' · validée' : ''}</p>
             <h1 class="title" style="font-size:clamp(32px,3.6vw,46px)">${esc(r.name)}</h1>
             ${r.description ? `<p class="lede">${esc(r.description)}</p>` : ''}
             <div class="meta" style="margin-top:14px"><span>${icon('clock', 16)}${r.prepTime} min</span><span>${icon('users', 16)}${r.servings} portions de base</span></div>
@@ -267,6 +268,31 @@
       if (r) C.save.recipe({ ...r, favorite: !r.favorite });
     },
     'rec.new': () => editor(null),
+    'rec.import': async () => {
+      const file = await C.pickFile('.json,application/json');
+      if (!file) return;
+      let data;
+      try {
+        data = JSON.parse(await file.text());
+      } catch (e) {
+        return C.toast('Fichier illisible : ce n’est pas du JSON valide.');
+      }
+      const list = C.recipesIn(data);
+      if (!list) return C.toast('Ce fichier ne contient pas de recettes Commis.');
+      const have = new Set(C.S.recipes.map((r) => r.id));
+      const n = list.filter((r) => r && r.id && !have.has(r.id)).length;
+      if (!n) return C.toast('Ces recettes sont déjà dans Commis.');
+      if (!(await C.confirm(`Ajouter ${n} recette${n > 1 ? 's' : ''} ?`, `Elles arrivent dans « À tester » ; vos recettes actuelles ne changent pas.${list.length > n ? ` ${list.length - n} déjà présente${list.length - n > 1 ? 's' : ''} ser${list.length - n > 1 ? 'ont' : 'a'} ignorée${list.length - n > 1 ? 's' : ''}.` : ''}`, 'Ajouter'))) return;
+      try {
+        const res = await C.importRecipes(data);
+        C.ui.rtab = 'tester';
+        C.ui.rf.cat = '';
+        C.render();
+        C.toast(`${res.added} recette${res.added > 1 ? 's' : ''} ajoutée${res.added > 1 ? 's' : ''} à « À tester »`);
+      } catch (e) {
+        C.toast(e.message);
+      }
+    },
     'rec.tab': (el) => {
       C.ui.rtab = el.dataset.v;
       C.ui.rf.cat = '';

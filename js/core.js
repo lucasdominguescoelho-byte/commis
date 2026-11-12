@@ -36,6 +36,8 @@
     { name: 'Soupe', hue: 55 },
     { name: 'Salade', hue: 120 },
     { name: 'Gratin & four', hue: 40 },
+    { name: 'Burgers & wraps', hue: 10 },
+    { name: 'Petit-déjeuner', hue: 48 },
     { name: 'Autre', hue: 300 },
   ];
   // Ustensiles de cuisine : les recettes générées n'utilisent que ceux cochés dans Réglages.
@@ -50,7 +52,7 @@
     { id: 'wok', name: 'Wok' },
     { id: 'cuiseur-riz', name: 'Cuiseur à riz' },
   ];
-  C.UNITS = ['g', 'kg', 'ml', 'dl', 'l', 'pièce', 'c. à soupe', 'c. à café', 'gousse', 'tranche', 'botte', 'boîte', 'sachet', 'pincée'];
+  C.UNITS = ['g', 'kg', 'ml', 'dl', 'l', 'pièce', 'c. à soupe', 'c. à café', 'gousse', 'tranche', 'botte', 'boîte', 'sachet', 'pincée', 'poignée'];
   C.DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
   C.DAYS_S = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   C.SLOTS = ['midi', 'soir'];
@@ -129,7 +131,7 @@
     return b ? { qty: qty * b[1], unit: b[0] } : { qty, unit: unit || 'pièce' };
   };
   const UNIT_S = { 'pièce': 'pce', 'c. à soupe': 'c. à s.', 'c. à café': 'c. à c.' };
-  const PLURAL = { gousse: 'gousses', tranche: 'tranches', botte: 'bottes', 'boîte': 'boîtes', sachet: 'sachets', 'pincée': 'pincées' };
+  const PLURAL = { gousse: 'gousses', tranche: 'tranches', botte: 'bottes', 'boîte': 'boîtes', sachet: 'sachets', 'pincée': 'pincées', 'poignée': 'poignées' };
   C.fmtQty = (qty, unit) => {
     if (!qty) return '';
     const { qty: q, unit: u } = C.toBase(qty, unit);
@@ -389,6 +391,23 @@
     expenses: S.expenses,
     fridge: S.fridge,
   });
+
+  // Ajoute des recettes (fichier « commis-recettes » ou sauvegarde) sans rien effacer :
+  // celles déjà présentes (même identifiant) sont laissées telles quelles.
+  C.recipesIn = (data) => (data && (data.app === 'commis-recettes' || data.app === 'cabas') && Array.isArray(data.recipes) ? data.recipes : null);
+  C.importRecipes = async (data) => {
+    const list = C.recipesIn(data);
+    if (!list) throw new Error("Ce fichier ne contient pas de recettes Commis.");
+    const have = new Set(S.recipes.map((r) => r.id));
+    const fresh = list.filter((r) => r && r.id && r.name && Array.isArray(r.ingredients) && Array.isArray(r.steps) && !have.has(r.id));
+    for (const r of fresh) {
+      const rec = { favorite: false, validated: false, demo: false, createdAt: Date.now(), ...r };
+      upsert(S.recipes, rec);
+      await C.db.put('recipes', rec);
+    }
+    if (fresh.length) C.changed();
+    return { added: fresh.length, skipped: list.length - fresh.length };
+  };
 
   C.importData = async (data) => {
     if (!data || data.app !== 'cabas' || !Array.isArray(data.recipes)) throw new Error("Ce fichier n'est pas une sauvegarde Commis.");

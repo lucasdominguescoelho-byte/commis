@@ -94,6 +94,7 @@
       } catch (e) {
         return C.toast('Fichier illisible : ce n’est pas du JSON valide.');
       }
+      if (data && data.app === 'commis-recettes') return C.toast('Ce fichier contient des recettes : importez-le depuis Recettes › Importer.');
       if (!data || data.app !== 'cabas') return C.toast('Ce fichier n’est pas une sauvegarde Commis.');
       if (!(await C.confirm('Restaurer cette sauvegarde ?', `Les données actuelles seront remplacées par celles du ${C.esc(new Date(data.exportedAt || Date.now()).toLocaleDateString('fr-CH'))} (${(data.recipes || []).length} recettes, ${(data.promotions || []).length} promotions).`, 'Restaurer'))) return;
       try {
