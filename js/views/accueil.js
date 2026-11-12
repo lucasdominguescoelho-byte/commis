@@ -31,8 +31,49 @@
 
   // Disposition inspirée de miamz.ch : en-tête partagé (texte + photo), bande des magasins,
   // bande des économies, « on mange ça » en cartes photo, puis courses et bonnes affaires.
+  // Données affichées sur les objets de la cuisine 3D
+  function homeInfo() {
+    const wid = C.weekId();
+    const t = E.planTotals(wid);
+    const next = upcomingAll(1)[0];
+    const promos = E.activePromos(wid).filter((p) => E.promoState(p) !== 'expired');
+    const best = promos.map((p) => ({ p, pct: E.pct(p) })).sort((a, b) => b.pct - a.pct)[0];
+    const shop = E.shopping(wid);
+    const soon = C.S.fridge.filter((f) => E.expiresIn(f) != null && E.expiresIn(f) <= 3);
+    return {
+      next: next ? { id: next.r.id, name: next.r.name, when: next.when, people: next.s.servings } : null,
+      meals: t.meals,
+      savings: t.savings,
+      fridge: C.S.fridge.length,
+      soon: soon.map((f) => f.name),
+      shopLeft: shop.items.length - shop.done,
+      promos: promos.length,
+      best: best && best.pct ? { name: best.p.name, pct: best.pct, store: C.storeById(best.p.store).name } : null,
+      recipes: C.S.recipes.length,
+      toTest: C.S.recipes.filter((r) => r.toTest && !r.validated).length,
+    };
+  }
+
+  // Accueil en 3D : la cuisine (js/cuisine3d.js) ; la vue résumé reste disponible et sert de repli.
+  function render3d(root) {
+    const wid = C.weekId();
+    const t = E.planTotals(wid);
+    root.innerHTML = `<section class="k3">
+        <div class="k3-stage"></div>
+        <div class="k3-load"><span class="spin"></span>Préparation de la cuisine…</div>
+        <div class="k3-labels" aria-label="Pièces de la cuisine"></div>
+        <header class="k3-head"><p class="eyebrow">Semaine ${C.weekNo(wid)} · ${C.fmtDate(C.today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h1 class="k3-t">Votre <em>cuisine</em></h1>
+          <p class="k3-s">${t.savings >= 0.05 ? `<b>${C.chf(t.savings)}</b> économisés cette semaine · ` : ''}${t.meals} repas sur 14 prévus</p></header>
+        <button class="btn btn--ghost btn--sm k3-switch" data-act="home.classic">${icon('book', 16)} Vue résumé</button>
+        <p class="k3-hint">${matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Cliquez sur un objet pour l’ouvrir' : 'Touchez un objet pour l’ouvrir'}</p>
+      </section>`;
+    C.k3d.mount(root.querySelector('.k3-stage'), homeInfo());
+  }
+
   C.views.accueil = {
     render(root) {
+      if (!C.ui.homeClassic && !C.k3dFailed && C.k3d && C.k3d.supported()) return render3d(root);
       const wid = C.weekId();
       const st = C.S.settings;
       const t = E.planTotals(wid);
@@ -127,7 +168,7 @@
             <h1 class="hh-t">${title}</h1>
             <p class="hh-sub">${sub}</p>
             <div class="hh-cta">${cta}</div>
-            <p class="hh-micro">${promos.length} promotions en cours · ${pool} recette${pool > 1 ? 's' : ''} compatible${pool > 1 ? 's' : ''} avec vos préférences</p></div>
+            <p class="hh-micro">${promos.length} promotions en cours · ${pool} recette${pool > 1 ? 's' : ''} compatible${pool > 1 ? 's' : ''} avec vos préférences${!C.k3dFailed && C.k3d && C.k3d.supported() ? ` · <button class="link" data-act="home.room">Revenir à la cuisine 3D</button>` : ''}</p></div>
           <div class="hh-v">${next ? `<a href="#/recettes/${next.r.id}" class="hh-img" aria-label="${esc(next.r.name)}">${heroVisual}</a>` : `<span class="hh-img">${heroVisual}</span>`}${heroCard}</div>
         </section>
         ${storeStrip}
@@ -140,6 +181,8 @@
 
   Object.assign(C.acts, {
     'home.week': () => { C.ui.week = C.weekId(); },
+    'home.classic': () => { C.ui.homeClassic = true; C.render(); },
+    'home.room': () => { C.ui.homeClassic = false; C.render(); },
     'home.people': (el) => C.save.settings({ household: Math.max(1, Math.min(12, C.S.settings.household + Number(el.dataset.d))) }),
     'home.generate': () => {
       C.ui.week = C.weekId();

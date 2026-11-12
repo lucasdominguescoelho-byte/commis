@@ -39,6 +39,10 @@ Lancer la mise à jour à la main :
 python3 outils/promotions.py
 ```
 
+## Accueil : la cuisine 3D
+
+L'accueil est une cuisine en maquette 3D (`js/cuisine3d.js`, Three.js 0.160 chargé depuis jsDelivr puis gardé hors ligne par le service worker). Chaque objet ouvre une page : frigo → Frigo, livre → Recettes, ardoise → Planning, cabas → Courses, prospectus → Promotions, tirelire → Budget, cuisinière → le prochain repas. L'ardoise affiche le plat du soir, le post-it du frigo les aliments à consommer, le prospectus la meilleure promotion. « Vue résumé » affiche l'accueil classique ; sans WebGL ou si Three.js ne charge pas, c'est lui qui s'affiche automatiquement.
+
 ## Premier lancement
 
 La première fois que Commis s'ouvre sur un appareil, un court questionnaire règle le foyer, le budget, les magasins, le régime, les allergies et les ustensiles (rien n'est enregistré avant la fin ; « Passer » garde les réglages par défaut). On peut le relancer depuis **Réglages › Revoir le questionnaire**. Il n'y a pas de compte : les réglages restent sur l'appareil.
