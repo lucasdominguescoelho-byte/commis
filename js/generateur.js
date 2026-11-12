@@ -18,48 +18,49 @@
      de / au / court : formes pour composer le nom du plat · k : cuisson · t : plats où l'ingrédient a sa place · g : genre de protéine */
   const P = [
     { n: 'Émincé de poulet', c: 'vp', q: 125, u: 'g', p: 2.5, de: 'de poulet', au: 'au poulet', court: 'poulet', g: 'viande', k: 'à feu vif 5 à 6 minutes, jusqu’à ce qu’il soit doré', t: ['poele', 'curry', 'wok', 'pates', 'salade'] },
-    { n: 'Poitrine de poulet', c: 'vp', q: 140, u: 'g', p: 3.2, de: 'de poulet', au: 'au poulet', court: 'poulet', plat: 'Poulet', g: 'viande', k: '6 minutes de chaque côté', t: ['four', 'papillote', 'salade', 'poele'] },
-    { n: 'Cuisses de poulet', c: 'vp', q: 220, u: 'g', p: 2.4, de: 'de poulet', au: 'au poulet', court: 'poulet', plat: 'Cuisses de poulet', g: 'viande', k: '', t: ['four'] },
+    { n: 'Poitrine de poulet', c: 'vp', q: 140, u: 'g', p: 3.2, de: 'de poulet', au: 'au poulet', court: 'poulet', plat: 'Poulet', g: 'viande', k: '6 minutes de chaque côté', t: ['airfryer', 'four', 'papillote', 'salade', 'poele'] },
+    { n: 'Cuisses de poulet', c: 'vp', q: 220, u: 'g', p: 2.4, de: 'de poulet', au: 'au poulet', court: 'poulet', plat: 'Cuisses de poulet', g: 'viande', k: '', t: ['airfryer', 'mijote', 'four'] },
     { n: 'Viande hachée de bœuf', c: 'vp', q: 110, u: 'g', p: 2.0, de: 'de bœuf haché', au: 'à la viande hachée', court: 'viande hachée', g: 'viande', k: 'en l’émiettant, 5 minutes', t: ['pates', 'poele', 'gratin'] },
     { n: 'Émincé de bœuf', c: 'vp', q: 120, u: 'g', p: 4.0, de: 'de bœuf', au: 'au bœuf', court: 'bœuf', g: 'viande', k: 'à feu très vif 2 à 3 minutes', t: ['wok', 'poele'] },
-    { n: 'Émincé de porc', c: 'vp', q: 120, u: 'g', p: 2.4, de: 'de porc', au: 'au porc', court: 'porc', g: 'viande', k: 'à feu vif 4 à 5 minutes', t: ['poele', 'wok', 'curry'] },
-    { n: 'Saucisses à rôtir', c: 'vp', q: 1, u: 'pièce', p: 1.9, de: 'de saucisses', au: 'aux saucisses', court: 'saucisses', plat: 'Saucisses', g: 'viande', k: 'à feu moyen 12 minutes en les retournant', t: ['four', 'poele'] },
+    { n: 'Ragoût de bœuf', c: 'vp', q: 150, u: 'g', p: 3.6, de: 'de bœuf', au: 'au bœuf', court: 'bœuf', g: 'viande', k: '', t: ['mijote'] },
+    { n: 'Émincé de porc', c: 'vp', q: 120, u: 'g', p: 2.4, de: 'de porc', au: 'au porc', court: 'porc', g: 'viande', k: 'à feu vif 4 à 5 minutes', t: ['mijote', 'poele', 'wok', 'curry'] },
+    { n: 'Saucisses à rôtir', c: 'vp', q: 1, u: 'pièce', p: 1.9, de: 'de saucisses', au: 'aux saucisses', court: 'saucisses', plat: 'Saucisses', g: 'viande', k: 'à feu moyen 12 minutes en les retournant', t: ['airfryer', 'four', 'poele'] },
     { n: 'Lardons', c: 'vp', q: 50, u: 'g', p: 1.0, de: 'de lardons', au: 'aux lardons', court: 'lardons', g: 'viande', k: 'à sec jusqu’à ce qu’ils soient dorés', t: ['pates', 'gratin', 'quiche', 'salade', 'omelette'] },
     { n: 'Jambon', c: 'vp', q: 60, u: 'g', p: 1.3, de: 'de jambon', au: 'au jambon', court: 'jambon', g: 'viande', k: '', t: ['pates', 'gratin', 'quiche', 'salade', 'omelette'] },
-    { n: 'Filet de saumon', c: 'vp', q: 125, u: 'g', p: 3.5, de: 'de saumon', au: 'au saumon', court: 'saumon', plat: 'Saumon', g: 'poisson', k: '4 minutes de chaque côté', t: ['four', 'papillote', 'pates'] },
+    { n: 'Filet de saumon', c: 'vp', q: 125, u: 'g', p: 3.5, de: 'de saumon', au: 'au saumon', court: 'saumon', plat: 'Saumon', g: 'poisson', k: '4 minutes de chaque côté', t: ['airfryer', 'four', 'papillote', 'pates'] },
     { n: 'Saumon fumé', c: 'vp', q: 50, u: 'g', p: 2.5, de: 'de saumon fumé', au: 'au saumon fumé', court: 'saumon fumé', g: 'poisson', k: '', t: ['pates', 'salade', 'quiche'] },
     { n: 'Filet de cabillaud', c: 'vp', q: 140, u: 'g', p: 3.8, de: 'de cabillaud', au: 'au cabillaud', court: 'cabillaud', plat: 'Cabillaud', g: 'poisson', k: '4 minutes de chaque côté', t: ['four', 'papillote'] },
-    { n: 'Filets de pangasius', c: 'vp', q: 140, u: 'g', p: 1.4, de: 'de poisson', au: 'au poisson', court: 'poisson', plat: 'Poisson blanc', g: 'poisson', k: '3 minutes de chaque côté', t: ['four', 'papillote', 'curry'] },
+    { n: 'Filets de pangasius', c: 'vp', q: 140, u: 'g', p: 1.4, de: 'de poisson', au: 'au poisson', court: 'poisson', plat: 'Poisson blanc', g: 'poisson', k: '3 minutes de chaque côté', t: ['airfryer', 'four', 'papillote', 'curry'] },
     { n: 'Crevettes', c: 'vp', q: 100, u: 'g', p: 3.0, de: 'de crevettes', au: 'aux crevettes', court: 'crevettes', g: 'poisson', k: '2 à 3 minutes, jusqu’à ce qu’elles soient roses', t: ['wok', 'curry', 'pates'] },
     { n: 'Thon en boîte', c: 'vp', q: 60, u: 'g', p: 1.2, de: 'de thon', au: 'au thon', court: 'thon', g: 'poisson', k: '', t: ['pates', 'salade'] },
     { n: 'Œufs', c: 'lait', q: 2, u: 'pièce', p: 0.9, de: 'd’œufs', au: 'aux œufs', court: 'œufs', g: 'vege', k: '', t: ['omelette', 'salade'] },
-    { n: 'Tofu nature', c: 'epi', q: 100, u: 'g', p: 1.4, de: 'de tofu', au: 'au tofu', court: 'tofu', g: 'vege', k: 'en dés, jusqu’à ce qu’il soit doré', t: ['wok', 'curry', 'poele'] },
-    { n: 'Pois chiches en boîte', c: 'epi', q: 120, u: 'g', p: 0.55, de: 'de pois chiches', au: 'aux pois chiches', court: 'pois chiches', g: 'vege', k: 'égouttés, 5 minutes', t: ['curry', 'salade'] },
+    { n: 'Tofu nature', c: 'epi', q: 100, u: 'g', p: 1.4, de: 'de tofu', au: 'au tofu', court: 'tofu', g: 'vege', k: 'en dés, jusqu’à ce qu’il soit doré', t: ['airfryer', 'wok', 'curry', 'poele'] },
+    { n: 'Pois chiches en boîte', c: 'epi', q: 120, u: 'g', p: 0.55, de: 'de pois chiches', au: 'aux pois chiches', court: 'pois chiches', g: 'vege', k: 'égouttés, 5 minutes', t: ['mijote', 'curry', 'salade'] },
     { n: 'Lentilles vertes', c: 'epi', q: 70, u: 'g', p: 0.4, de: 'de lentilles', au: 'aux lentilles', court: 'lentilles', g: 'vege', k: '', t: ['salade', 'curry'] },
     { n: 'Feta', c: 'lait', q: 50, u: 'g', p: 0.8, de: 'de feta', au: 'à la feta', court: 'feta', g: 'vege', k: '', t: ['salade', 'four', 'pates', 'omelette'] },
     { n: 'Mozzarella', c: 'lait', q: 60, u: 'g', p: 1.0, de: 'de mozzarella', au: 'à la mozzarella', court: 'mozzarella', g: 'vege', k: '', t: ['salade', 'gratin', 'pates'] },
   ];
   const L = [
-    { n: 'Courgettes', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'aux courgettes', court: 'courgettes', prep: 'en rondelles', t: ['poele', 'wok', 'curry', 'gratin', 'four', 'pates', 'quiche', 'omelette', 'papillote', 'risotto'] },
-    { n: 'Poivrons', c: 'fl', q: 120, u: 'g', p: 0.6, aux: 'aux poivrons', court: 'poivrons', prep: 'en lanières', t: ['poele', 'wok', 'curry', 'four', 'salade', 'pates', 'omelette'] },
-    { n: 'Brocoli', c: 'fl', q: 150, u: 'g', p: 0.7, aux: 'au brocoli', court: 'brocoli', prep: 'en petits bouquets', t: ['poele', 'wok', 'curry', 'gratin', 'four', 'pates', 'quiche', 'soupe'] },
-    { n: 'Carottes', c: 'fl', q: 120, u: 'g', p: 0.25, aux: 'aux carottes', court: 'carottes', prep: 'en rondelles', t: ['poele', 'wok', 'curry', 'soupe', 'four', 'salade', 'papillote'] },
-    { n: 'Champignons de Paris', c: 'fl', q: 100, u: 'g', p: 1.1, aux: 'aux champignons', court: 'champignons', prep: 'émincés', t: ['poele', 'wok', 'pates', 'risotto', 'quiche', 'gratin', 'omelette'] },
+    { n: 'Courgettes', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'aux courgettes', court: 'courgettes', prep: 'en rondelles', t: ['airfryer', 'poele', 'wok', 'curry', 'gratin', 'four', 'pates', 'quiche', 'omelette', 'papillote', 'risotto'] },
+    { n: 'Poivrons', c: 'fl', q: 120, u: 'g', p: 0.6, aux: 'aux poivrons', court: 'poivrons', prep: 'en lanières', t: ['airfryer', 'poele', 'wok', 'curry', 'four', 'salade', 'pates', 'omelette'] },
+    { n: 'Brocoli', c: 'fl', q: 150, u: 'g', p: 0.7, aux: 'au brocoli', court: 'brocoli', prep: 'en petits bouquets', t: ['airfryer', 'poele', 'wok', 'curry', 'gratin', 'four', 'pates', 'quiche', 'soupe'] },
+    { n: 'Carottes', c: 'fl', q: 120, u: 'g', p: 0.25, aux: 'aux carottes', court: 'carottes', prep: 'en rondelles', t: ['airfryer', 'mijote', 'poele', 'wok', 'curry', 'soupe', 'four', 'salade', 'papillote'] },
+    { n: 'Champignons de Paris', c: 'fl', q: 100, u: 'g', p: 1.1, aux: 'aux champignons', court: 'champignons', prep: 'émincés', t: ['mijote', 'poele', 'wok', 'pates', 'risotto', 'quiche', 'gratin', 'omelette'] },
     { n: 'Épinards frais', c: 'fl', q: 80, u: 'g', p: 0.9, aux: 'aux épinards', court: 'épinards', prep: 'grossièrement hachés', t: ['curry', 'pates', 'quiche', 'gratin', 'risotto', 'omelette'] },
-    { n: 'Courge', c: 'fl', q: 200, u: 'g', p: 0.65, aux: 'à la courge', court: 'courge', prep: 'en cubes', t: ['soupe', 'four', 'risotto', 'curry', 'gratin', 'salade'] },
-    { n: 'Poireaux', c: 'fl', q: 120, u: 'g', p: 0.55, aux: 'aux poireaux', court: 'poireaux', prep: 'émincés', t: ['soupe', 'quiche', 'gratin', 'risotto', 'pates', 'papillote'] },
+    { n: 'Courge', c: 'fl', q: 200, u: 'g', p: 0.65, aux: 'à la courge', court: 'courge', prep: 'en cubes', t: ['mijote', 'soupe', 'four', 'risotto', 'curry', 'gratin', 'salade'] },
+    { n: 'Poireaux', c: 'fl', q: 120, u: 'g', p: 0.55, aux: 'aux poireaux', court: 'poireaux', prep: 'émincés', t: ['mijote', 'soupe', 'quiche', 'gratin', 'risotto', 'pates', 'papillote'] },
     { n: 'Tomates', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'aux tomates', court: 'tomates', prep: 'en dés', t: ['salade', 'pates', 'four', 'omelette'] },
     { n: 'Tomates cerises', c: 'fl', q: 100, u: 'g', p: 0.7, aux: 'aux tomates cerises', court: 'tomates cerises', prep: 'coupées en deux', t: ['salade', 'pates', 'four', 'papillote'] },
     { n: 'Aubergines', c: 'fl', q: 150, u: 'g', p: 0.75, aux: 'aux aubergines', court: 'aubergines', prep: 'en dés', t: ['four', 'curry', 'poele', 'pates'] },
-    { n: 'Chou-fleur', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'au chou-fleur', court: 'chou-fleur', prep: 'en petits bouquets', t: ['curry', 'gratin', 'four', 'soupe'] },
-    { n: 'Haricots verts', c: 'fl', q: 120, u: 'g', p: 0.9, aux: 'aux haricots verts', court: 'haricots verts', prep: 'équeutés', t: ['poele', 'salade', 'four', 'papillote'] },
-    { n: 'Patates douces', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'aux patates douces', court: 'patates douces', prep: 'en cubes', t: ['four', 'curry', 'soupe'] },
+    { n: 'Chou-fleur', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'au chou-fleur', court: 'chou-fleur', prep: 'en petits bouquets', t: ['airfryer', 'curry', 'gratin', 'four', 'soupe'] },
+    { n: 'Haricots verts', c: 'fl', q: 120, u: 'g', p: 0.9, aux: 'aux haricots verts', court: 'haricots verts', prep: 'équeutés', t: ['airfryer', 'mijote', 'poele', 'salade', 'four', 'papillote'] },
+    { n: 'Patates douces', c: 'fl', q: 150, u: 'g', p: 0.6, aux: 'aux patates douces', court: 'patates douces', prep: 'en cubes', t: ['mijote', 'four', 'curry', 'soupe'] },
     { n: 'Chou blanc', c: 'fl', q: 120, u: 'g', p: 0.3, aux: 'au chou', court: 'chou', prep: 'émincé finement', t: ['wok', 'poele'] },
     { n: 'Asperges vertes', c: 'fl', q: 100, u: 'g', p: 1.5, aux: 'aux asperges', court: 'asperges', prep: 'en tronçons', t: ['risotto', 'pates', 'quiche', 'papillote'] },
     { n: 'Petits pois surgelés', c: 'surg', q: 80, u: 'g', p: 0.35, aux: 'aux petits pois', court: 'petits pois', prep: '', t: ['risotto', 'pates', 'curry', 'omelette'] },
     { n: 'Concombre', c: 'fl', q: 100, u: 'g', p: 0.4, aux: 'au concombre', court: 'concombre', prep: 'en dés', t: ['salade'] },
     { n: 'Betteraves cuites', c: 'fl', q: 100, u: 'g', p: 0.5, aux: 'aux betteraves', court: 'betteraves', prep: 'en dés', t: ['salade'] },
-    { n: 'Fenouil', c: 'fl', q: 120, u: 'g', p: 0.6, aux: 'au fenouil', court: 'fenouil', prep: 'émincé', t: ['four', 'papillote', 'salade'] },
+    { n: 'Fenouil', c: 'fl', q: 120, u: 'g', p: 0.6, aux: 'au fenouil', court: 'fenouil', prep: 'émincé', t: ['airfryer', 'four', 'papillote', 'salade'] },
     { n: 'Maïs en boîte', c: 'epi', q: 60, u: 'g', p: 0.3, aux: 'au maïs', court: 'maïs', prep: 'égoutté', t: ['salade'] },
   ];
   const F = [
@@ -70,7 +71,7 @@
     { n: 'Cornettes', c: 'epi', q: 100, u: 'g', p: 0.35, court: 'cornettes', k: 'Cuire les cornettes 2 minutes de moins que le temps indiqué.', t: ['gratin'] },
     { n: 'Tagliatelles', c: 'epi', q: 100, u: 'g', p: 0.45, court: 'tagliatelles', k: 'Cuire les tagliatelles al dente.', t: ['pates'] },
     { n: 'Nouilles de blé', c: 'epi', q: 80, u: 'g', p: 0.6, court: 'nouilles', k: 'Cuire les nouilles, égoutter.', t: ['wok'] },
-    { n: 'Pommes de terre', c: 'fl', q: 250, u: 'g', p: 0.6, court: 'pommes de terre', k: '', t: ['four', 'gratin', 'soupe', 'salade', 'poele'] },
+    { n: 'Pommes de terre', c: 'fl', q: 250, u: 'g', p: 0.6, court: 'pommes de terre', k: '', t: ['airfryer', 'mijote', 'four', 'gratin', 'soupe', 'salade', 'poele'] },
     { n: 'Gnocchi', c: 'epi', q: 150, u: 'g', p: 0.8, court: 'gnocchi', k: 'Cuire les gnocchi dans l’eau bouillante jusqu’à ce qu’ils remontent.', t: ['gratin', 'poele'] },
     { n: 'Lentilles vertes', c: 'epi', q: 70, u: 'g', p: 0.4, court: 'lentilles', k: 'Cuire les lentilles 20 minutes dans l’eau non salée, égoutter.', t: ['salade'] },
     { n: 'Pain', c: 'boul', q: 1, u: 'tranche', p: 0.25, court: 'pain', k: '', t: ['soupe', 'omelette'] },
@@ -101,7 +102,11 @@
     x.r = 'P';
     x.art = ART[x.court] || 'le ' + x.court;
   });
-  L.forEach((x) => (x.r = 'L'));
+  const LART = {"brocoli": "le brocoli", "courge": "la courge", "chou-fleur": "le chou-fleur", "chou": "le chou", "concombre": "le concombre", "fenouil": "le fenouil", "maïs": "le maïs"};
+  L.forEach((x) => {
+    x.r = 'L';
+    x.art = LART[x.court] || 'les ' + x.court;
+  });
   F.forEach((x) => (x.r = 'F'));
 
   /* ---------- Modèles de plats ---------- */
@@ -109,7 +114,7 @@
   const et = (arr) => (arr.length < 2 ? arr.join('') : arr.slice(0, -1).join(', ') + ' et ' + arr[arr.length - 1]);
   const legs = (ls) => et(ls.map((l) => l.court));
   const auxLegs = (ls) => (ls.length === 1 ? ls[0].aux : ls[0].aux + ' et ' + ls.slice(1).map((l) => l.court).join(', '));
-  const prep = (ls) => et(ls.map((l) => (l.prep ? `les ${l.court} ${l.prep}` : `les ${l.court}`)));
+  const prep = (ls) => et(ls.map((l) => (l.prep ? `${l.art} ${l.prep}` : l.art)));
   const catOf = (p) => (!p ? 'Végétarien' : p.g === 'poisson' ? 'Poisson' : p.g === 'vege' ? 'Végétarien' : 'Viande');
 
   const T = [
@@ -144,11 +149,11 @@
       cat: () => 'Gratin & four',
       name: (r) => `Gratin de ${r.F.court} ${r.L[0].aux}${r.P ? ` et ${r.P.au}` : ''}`,
       steps: (r) => [
-        'Préchauffer le four à 200 °C.',
+        r.mode === 'airfryer' ? 'Préchauffer l’air fryer à 180 °C et beurrer un petit plat qui entre dans le panier.' : 'Préchauffer le four à 200 °C.',
         r.F.court === 'pommes de terre' ? 'Éplucher les pommes de terre, les couper en fines rondelles et les précuire 10 minutes à l’eau salée.' : r.F.k,
         `Faire revenir l’oignon émincé avec ${prep(r.L)} 5 minutes${r.P ? (r.P.k ? `, puis ${r.P.art} ${r.P.k}` : `, ajouter ${r.P.court === 'jambon' ? 'le jambon en lanières' : r.P.art}`) : ''}.`,
         `Mélanger avec les ${r.F.court} et la crème dans un plat, saler, poivrer.`,
-        'Parsemer de gruyère et gratiner 20 à 25 minutes.',
+        r.mode === 'airfryer' ? 'Parsemer de gruyère et gratiner 12 à 15 minutes dans l’air fryer.' : 'Parsemer de gruyère et gratiner 20 à 25 minutes.',
       ],
     },
     {
@@ -167,7 +172,12 @@
       id: 'curry', time: 35, mots: ['curry', 'epice', 'asiatique', 'indien'], P: 1, L: 2, F: 1, X: ['oignon', 'ail', 'coco', 'curry', 'huile'], onlyF: ['riz'],
       cat: (r) => catOf(r.P),
       name: (r) => `Curry ${r.P.de} ${auxLegs(r.L)}`,
-      steps: (r) => [
+      steps: (r) => r.mode === 'mijoteuse' ? [
+        `Mettre dans la mijoteuse ${r.P.art}, ${prep(r.L)}, l’oignon et l’ail hachés, le curry et le lait de coco.`,
+        'Saler, poivrer, mélanger et cuire 4 heures en position haute (ou 7 heures en position basse).',
+        r.F.k,
+        'Servir le curry avec le riz.',
+      ] : [
         r.F.k,
         `Faire revenir l’oignon et l’ail hachés dans l’huile, ajouter le curry et torréfier 1 minute.`,
         r.P.k ? `Ajouter ${r.P.art} et cuire ${r.P.k}.` : `Ajouter ${r.P.art}.`,
@@ -178,11 +188,11 @@
     {
       id: 'soupe', time: 35, mots: ['soupe', 'hiver', 'leger', 'reconfortant'], P: 0, L: 2, F: 1, X: ['oignon', 'bouillon', 'creme'], onlyF: ['pommes de terre'], pain: true,
       cat: () => 'Soupe',
-      name: (r) => `Soupe de ${legs(r.L)}`,
+      name: (r) => (r.mode === 'paysanne' ? `Soupe paysanne de ${legs(r.L)}` : `Velouté de ${legs(r.L)}`),
       steps: (r) => [
         `Éplucher et couper ${prep(r.L)}, ainsi que les pommes de terre en cubes.`,
-        'Faire revenir l’oignon émincé, ajouter les légumes et le bouillon.',
-        'Cuire 20 minutes à couvert, puis mixer finement.',
+        r.mode === 'cocotte' ? 'Faire revenir l’oignon émincé dans la cocotte-minute, ajouter les légumes et le bouillon.' : 'Faire revenir l’oignon émincé, ajouter les légumes et le bouillon.',
+        r.mode === 'cocotte' ? 'Fermer et cuire 8 minutes sous pression, puis mixer finement.' : r.mode === 'paysanne' ? 'Cuire 25 minutes à couvert, en petits morceaux (sans mixer).' : 'Cuire 20 minutes à couvert, puis mixer finement.',
         'Ajouter la crème, rectifier l’assaisonnement.',
         'Dorer le pain en cubes à la poêle et parsemer sur la soupe.',
       ],
@@ -201,8 +211,13 @@
     {
       id: 'four', time: 45, mots: ['four', 'plaque', 'simple'], P: 1, L: 1, F: 1, X: ['olive', 'herbes', 'oignon'], onlyF: ['pommes de terre', 'patates douces'],
       cat: (r) => (r.P.g === 'poisson' ? 'Poisson' : 'Gratin & four'),
-      name: (r) => `${r.P.plat || cap(r.P.court)} au four, ${r.F.court} et ${r.L[0].court}`,
-      steps: (r) => [
+      name: (r) => `${r.P.plat || cap(r.P.court)} ${r.mode === 'airfryer' ? 'à l’air fryer' : 'au four'}, ${r.F.court} et ${r.L[0].court}`,
+      steps: (r) => r.mode === 'airfryer' ? [
+        `Couper les ${r.F.court} en quartiers, les mélanger avec l’huile, du sel et les herbes.`,
+        'Cuire 15 minutes à 200 °C dans l’air fryer en secouant le panier à mi-cuisson.',
+        `Ajouter ${prep(r.L)} et ${r.P.art}, poursuivre ${r.P.g === 'poisson' ? '10 à 12' : '12 à 15'} minutes à 190 °C.`,
+        'Servir bien chaud.',
+      ] : [
         'Préchauffer le four à 200 °C.',
         `Couper les ${r.F.court} en quartiers et l’oignon en morceaux, huiler, saler et enfourner 20 minutes.`,
         `Ajouter ${prep(r.L)} et ${r.P.court === 'feta' ? 'la feta en bloc' : r.P.court} sur la plaque, parsemer d’herbes.`,
@@ -215,11 +230,11 @@
       cat: (r) => catOf(r.P),
       name: (r) => `Papillote ${r.P.de} ${r.L[0].aux}, riz`,
       steps: (r) => [
-        'Préchauffer le four à 200 °C.',
+        r.mode === 'airfryer' ? 'Préchauffer l’air fryer à 180 °C.' : 'Préchauffer le four à 200 °C.',
         r.F.k,
         `Déposer ${prep(r.L)} sur une feuille de papier cuisson, poser ${r.P.art} dessus.`,
         'Arroser d’huile d’olive et de jus de citron, saler, poivrer, refermer la papillote.',
-        `Cuire 15 à 18 minutes et servir avec le riz.`,
+        r.mode === 'airfryer' ? 'Cuire 12 à 14 minutes dans le panier de l’air fryer et servir avec le riz.' : 'Cuire 15 à 18 minutes et servir avec le riz.',
       ],
     },
     {
@@ -252,12 +267,61 @@
       steps: (r) => [
         r.F.k,
         `Couper ${prep(r.L)}.`,
-        `Saisir ${r.P.art} dans un wok très chaud${r.P.k ? ' ' + r.P.k : ''}, réserver.`,
+        `Saisir ${r.P.art} dans ${r.tools.has('wok') ? 'un wok' : 'une grande poêle'} très chaud${r.tools.has('wok') ? '' : 'e'}${r.P.k ? ' ' + r.P.k : ''}, réserver.`,
         'Sauter les légumes et l’ail haché 4 à 5 minutes à feu vif.',
         `Ajouter les nouilles, ${r.P.art} et la sauce soja, mélanger 2 minutes et servir.`,
       ],
     },
+    {
+      id: 'airfryer', time: 30, mots: ['air fryer', 'airfryer', 'frites', 'croustillant', 'rapide'], P: 1, L: 1, F: 1, X: ['huile', 'herbes'], onlyF: ['pommes de terre'],
+      cat: (r) => catOf(r.P),
+      name: (r) => `${r.P.plat || cap(r.P.court)} à l’air fryer, frites et ${r.L[0].court}`,
+      steps: (r) => [
+        'Couper les pommes de terre en frites, les rincer, bien les sécher et les mélanger avec la moitié de l’huile.',
+        'Cuire les frites 15 minutes à 200 °C dans l’air fryer, en secouant le panier à mi-cuisson.',
+        `Badigeonner ${r.P.art} et ${prep(r.L)} du reste d’huile, saler, poivrer, parsemer d’herbes.`,
+        `Ajouter dans le panier et cuire encore ${r.P.g === 'poisson' ? '8 à 10' : '12 à 15'} minutes à 190 °C.`,
+        'Servir aussitôt, bien croustillant.',
+      ],
+    },
+    {
+      id: 'mijote', time: 30, mots: ['mijote', 'mijoteuse', 'cocotte', 'ragout', 'hiver', 'reconfortant'], P: 1, L: 2, F: 1, X: ['oignon', 'ail', 'bouillon', 'herbes'], onlyF: ['pommes de terre'],
+      cat: (r) => catOf(r.P),
+      name: (r) => `Mijoté ${r.P.de} ${auxLegs(r.L)}`,
+      steps: (r) => r.mode === 'cocotte' ? [
+        `Dans la cocotte-minute, faire dorer ${r.P.art} avec l’oignon émincé.`,
+        `Ajouter ${prep(r.L)}, les pommes de terre en gros cubes, l’ail, les herbes et le bouillon.`,
+        'Fermer et cuire 25 minutes sous pression.',
+        'Laisser la pression retomber, saler, poivrer et servir.',
+      ] : [
+        `Couper ${prep(r.L)} et les pommes de terre en gros cubes, émincer l’oignon et l’ail.`,
+        `Tout mettre dans la mijoteuse avec ${r.P.art}, les herbes et le bouillon.`,
+        'Cuire 6 heures en position basse (ou 3 h 30 en position haute).',
+        'Saler, poivrer et servir. Se prépare le matin, prêt le soir.',
+      ],
+    },
   ];
+
+  /* ---------- Ustensiles ----------
+     Chaque modèle liste ses façons de faire (modes) et les ustensiles qu'elles demandent ;
+     le premier mode possible avec les ustensiles cochés dans Réglages est retenu. */
+  const MODES = {
+    poele: [{ m: 'poele', t: ['plaques'] }],
+    pates: [{ m: 'poele', t: ['plaques'] }],
+    gratin: [{ m: 'four', t: ['four', 'plaques'] }, { m: 'airfryer', t: ['airfryer', 'plaques'] }],
+    risotto: [{ m: 'poele', t: ['plaques'] }],
+    curry: [{ m: 'poele', t: ['plaques'] }, { m: 'mijoteuse', t: ['mijoteuse'] }],
+    soupe: [{ m: 'veloute', t: ['plaques', 'blender'] }, { m: 'cocotte', t: ['cocotte', 'blender'] }, { m: 'paysanne', t: ['plaques'] }],
+    salade: [{ m: 'poele', t: ['plaques'] }],
+    four: [{ m: 'four', t: ['four'] }, { m: 'airfryer', t: ['airfryer'] }],
+    papillote: [{ m: 'four', t: ['four', 'plaques'] }, { m: 'airfryer', t: ['airfryer', 'plaques'] }],
+    quiche: [{ m: 'four', t: ['four', 'plaques'] }],
+    omelette: [{ m: 'poele', t: ['plaques'] }],
+    wok: [{ m: 'poele', t: ['plaques'] }],
+    airfryer: [{ m: 'airfryer', t: ['airfryer'] }],
+    mijote: [{ m: 'mijoteuse', t: ['mijoteuse'] }, { m: 'cocotte', t: ['cocotte'] }],
+  };
+  const modeFor = (tpl, tools) => (MODES[tpl.id] || [{ m: 'poele', t: ['plaques'] }]).find((x) => x.t.every((t) => tools.has(t))) || null;
 
   /* ---------- Préparation des candidats ---------- */
   const allowed = (n) => !E.conflicts({ ingredients: [{ name: n }] }).length;
@@ -299,7 +363,9 @@
     let Ps = ctx.P.filter(fits);
     if (tpl.onlyP) Ps = Ps.filter((p) => tpl.onlyP.includes(p.court));
     const Ls = ctx.L.filter(fits);
-    const r = { tpl, L: [], P: null, P2: null, F: null };
+    const mode = modeFor(tpl, ctx.tools);
+    if (!mode) return null;
+    const r = { tpl, L: [], P: null, P2: null, F: null, mode: mode.m, tools: ctx.tools };
     if (tpl.needP) {
       const egg = ctx.P.find((p) => tpl.needP.includes(p.court));
       if (!egg) return null;
@@ -329,6 +395,20 @@
     // Le hasard compte assez pour varier d'un clic à l'autre, sans écraser l'intérêt des promotions.
     r.score = [...main, ...xs].reduce((n, x) => n + x.score, 0) + Math.random() * 6;
     return r;
+  }
+
+  /* ---------- Photo d'illustration (Unsplash, voir assets/img/recettes/CREDITS.md) ---------- */
+  const IMG = (f) => `assets/img/recettes/${f}.webp`;
+  function photoFor(r) {
+    const id = r.tpl.id;
+    const fish = r.P && r.P.g === 'poisson';
+    if (id === 'pates') return IMG(r.sauce === 'creme' ? 'plat-pates-creme' : r.F.court === 'spaghetti' ? 'spaghetti-bolognaise' : 'penne-thon-tomates-olives');
+    if (id === 'soupe') return IMG(r.mode === 'paysanne' ? 'plat-soupe-paysanne' : 'soupe-courge-croutons');
+    if (id === 'salade') return IMG(r.F.court === 'lentilles' ? 'salade-lentilles-feta-courge' : 'plat-salade-composee');
+    if (id === 'four') return IMG(r.mode === 'airfryer' ? 'plat-airfryer' : fish ? 'saumon-pommes-de-terre-brocoli' : r.P.court === 'saucisses' ? 'saucisses-puree-carottes' : 'cuisses-poulet-legumes-hiver');
+    if (id === 'poele') return IMG(r.F.court === 'riz' && r.P.court === 'poulet' ? 'emince-poulet-creme-riz' : 'plat-poelee');
+    const fixe = { gratin: 'gratin-cornettes-jambon', risotto: 'risotto-champignons', curry: 'curry-pois-chiches-epinards', papillote: 'plat-papillote', quiche: 'quiche-poireaux-lardons', omelette: 'plat-omelette', wok: 'wok-tofu-nouilles', airfryer: 'plat-airfryer', mijote: 'plat-mijote' };
+    return fixe[id] ? IMG(fixe[id]) : '';
   }
 
   const roundQty = (q, u) => {
@@ -364,94 +444,12 @@
       prepTime: r.tpl.time,
       servings: people,
       ingredients,
-      steps: r.tpl.steps(r).filter(Boolean),
+      steps: r.tpl.steps(r).filter(Boolean).map((st) => (r.tools.has('cuiseur-riz') ? st.replace('Cuire le riz selon les indications du paquet.', 'Cuire le riz au cuiseur à riz.') : st)),
+      photo: photoFor(r),
+      tools: (modeFor(r.tpl, r.tools) || { t: [] }).t,
       favorite: false,
-      photo: '',
       validated: false,
       source: 'cabas',
-      demo: false,
-      createdAt: Date.now(),
-    };
-  }
-
-  /* ---------- Livre de cuisine (Wikilivres, licence CC BY-SA 4.0) ----------
-     data/recettes.json est produit par outils/recettes.py. Chaque recette garde le lien
-     vers sa page d'origine, affiché avec la recette. */
-  let LIB = null;
-  async function loadLibrary() {
-    if (LIB) return LIB;
-    try {
-      const res = await fetch('data/recettes.json');
-      const d = await res.json();
-      LIB = (d.recettes || []).map((r) => ({ ...r, _t: C.norm([r.name, r.category, ...(r.tags || []), ...r.ingredients.map((i) => i.name)].join(' ')) }));
-    } catch (e) {
-      LIB = [];
-    }
-    return LIB;
-  }
-
-  const sameFood = (a, b) => {
-    const ta = C.tokens(a);
-    const tb = C.tokens(b);
-    return (ta.length && ta.every((t) => tb.includes(t))) || (tb.length && tb.every((t) => ta.includes(t)));
-  };
-  // Intérêt d'une recette du livre : promotions (gros rabais d'abord), frigo, envie, simplicité.
-  function scoreLib(r, ctx) {
-    if (E.conflicts(r).length) return null;
-    let score = 1 + Math.random() * 4;
-    const uses = [];
-    r.ingredients.forEach((i) => {
-      const m = ctx.promos.length ? E.promoFor(i.name, ctx.promos) : null;
-      if (m) {
-        const pct = Math.round((1 - m.ratio) * 100);
-        score += (['vp', 'fl', 'lait'].includes(i.cat) ? 1.5 : 0.5) + pct / 12;
-        uses.push({ ing: i, promo: m.promo, pct });
-      }
-      const f = ctx.fridge.find((x) => sameFood(i.name, `${x.name} ${x.generic || ''}`.trim()) || sameFood(i.name, x.name));
-      if (f) {
-        score += 5 + (E.expiresIn(f) != null && E.expiresIn(f) <= 3 ? 3 : 0);
-        uses.push({ ing: i, fridge: f });
-      }
-    });
-    if (r.ingredients.length > 12) score -= 1.5;
-    if (r.prepTime > 90) score -= 2;
-    return { r, score, uses, lib: true };
-  }
-
-  // Recette du livre adaptée au nombre de personnes, avec promotions et frigo repérés.
-  function fromLib(x, people) {
-    const r = x.r;
-    const k = people / (r.servings || 4);
-    const promoTxt = x.uses.filter((u) => u.promo).map((u) => `${u.ing.name.toLowerCase()} (${C.storeById(u.promo.store).name}${u.pct ? ` −${u.pct} %` : ''})`);
-    const frigoTxt = x.uses.filter((u) => u.fridge).map((u) => u.fridge.name.toLowerCase());
-    const why = [promoTxt.length ? `En promotion : ${et(promoTxt.slice(0, 5))}.` : 'Avec des articles habituels.', frigoTxt.length ? `Du frigo : ${et(frigoTxt)}.` : ''].filter(Boolean).join(' ');
-    return {
-      id: C.uid(),
-      name: r.name,
-      description: r.description || '',
-      why,
-      category: r.category,
-      prepTime: r.prepTime,
-      servings: people,
-      ingredients: r.ingredients.map((i) => {
-        const u = x.uses.find((y) => y.ing === i);
-        return {
-          name: i.name,
-          qty: i.qty ? roundQty(i.qty * k, i.unit) : 0,
-          unit: i.unit,
-          cat: i.cat,
-          price: Math.round(i.price * k * 20) / 20,
-          ...(u && u.promo ? { promoId: u.promo.id } : {}),
-          ...(x.uses.some((y) => y.ing === i && y.fridge) ? { frigo: true } : {}),
-        };
-      }),
-      steps: r.steps,
-      favorite: false,
-      photo: r.photo || '',
-      validated: false,
-      source: 'wikilivres',
-      sourceUrl: r.url,
-      license: 'CC BY-SA 4.0',
       demo: false,
       createdAt: Date.now(),
     };
@@ -461,97 +459,64 @@
   C.cuisine = {
     // Aliments connus (sert aussi à reconnaître les articles d'un ticket de caisse).
     foods: [...P, ...L, ...F, ...Object.values(X)].filter((x, i, a) => a.findIndex((y) => y.n === x.n) === i),
+    // Types de plats faisables avec les ustensiles donnés (pour l'affichage dans Générer).
+    possible: (tools) => T.filter((t) => modeFor(t, new Set(tools))).map((t) => t.id),
     // Renvoie des idées de recettes différentes, sans rien envoyer sur Internet.
-    loadLibrary,
-    // Recherche par nom ou ingrédient dans le livre (« lasagnes », « poireaux »…).
-    async search(q, { people = 2, usePromos = true, fridgeIds = [] } = {}) {
-      const library = await loadLibrary();
-      const words = C.tokens(q).filter((x) => x.length > 1);
-      if (!words.length) return [];
-      const ctx = context({ usePromos, fridgeIds });
-      return library
-        .filter((r) => words.every((x) => r._t.includes(x)))
-        .map((r) => scoreLib(r, ctx))
-        .filter(Boolean)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 12)
-        .map((x) => fromLib(x, people));
-    },
-    size: () => (LIB ? LIB.length : null),
-    async generate({ count: n = 3, people = 2, maxTime = 0, wish = '', usePromos = true, fridgeIds = [], avoid = [] }) {
-      const library = await loadLibrary();
+    generate({ count: n = 3, people = 2, maxTime = 0, wish = '', usePromos = true, fridgeIds = [], avoid = [], tools }) {
       // avoid : idées affichées juste avant (on change de plat et de protéine principale)
       const key = (name) => C.tokens(name).sort().join(' ');
       const prevT = new Set(avoid.map((r) => r.tpl));
       const prevP = new Set(avoid.map((r) => r.main).filter(Boolean));
       const ctx = context({ usePromos, fridgeIds });
+      ctx.tools = new Set(tools || C.S.settings.tools || []);
       const w = C.norm(wish);
-      let tpls = T.filter((t) => !maxTime || t.time <= maxTime);
+      let tpls = T.filter((t) => (!maxTime || t.time <= maxTime) && modeFor(t, ctx.tools));
+      if (!tpls.length) return { recipes: [], note: 'Aucun plat possible avec ces ustensiles et ce temps. Vérifiez vos ustensiles dans Réglages.' };
       const vege = /vege|sans viande/.test(w);
       const fast = /rapide|vite|express/.test(w);
-      const words = C.tokens(w).filter((x) => x.length > 2 && !/vege|rapide|vite|express|sans|viande|recette|plat/.test(x));
-      if (vege) {
-        ctx.P = ctx.P.filter((p) => p.g === 'vege');
-      }
-      if (fast) tpls = tpls.filter((t) => t.time <= 30);
+      if (vege) ctx.P = ctx.P.filter((p) => p.g === 'vege');
+      if (fast && tpls.some((t) => t.time <= 30)) tpls = tpls.filter((t) => t.time <= 30);
       const wanted = tpls.filter((t) => t.mots.some((m) => w.includes(m)) || w.includes(t.id));
       if (wanted.length) tpls = wanted;
-      else if (words.length) tpls = []; // envie précise : on cherche d'abord dans le livre
+      // Ingrédient demandé dans l'envie (« poireaux », « saumon ») : on le favorise.
+      const words = C.tokens(w).filter((x) => x.length > 2);
+      const boost = (r) => [r.P, r.P2, r.F, ...r.L].filter(Boolean).some((x) => C.tokens(x.n).some((t) => words.includes(t)));
 
       const known = new Set([...C.S.recipes.map((r) => r.name), ...avoid.map((r) => r.name)].map(key));
       const tries = [];
-      // Recettes du livre
-      const limit = maxTime || (fast ? 30 : 0);
-      library.forEach((rec) => {
-        if (limit && rec.prepTime > limit) return;
-        if (vege && E.hasMeat(rec)) return;
-        if (words.length && !words.some((x) => rec._t.includes(x))) return;
-        if (known.has(key(rec.name))) return;
-        const x = scoreLib(rec, ctx);
-        if (!x) return;
-        if (prevT.has('lib:' + rec.category)) x.score -= 2;
-        tries.push(x);
-      });
-      for (let i = 0; i < (tpls.length ? 400 : 0); i++) {
+      for (let i = 0; i < 500; i++) {
         const r = attempt(rnd(tpls), ctx);
         if (!r) continue;
         if (prevT.has(r.tpl.id)) r.score -= 4;
         if (r.P && prevP.has(r.P.court)) r.score -= 6;
-        r.score -= 4; // le livre de recettes passe avant les plats composés
+        if (words.length && boost(r)) r.score += 12;
         tries.push(r);
       }
       tries.sort((a, b) => b.score - a.score);
-      // Variété : des catégories de plats et des protéines différentes d'une idée à l'autre.
+      // Variété : un type de plat et une protéine principale différents par idée, si possible.
       const out = [];
-      const usedC = new Set();
+      const usedT = new Set();
       const usedP = new Set();
       const usedName = new Set();
-      const cat = (x) => (x.lib ? x.r.category : x.tpl.cat(x));
-      const nm = (x) => key(x.lib ? x.r.name : x.tpl.name(x));
-      const hasLib = tries.some((x) => x.lib);
       for (const pass of [0, 1, 2]) {
-        for (const x of tries) {
+        for (const r of tries) {
           if (out.length >= n) break;
-          const name = nm(x);
-          // au plus un plat composé par série (sauf frigo coché, où ils utilisent mieux les restes)
-          if (pass < 2 && hasLib && !x.lib && out.filter((y) => !y.lib).length >= (ctx.fridge.length ? 2 : 1)) continue;
+          const name = key(r.tpl.name(r));
           if (usedName.has(name) || known.has(name)) continue;
-          if (pass < 2 && usedC.has(cat(x))) continue;
-          if (pass < 1 && !x.lib && x.P && usedP.has(x.P.court)) continue;
-          out.push(x);
-          usedC.add(cat(x));
-          if (!x.lib && x.P) usedP.add(x.P.court);
+          if (pass < 2 && usedT.has(r.tpl.id)) continue;
+          if (pass < 1 && r.P && usedP.has(r.P.court)) continue;
+          out.push(r);
+          usedT.add(r.tpl.id);
+          if (r.P) usedP.add(r.P.court);
           usedName.add(name);
         }
       }
-      const recipes = out
-        .map((x) => (x.lib ? { ...fromLib(x, people), tpl: 'lib:' + x.r.category, main: '' } : { ...build(x, people), tpl: x.tpl.id, main: x.P ? x.P.court : '' }))
-        .filter((rec) => !E.conflicts(rec).length);
+      const recipes = out.map((r) => ({ ...build(r, people), tpl: r.tpl.id, main: r.P ? r.P.court : '' })).filter((rec) => !E.conflicts(rec).length);
       const unused = ctx.fridge.filter((f) => !recipes.some((rec) => rec.ingredients.some((i) => i.frigo && C.tokens(i.name).every((t) => C.tokens(f.name).includes(t)))));
       return {
         recipes,
         unusedFridge: unused.map((f) => f.name),
-        note: recipes.length ? '' : 'Aucune recette ne correspond. Essayez une autre envie, un autre temps, ou cochez plus d’aliments.',
+        note: recipes.length ? '' : 'Pas assez de produits compatibles avec vos préférences. Ajoutez des aliments au frigo ou assouplissez l’envie particulière.',
       };
     },
   };

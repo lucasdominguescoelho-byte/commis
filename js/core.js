@@ -38,6 +38,18 @@
     { name: 'Gratin & four', hue: 40 },
     { name: 'Autre', hue: 300 },
   ];
+  // Ustensiles de cuisine : les recettes générées n'utilisent que ceux cochés dans Réglages.
+  C.TOOLS = [
+    { id: 'plaques', name: 'Plaques de cuisson' },
+    { id: 'four', name: 'Four' },
+    { id: 'airfryer', name: 'Air fryer' },
+    { id: 'micro', name: 'Micro-ondes' },
+    { id: 'blender', name: 'Mixeur / blender' },
+    { id: 'mijoteuse', name: 'Mijoteuse' },
+    { id: 'cocotte', name: 'Cocotte-minute' },
+    { id: 'wok', name: 'Wok' },
+    { id: 'cuiseur-riz', name: 'Cuiseur à riz' },
+  ];
   C.UNITS = ['g', 'kg', 'ml', 'dl', 'l', 'pièce', 'c. à soupe', 'c. à café', 'gousse', 'tranche', 'botte', 'boîte', 'sachet', 'pincée'];
   C.DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
   C.DAYS_S = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -182,6 +194,7 @@
     liked: [],
     avoided: [],
     seeded: false,
+    tools: ['plaques', 'four', 'micro', 'blender'],
     promoMeta: null, // dernière synchronisation des promotions (date, état de chaque source)
   };
   const S = (C.S = { settings: { ...C.DEFAULT_SETTINGS }, recipes: [], promotions: [], plans: {}, lists: {}, expenses: [], fridge: [] });
@@ -242,6 +255,10 @@
     }
     S.promotions.filter((p) => p.demo || !valid.includes(p.store)).forEach((p) => C.db.del('promotions', p.id));
     S.promotions = S.promotions.filter((p) => !p.demo && valid.includes(p.store));
+    if (!Array.isArray(S.settings.tools)) {
+      S.settings.tools = C.DEFAULT_SETTINGS.tools.slice();
+      C.db.put('kv', S.settings);
+    }
     // Novembre 2026 : l'onglet Recettes ne montre que les recettes testées et validées.
     // Les exemples passent « à tester » ; les recettes écrites à la main sont considérées validées.
     S.recipes.forEach((r) => {

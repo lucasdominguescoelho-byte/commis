@@ -3,7 +3,7 @@
    - Promotions (data/promotions.json) : réseau d'abord, dernière version connue sinon.
    - Images et icônes de l'app : copie locale d'abord.
    Les photos des produits (sites des magasins) ne passent pas par ici. */
-const CACHE = 'commis-v5';
+const CACHE = 'commis-v6';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/core.js', 'js/seed.js', 'js/engine.js', 'js/sources.js', 'js/ui.js', 'js/generateur.js', 'js/app.js',

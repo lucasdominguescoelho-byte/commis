@@ -19,3 +19,16 @@ Recadrées en 4:3 (1200 × 900) et converties en WebP par le service d'images d'
 | `saucisses-puree-carottes.webp` | `photo-1675774648717-8f0570bc40b7` |
 | `wok-tofu-nouilles.webp` | `photo-1655427221151-870cc71a63c2` |
 | `cuisses-poulet-legumes-hiver.webp` | `photo-1742455259385-654d727825f1` |
+
+Photos d'illustration des recettes générées par Commis (même licence Unsplash) :
+
+| Fichier | Photo Unsplash |
+| --- | --- |
+| `plat-poelee.webp` | `photo-1628025114288-1693ac3bcac1` |
+| `plat-pates-creme.webp` | `photo-1555949258-eb67b1ef0ceb` |
+| `plat-soupe-paysanne.webp` | `photo-1612108438004-257c47560118` |
+| `plat-salade-composee.webp` | `photo-1646502094504-a27b89b13aeb` |
+| `plat-airfryer.webp` | `photo-1709164632728-8a943456dd0a` |
+| `plat-papillote.webp` | `photo-1671393012112-a888d480979d` |
+| `plat-omelette.webp` | `photo-1766146431872-a4472ccd3889` |
+| `plat-mijote.webp` | `photo-1664741662725-bd131742b7b7` |

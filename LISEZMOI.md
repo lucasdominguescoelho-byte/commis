@@ -62,7 +62,9 @@ La caméra demande que Commis soit ouvert en HTTPS (l'adresse GitHub Pages) et l
 `js/generateur.js` compose les recettes sur l'appareil, sans rien envoyer sur Internet et sans clé :
 
 - une base d'environ 60 ingrédients courants (portion par personne, prix habituel, cuisson) ;
-- 12 modèles de plats : poêlée, pâtes, gratin, risotto, curry, soupe, salade, plaque au four, papillote, quiche, omelette, wok ;
+- 14 modèles de plats : poêlée, pâtes, gratin, risotto, curry, soupe, salade, plaque au four, papillote, quiche, omelette, wok, air fryer, mijoté ;
+- vos **ustensiles** (Réglages) : seuls les plats faisables sont proposés, et les étapes s'adaptent (air fryer au lieu du four, velouté mixé ou soupe en morceaux sans mixeur, mijoteuse ou cocotte-minute, cuiseur à riz…) ;
+- une **photo d'illustration** par type de plat (Unsplash, voir `assets/img/recettes/CREDITS.md`) ;
 - pour chaque idée, Commis essaie des centaines de combinaisons et garde celles qui utilisent le plus de produits en promotion (gros rabais d'abord) et d'aliments du frigo cochés, en respectant régime, allergies et aliments évités. « Autres idées » change de plat et de protéine principale.
 
 C'est fiable et simple, mais moins inventif qu'un chef : pour élargir le répertoire, ajouter des ingrédients (tableaux `P`, `L`, `F`) ou des modèles (tableau `T`).
@@ -94,9 +96,3 @@ Aucune dépendance, aucune compilation : HTML, CSS et JavaScript simples ; Pytho
 | `js/views/*.js` | Une page par fichier |
 | `outils/promotions.py` | Récupération et traduction des promotions |
 | `.github/workflows/promotions.yml` | Mise à jour quotidienne et publication |
-
-## Livre de recettes (Wikilivres)
-
-`data/recettes.json` (environ 550 plats salés) est importé par `outils/recettes.py` depuis le [Livre de cuisine de Wikilivres](https://fr.wikibooks.org/wiki/Livre_de_cuisine). Auteurs : contributeurs de Wikilivres. Licence : [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr). Modifications : texte simplifié, quantités extraites, prix estimés. Ce fichier est diffusé sous la même licence. Chaque recette garde le lien vers sa page d'origine, affiché dans l'app ; les photos viennent de Wikimedia Commons.
-
-« Générer » pioche d'abord dans ce livre (promotions en priorité, articles habituels sinon), complété par quelques plats composés par Commis. On peut aussi chercher une recette par nom ou ingrédient. Pour mettre le livre à jour : `python3 outils/recettes.py`.
