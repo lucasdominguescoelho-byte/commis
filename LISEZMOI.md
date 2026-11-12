@@ -4,7 +4,7 @@ Outil personnel pour planifier les repas de la semaine avec les promotions de **
 
 ## Ouvrir Commis
 
-- **En ligne (ordinateur et téléphone)** : l'adresse GitHub Pages du dépôt, par exemple `https://<utilisateur>.github.io/cabas/`.
+- **En ligne (ordinateur et téléphone)** : **https://lucasdominguescoelho-byte.github.io/commis/** (sur iPhone : Safari › Partager › Sur l'écran d'accueil).
 - **Sur le téléphone** : ouvrir l'adresse dans Safari, puis *Partager → Sur l'écran d'accueil*. Commis s'ouvre alors comme une app et fonctionne aussi hors ligne (la liste de courses reste disponible au magasin).
 - **En local** : double-cliquer sur `Ouvrir Commis.command` (serveur sur `http://localhost:8765`). Ouvrir `index.html` directement fonctionne aussi, mais sans les promotions.
 
