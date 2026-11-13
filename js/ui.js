@@ -33,6 +33,8 @@
     move: '<path d="M4 8.5h13.5l-3-3M20 15.5H6.5l3 3"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     expand: '<path d="M4.5 9.5v-5h5M14.5 4.5h5v5M19.5 14.5v5h-5M9.5 19.5h-5v-5"/>',
+    moon: '<path d="M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1z"/>',
+    sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
     fridge: '<rect x="5.5" y="3" width="13" height="18" rx="2.5"/><path d="M5.5 10h13M8.5 6v1.5M8.5 13v3"/>',
     barcode: '<path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17M8 8v8M11 8v8M14 8v8M16.5 8v8"/>',
@@ -94,11 +96,12 @@
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     const html = () => (typeof body === 'function' ? body() : body);
+    const footHtml = () => (typeof foot === 'function' ? foot() : foot); // le pied peut changer avec le contenu
     wrap.innerHTML = `<div class="sheet-bg" data-close></div>
       <section class="sheet ${size ? 'sheet--' + size : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" tabindex="-1">
         <header class="sheet-h"><div><h2>${esc(title)}</h2>${sub ? `<p>${sub}</p>` : ''}</div><button class="ibtn" data-close aria-label="Fermer">${icon('x')}</button></header>
         <div class="sheet-b">${html()}</div>
-        ${foot ? `<footer class="sheet-f">${foot}</footer>` : ''}
+        ${foot ? `<footer class="sheet-f">${footHtml()}</footer>` : ''}
       </section>`;
     document.getElementById('layer').appendChild(wrap);
     document.body.style.overflow = 'hidden';
@@ -107,7 +110,13 @@
     const api = {
       el: wrap,
       body: wrap.querySelector('.sheet-b'),
-      refresh: typeof body === 'function' ? () => { const h = html(); if (h == null) api.close(); else api.body.innerHTML = h; } : null,
+      refresh: typeof body === 'function' ? () => {
+        const h = html();
+        if (h == null) return api.close();
+        api.body.innerHTML = h;
+        const f = typeof foot === 'function' && wrap.querySelector('.sheet-f');
+        if (f) f.innerHTML = footHtml();
+      } : null,
       close() {
         if (closed) return;
         closed = true;

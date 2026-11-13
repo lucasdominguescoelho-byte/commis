@@ -29,6 +29,9 @@
         ${block('Foyer', 'Nombre de personnes à table. Les quantités et les coûts des nouveaux repas planifiés sont calculés pour ce nombre.',
           `<div><div class="step"><button data-act="set.people" data-d="-1" aria-label="Moins">${icon('minus', 16)}</button><b>${st.household}</b><button data-act="set.people" data-d="1" aria-label="Plus">${icon('plus', 16)}</button><span>personne${st.household > 1 ? 's' : ''}</span></div></div>`)}
 
+        ${block('Apparence', 'Le mode nuit assombrit l’app et la cuisine 3D, avec une lumière chaude de lampe. En automatique, il s’allume de 20 h à 7 h.',
+          `<div class="chips">${[['jour', 'Jour'], ['nuit', 'Nuit'], ['auto', 'Automatique']].map(([id, label]) => `<button class="chip ${(st.theme || 'jour') === id ? 'is-on' : ''}" data-act="set.theme" data-v="${id}" aria-pressed="${(st.theme || 'jour') === id}">${label}</button>`).join('')}</div>`)}
+
         ${block('Magasins fréquentés', 'Seules les promotions de ces enseignes comptent dans les coûts, la liste de courses et le planning proposé.',
           `<div class="chips">${C.STORES.map((s) => `<button class="chip ${st.stores.includes(s.id) ? 'is-on' : ''}" data-act="set.store" data-v="${s.id}" aria-pressed="${st.stores.includes(s.id)}"><i style="background:${s.color}"></i>${s.name}</button>`).join('')}</div>`)}
 
@@ -75,6 +78,7 @@
   };
 
   Object.assign(C.acts, {
+    'set.theme': (el) => C.save.settings({ theme: el.dataset.v }),
     'set.people': (el) => C.save.settings({ household: Math.max(1, Math.min(12, C.S.settings.household + Number(el.dataset.d))) }),
     'set.store': (el) => toggle('stores', el.dataset.v),
     'set.diet': (el) => C.save.settings({ diets: E.toggleDiet(C.S.settings.diets, el.dataset.v) }),

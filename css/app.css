@@ -53,7 +53,7 @@ img { display: block; max-width: 100%; }
 /* ---------- Structure ---------- */
 .app { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); min-height: 100dvh; }
 .main { min-width: 0; }
-.view { width: 100%; max-width: 1240px; margin: 0 auto; padding: 44px clamp(24px, 4vw, 56px) 96px; outline: none; }
+.view { width: 100%; max-width: 1240px; margin: 0 auto; padding: 44px clamp(24px, 4vw, 56px) 96px; outline: none; overflow-x: clip; /* les infobulles cachées des graphiques ne font pas défiler la page */ }
 
 .side {
   position: sticky; top: 0; height: 100dvh; padding: 26px 14px 18px;
@@ -587,6 +587,9 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .note--test .ic { color: var(--citron-text); }
 .note--err { border: 1px solid #f0c4be; background: var(--danger-wash); color: var(--danger); margin-top: 16px; }
 .note--err .ic { color: var(--danger); }
+.note--ok { margin-top: 14px; border: 1px solid #cfe0c2; background: var(--sauge); color: #2f5b2a; }
+.note--ok .ic { color: #3f7a34; }
+.note--ok b { color: #24481f; }
 .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--raise); cursor: pointer; }
 .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ink); flex: none; }
 .check b { display: block; font-weight: 600; font-size: 14px; }
@@ -975,3 +978,59 @@ html.k3-full .k3 { --k3-b: env(safe-area-inset-bottom); }
   .k3-pin b { font-size: 12px; }
   .k3-hint { bottom: calc(14px + var(--k3-b)); font-size: 12px; }
 }
+
+/* ---------- Mode nuit : sombre et chaud, lumière de lampe orangée ----------
+   Activé par html.nuit (Réglages › Apparence, ou la lune dans la barre). */
+.theme-t .ic + .ic { display: none; }
+html.nuit .theme-t .ic { display: none; }
+html.nuit .theme-t .ic + .ic { display: block; }
+.side-foot .theme-t { align-self: center; }
+html.nuit {
+  color-scheme: dark;
+  --paper: #1b1410; --card: #251b16; --raise: #2c211b; --wash: #33261f;
+  --ink: #f6e6d4; --ink-2: #d2bca4; --ink-3: #9c8672;
+  --line: #3a2b23; --line-2: #2f231c;
+  --citron: #ff8a3d; --citron-d: #f0741f; --citron-ink: #1b1410; --citron-wash: #3b2416; --citron-text: #ffb27a;
+  --danger: #ff7a66; --danger-wash: #3a1d17;
+  --s1: #f2b35a; --s2: #ff7a3d;
+  --peche: #3a2318; --sauge: #26301f; --beurre: #382e17; --ciel: #1f2a31;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px -6px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -12px rgba(0, 0, 0, 0.6);
+}
+html.nuit body { background: var(--paper); }
+/* Surfaces écrites en blanc dans le thème du jour */
+html.nuit :is(.pc, .sheet) { background: var(--card); }
+html.nuit :is(.card--flush, .sum, .meal) { background: #2e211a; }
+html.nuit .side { background: rgba(27, 20, 16, 0.9); }
+html.nuit .tabs { background: rgba(27, 20, 16, 0.94); border-top-color: var(--line); }
+html.nuit .ph-img--produit, html.nuit .pd-v, html.nuit .shot--ticket { background: #efe2d2; }
+html.nuit .badge--frigo { background: #1f2f40; color: #a9c8ee; }
+html.nuit .ob-check { color: #b9d6a8; }
+html.nuit .logo-mark { background: #120c09; box-shadow: 0 0 0 1px #3a2b23; }
+/* Boutons foncés le jour : clairs la nuit, texte sombre */
+html.nuit .btn:not(.btn--ghost):not(.btn--citron):not(.btn--danger) { color: #1b1410; }
+html.nuit :is(.chip.is-on, .toast) { color: #1b1410; }
+html.nuit .nav-i.is-on, html.nuit .nav-i.is-on .ic { color: #1b1410; }
+html.nuit .card--citron .stat-l, html.nuit .card--citron .stat-s { color: rgba(27, 20, 16, 0.8); }
+html.nuit .movebar .btn { background: var(--raise); color: var(--ink); border-color: var(--raise); }
+html.nuit .chart-tip span strong { color: var(--ink); }
+html.nuit .sheet-bg { background: rgba(0, 0, 0, 0.55); }
+html.nuit .ob { background: rgba(0, 0, 0, 0.5); }
+html.nuit select.inp { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23d2bca4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+@media (hover: hover) and (pointer: fine) {
+  html.nuit .btn:not(.btn--ghost):not(.btn--citron):hover { background: #e8d3bd; border-color: #e8d3bd; }
+}
+/* Cuisine 3D la nuit : la pièce baigne dans une lueur orangée sur un fond sombre */
+html.nuit .k3 { background: radial-gradient(60% 50% at 55% 58%, rgba(255, 138, 61, 0.28) 0%, rgba(255, 138, 61, 0) 70%), linear-gradient(180deg, #120c0a 0%, #1f1410 55%, #2c1a11 100%); }
+html.nuit .k3-pin { background: rgba(43, 31, 25, 0.92); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -10px rgba(0, 0, 0, 0.7); }
+html.nuit .k3-pin.is-on { background: #3a2a21; }
+html.nuit .k3-pin.is-on b { color: var(--citron-text); }
+html.nuit :is(.k3-hint, .k3-mode-l) { background: rgba(43, 31, 25, 0.82); color: var(--ink-2); }
+html.nuit .k3-mode .logo-mark { box-shadow: 0 0 0 1px #3a2b23, 0 12px 26px -12px rgba(0, 0, 0, 0.7); }
+/* Passage jour ⇄ nuit en douceur (couleurs seulement) */
+html.theme-fade, html.theme-fade * { transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease !important; }
+@media (prefers-reduced-motion: reduce) { html.theme-fade, html.theme-fade * { transition: none !important; } }
+html.nuit .note--ok { border-color: #3b4d31; color: #c8e2b8; }
+html.nuit .note--ok .ic, html.nuit .note--ok b { color: #d9efcb; }
+html.nuit .note--err { border-color: #5a2a22; }
+html.nuit .note--test { border-color: #5a3420; }

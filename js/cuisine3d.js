@@ -14,7 +14,13 @@
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+  let nightWanted = document.documentElement.classList.contains('nuit');
   C.k3d = {
+    // Mode nuit : les lampes prennent le relais du jour, en douceur
+    night(on) {
+      nightWanted = !!on;
+      if (K) K.nightT = nightWanted ? 1 : 0;
+    },
     // Plein écran ⇄ menu : la caméra glisse vers le nouveau cadrage, en même temps que la barre
     mode() {
       if (K && K.el) reframe(true);
@@ -141,7 +147,8 @@
     const camera = new T.PerspectiveCamera(30, 1, 0.05, 60);
 
     // La lumière entre par le côté ouvert (le séjour) pour que les trois murs restent éclairés.
-    scene.add(new T.HemisphereLight('#FFEBD6', '#C89B80', 1.2));
+    const hemi = new T.HemisphereLight('#FFEBD6', '#C89B80', 1.2);
+    scene.add(hemi);
     const sun = new T.DirectionalLight('#FFD2A0', 2.3); // soleil doré qui entre par le séjour
     sun.position.set(6.5, 4.6, 1.8);
     sun.castShadow = true;
@@ -563,7 +570,8 @@
       room.add(at(glass, x, tableTop + 0.008, z));
     });
     const lamp = group(at(cyl(0.065, 0.075, 0.018, '#FAFAF8', 24), 0, 0.009, 0), at(cyl(0.011, 0.015, 0.2, '#FAFAF8', 12), 0, 0.115, 0));
-    const shade = at(mesh(new T.SphereGeometry(0.115, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat('#FFFFFF', { emissive: '#FFC27A', emissiveIntensity: 0.85 })), 0, 0.2, 0);
+    const shadeMat = mat('#FFFFFF', { emissive: '#FFC27A', emissiveIntensity: 0.85 });
+    const shade = at(mesh(new T.SphereGeometry(0.115, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), shadeMat), 0, 0.2, 0);
     shade.scale.set(1, 0.55, 1);
     lamp.add(shade);
     room.add(at(lamp, TX, tableTop, TZ));
@@ -967,17 +975,16 @@
       },
       { pos: flUp.clone().add(flN.clone().multiplyScalar(0.3)), look: flUp, ctrl: flUp.clone().add(flN.clone().multiplyScalar(1.4)).add(V3(0, 0.35, 0)) });
 
-    /* Tirelire en céramique mate satinée, moulée d'un seul morceau : une sphère dont la surface pousse
-       doucement en groin, en quatre petits pieds et en deux petites oreilles (aucune pièce rapportée).
-       Seuls les yeux, les narines, la fente et la queue sont des détails posés dessus. */
+    /* Tirelire en céramique mate satinée, moulée d'un seul morceau : une boule bien ronde, seulement
+       aplatie dessous là où elle est posée ; la surface pousse doucement en groin et en deux petites
+       oreilles. Seuls les yeux, les narines, la fente et la queue sont des détails posés dessus. */
     const glaze = new T.MeshPhysicalMaterial({ color: '#F3A9BA', roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.6 });
     const PIG_R = 0.08;
-    const PIG_S = V3(1.2, 1, 1.03); // ovale, un peu plus long que haut
+    const PIG_S = V3(1.08, 1, 1.04); // presque une boule
     const bumps = [
       // direction, hauteur, largeur (rad), forme (2 = arrondi, 4 = bout plat aux bords arrondis)
-      [V3(1, -0.06, 0), 0.19, 0.3, 3], // groin
-      ...[1, -1].flatMap((sx) => [1, -1].map((sz) => [V3(0.5 * sx, -0.8, 0.46 * sz), 0.13, 0.26, 2])), // pieds courts et ronds
-      ...[1, -1].map((sz) => [V3(0.4, 0.86, 0.32 * sz), 0.075, 0.17, 2]), // petites oreilles arrondies
+      [V3(1, -0.04, 0), 0.17, 0.3, 3], // groin
+      ...[1, -1].map((sz) => [V3(0.4, 0.86, 0.32 * sz), 0.07, 0.17, 2]), // petites oreilles arrondies
     ].map(([d, a, w, k]) => [d.normalize(), a, w, k]);
     const swell = (dir) => bumps.reduce((acc, [c, a, w, k]) => acc + a * Math.exp(-Math.pow(dir.angleTo(c) / w, k) / 2), 1);
     // point de la surface dans la direction donnée (repère de la tirelire)
@@ -985,6 +992,7 @@
       const d = V3(dx, dy, dz).normalize();
       return d.multiplyScalar(PIG_R * swell(d) + out).multiply(PIG_S);
     };
+    const PIG_CUT = -0.066; // hauteur du plat de pose (sous le centre)
     const pigGeo = new T.SphereGeometry(PIG_R, 128, 96);
     const gp = pigGeo.attributes.position;
     const pv = new T.Vector3();
@@ -992,6 +1000,7 @@
       pv.fromBufferAttribute(gp, i);
       const d = pv.clone().normalize();
       pv.copy(d).multiplyScalar(PIG_R * swell(d)).multiply(PIG_S);
+      if (pv.y < PIG_CUT) pv.y = PIG_CUT + (pv.y - PIG_CUT) * 0.06; // dessous aplati, bord adouci
       gp.setXYZ(i, pv.x, pv.y, pv.z);
     }
     pigGeo.computeVertexNormals();
@@ -1126,7 +1135,7 @@
       },
       { pos: V3(-1.78, 0.9, 0.32), look: V3(-1.92, 0.28, 0.32), ctrl: V3(-0.7, 1.45, 0.4) });
 
-    K = { renderer, scene, camera, room, items, steam, potX, steamBoost: 0, steamPhase: 0, last: 0, tween: null, textures: { postit, board, flyer, book: { right: pageR, left: pageL, fronts } }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, potX, steamBoost: 0, steamPhase: 0, last: 0, tween: null, night: 0, nightT: 0, lights: { hemi, sun, fill, ceiling, lamp: lampLight, hood: hoodLight, shade: shadeMat }, textures: { postit, board, flyer, book: { right: pageR, left: pageL, fronts } }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
@@ -1437,6 +1446,8 @@
     K.ro.observe(el);
     K.anim = null;
     K.tween = null;
+    K.nightT = K.night = nightWanted ? 1 : 0;
+    applyNight(K.night);
     K.hover = null;
     K.steamBoost = 0;
     K.items.forEach((x) => {
@@ -1562,6 +1573,35 @@
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+  // Éclairage du jour (0) à la nuit (1) : le soleil s'efface, plafonnier, lampe de table et hotte
+  // prennent une lumière orangée de soirée
+  const LIGHT = {
+    hemiSky: ['#FFEBD6', '#6B4A3A'],
+    hemiGround: ['#C89B80', '#24150F'],
+    ceiling: ['#FFD7AE', '#FF9A4A'],
+    lamp: ['#FFAE5E', '#FF8A33'],
+    hood: ['#FFD9A8', '#FFB067'],
+  };
+  const mix = (a, b, n) => a + (b - a) * n;
+  const col = (c, pair, n) => c.set(pair[0]).lerp(new T.Color(pair[1]), n);
+  function applyNight(n) {
+    const L = K.lights;
+    L.hemi.intensity = mix(1.2, 0.56, n);
+    col(L.hemi.color, LIGHT.hemiSky, n);
+    col(L.hemi.groundColor, LIGHT.hemiGround, n);
+    L.sun.intensity = mix(2.3, 0.1, n);
+    L.fill.intensity = mix(0.35, 0.05, n);
+    L.ceiling.intensity = mix(1.6, 4.2, n);
+    L.ceiling.distance = mix(6, 8, n);
+    col(L.ceiling.color, LIGHT.ceiling, n);
+    L.lamp.intensity = mix(3.2, 7, n);
+    col(L.lamp.color, LIGHT.lamp, n);
+    L.hood.intensity = mix(5, 10, n);
+    col(L.hood.color, LIGHT.hood, n);
+    L.shade.emissiveIntensity = mix(0.85, 1.9, n);
+    K.renderer.toneMappingExposure = mix(1.12, 1.02, n);
+  }
+
   // Courbe de Bézier quadratique : la caméra passe devant l'objet avant d'y entrer
   const bez = (out, a, c, b, e) => out.set(0, 0, 0).addScaledVector(a, (1 - e) * (1 - e)).addScaledVector(c, 2 * (1 - e) * e).addScaledVector(b, e * e);
 
@@ -1580,6 +1620,12 @@
     }
     K.off.az += (K.offT.az - K.off.az) * 0.06;
     K.off.el += (K.offT.el - K.off.el) * 0.06;
+    // Jour ⇄ nuit : les lumières glissent d'un réglage à l'autre
+    if (Math.abs(K.nightT - K.night) > 0.001) {
+      K.night += (K.nightT - K.night) * Math.min(1, dt * 4);
+      if (Math.abs(K.nightT - K.night) < 0.002) K.night = K.nightT;
+      applyNight(K.night);
+    }
     // Plein écran ⇄ menu : glissement du cadrage
     if (K.tween) {
       const p = clamp01((now - K.tween.t) / 560);

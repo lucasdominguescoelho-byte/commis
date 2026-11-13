@@ -197,6 +197,7 @@
     avoided: [],
     seeded: false,
     tools: ['plaques', 'four', 'micro', 'blender'],
+    theme: 'jour', // 'jour', 'nuit' ou 'auto' (nuit de 20 h à 7 h)
     promoMeta: null, // dernière synchronisation des promotions (date, état de chaque source)
   };
   const S = (C.S = { settings: { ...C.DEFAULT_SETTINGS }, recipes: [], promotions: [], plans: {}, lists: {}, expenses: [], fridge: [] });

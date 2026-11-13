@@ -32,6 +32,28 @@
     else location.hash = hash;
   };
 
+  /* ---------- Mode nuit : ambiance sombre et chaude ---------- */
+  C.night = () => {
+    const t = C.S.settings.theme || 'jour';
+    if (t === 'nuit') return true;
+    if (t !== 'auto') return false;
+    const h = new Date().getHours();
+    return h >= 20 || h < 7;
+  };
+  C.applyTheme = () => {
+    const n = C.night();
+    const html = document.documentElement;
+    html.classList.toggle('nuit', n);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = n ? '#1B1410' : '#FFFAF6';
+    try {
+      localStorage.setItem('commis-nuit', n ? '1' : '0'); // relu dès le chargement (pas d'éclair blanc)
+    } catch (e) {}
+    if (C.k3d && C.k3d.night) C.k3d.night(n);
+  };
+  setInterval(() => C.S.settings.theme === 'auto' && C.applyTheme(), 5 * 60 * 1000);
+  const themeBtn = (size) => `<button class="ibtn theme-t" data-act="theme.toggle" aria-label="Mode nuit" title="Mode nuit">${icon('moon', size)}${icon('sun', size)}</button>`;
+
   function shell(route) {
     const left = C.eng.shopping(C.weekId());
     const toBuy = left.items.length - left.done;
@@ -42,10 +64,10 @@
     document.getElementById('side').innerHTML = `${logo}
       <nav class="nav">${NAV.map((n) => link(n, 'nav-i')).join('')}</nav>
       <div class="side-foot">
-        <nav class="nav">${link({ id: 'reglages', label: 'Réglages', icon: 'settings' }, 'nav-i')}</nav>
+        ${themeBtn(20)}<nav class="nav">${link({ id: 'reglages', label: 'Réglages', icon: 'settings' }, 'nav-i')}</nav>
         <p class="side-note">${C.noStorage ? 'Stockage local indisponible : les données ne seront pas conservées.' : 'Données enregistrées sur cet appareil uniquement.'}</p>
       </div>`;
-    document.getElementById('topbar').innerHTML = `${logo}<div><a class="ibtn ${route.view === 'budget' ? 'is-on' : ''}" href="#/budget" aria-label="Budget">${icon('wallet', 22)}</a><a class="ibtn ${route.view === 'reglages' ? 'is-on' : ''}" href="#/reglages" aria-label="Réglages">${icon('settings', 22)}</a></div>`;
+    document.getElementById('topbar').innerHTML = `${logo}<div>${themeBtn(22)}<a class="ibtn ${route.view === 'budget' ? 'is-on' : ''}" href="#/budget" aria-label="Budget">${icon('wallet', 22)}</a><a class="ibtn ${route.view === 'reglages' ? 'is-on' : ''}" href="#/reglages" aria-label="Réglages">${icon('settings', 22)}</a></div>`;
     document.getElementById('tabs').innerHTML = NAV.slice(0, 6).map((n) => link({ ...n, label: n.short || n.label }, 'tab')).join('');
   }
 
@@ -57,6 +79,7 @@
     const changed = id !== last;
     last = id;
     shell(route);
+    C.applyTheme();
     root.classList.toggle('fade', changed);
     root.dataset.view = route.view; // dispositions propres à une page (ex. accueil)
     // Cuisine 3D : plein écran par défaut ; le mode choisi (plein écran ou menu) est gardé
@@ -97,6 +120,17 @@
     'week.next': () => { C.ui.week = C.shiftWeek(C.ui.week, 1); C.ui.moving = null; C.render(); },
     'week.today': () => { C.ui.week = C.weekId(); C.ui.moving = null; C.render(); },
     go: (el) => C.go(el.dataset.href),
+    // Bascule rapide jour ⇄ nuit (sans tout redessiner : la cuisine 3D change d'éclairage en douceur)
+    'theme.toggle': () => {
+      const html = document.documentElement;
+      Object.assign(C.S.settings, { theme: html.classList.contains('nuit') ? 'jour' : 'nuit' });
+      C.db.put('kv', C.S.settings);
+      html.classList.add('theme-fade');
+      C.applyTheme();
+      clearTimeout(C.ui.themeT);
+      C.ui.themeT = setTimeout(() => html.classList.remove('theme-fade'), 450);
+      if (C.route().view === 'reglages') C.render();
+    },
   });
 
   window.addEventListener('hashchange', () => {
