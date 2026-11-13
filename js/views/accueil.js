@@ -40,7 +40,18 @@
     const best = promos.map((p) => ({ p, pct: E.pct(p) })).sort((a, b) => b.pct - a.pct)[0];
     const shop = E.shopping(wid);
     const soon = C.S.fridge.filter((f) => E.expiresIn(f) != null && E.expiresIn(f) <= 3);
+    const plan = C.S.plans[wid];
+    const today = C.today();
+    const dish = (d, slot) => {
+      const s = plan && plan.slots[`${d}-${slot}`];
+      const r = s && C.recipe(s.recipeId);
+      return r ? r.name : '';
+    };
     return {
+      week: C.DAYS_S.map((name, d) => {
+        const iso = C.dayIso(wid, d);
+        return { label: `${name} ${C.parse(iso).getDate()}`, today: iso === today, past: iso < today, midi: dish(d, 'midi'), soir: dish(d, 'soir') };
+      }),
       next: next ? { id: next.r.id, name: next.r.name, when: next.when, people: next.s.servings } : null,
       meals: t.meals,
       savings: t.savings,

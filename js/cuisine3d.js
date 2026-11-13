@@ -1,7 +1,7 @@
 /* Commis — la cuisine 3D de l'accueil : la vraie cuisine de Lucas, en maquette.
    Pièce en coupe construite uniquement avec des formes arrondies (Three.js, gratuit, chargé depuis jsDelivr
    la première fois), d'après ses photos. Chaque objet ouvre une page : frigo → Frigo, livre → Recettes,
-   chevalet sur la table → Planning, cabas → Courses, courrier → Promotions, tirelire → Budget, casserole → le repas du soir.
+   tableau de la semaine → Planning, cabas → Courses, prospectus sur la table → Promotions, tirelire → Budget, casserole → le repas du soir.
    Les objets affichent des informations en direct (plat du soir sur l'ardoise, post-it du frigo, meilleure promo).
    Sans WebGL ou sans réseau, l'accueil revient tout seul à la vue résumé. */
 (function () {
@@ -595,13 +595,13 @@
     bookG.rotation.y = -0.35; // tourné vers le séjour
     add('recettes', 'Recettes', '#/recettes', at(bookG, 0.85, 0.9, -1.9), [0.85, 1.3, -1.88]);
 
-    /* Courrier sur le banc : les prospectus des promotions */
+    /* Prospectus des promotions, posés sur la table (lisibles depuis le séjour) */
     const flyer = paint(384, 512, () => {});
     const flyerMesh = plane(0.2, 0.27, mat('#ffffff', { map: flyer.tex, roughness: 0.9 }));
     flyerMesh.rotation.x = -Math.PI / 2;
     const flyers = group(at(rbox(0.2, 0.006, 0.27, 0.003, '#FFF1C2'), 0.015, 0, 0.02), at(flyerMesh, 0, 0.0045, 0));
-    flyers.rotation.y = -Math.PI / 2 + 0.2;
-    add('promotions', 'Promotions', '#/promotions', at(flyers, -1.62, 0.493, SZ - 0.18), [-1.62, 1.0, SZ - 0.2]);
+    flyers.rotation.y = Math.PI / 2 + 0.22;
+    add('promotions', 'Promotions', '#/promotions', at(flyers, TX - 0.04, tableTop + 0.003, TZ + 0.17), [TX - 0.04, tableTop + 0.28, TZ + 0.17]);
 
     /* Tirelire sur l'étagère du portemanteau */
     const pig = group();
@@ -617,23 +617,20 @@
       pig.add(at(cyl(0.013, 0.013, 0.025, '#F19484', 8), -0.045, 0.012, 0.04 * s));
       pig.add(at(ball(0.007, COL.ink), 0.075, 0.095, 0.025 * s));
     });
-    pig.rotation.y = -0.9; // le groin vers le séjour
+    pig.rotation.y = 0.8; // le groin vers la pièce et le séjour, pas vers le mur
     add('budget', 'Budget', '#/budget', at(pig, -1.5, 1.883, SZ - 0.1), [-1.5, 2.12, SZ - 0.1]);
 
-    /* Le planning sur la table : un chevalet « Ce soir » au centre */
-    const card = paint(512, 320, () => {});
-    const tent = group();
-    [-1, 1].forEach((s) => {
-      const p = plane(0.22, 0.14, s > 0 ? mat('#ffffff', { map: card.tex }) : mat('#F6F1EA'));
-      p.position.set(0, 0.065, s * 0.03);
-      p.rotation.x = s * -0.38;
-      if (s < 0) p.rotation.y = Math.PI;
-      tent.add(p);
-    });
-    tent.rotation.y = Math.PI / 2; // tourné vers le séjour
-    add('planning', 'Planning', '#/planning', at(group(tent), TX, tableTop, TZ + 0.08), [TX, tableTop + 0.32, TZ + 0.08]);
+    /* Le planning de la semaine : un tableau blanc sur le mur du fond, à gauche de la porte d'entrée */
+    const board = paint(640, 512, () => {});
+    const planBoard = group(
+      rbox(0.03, 0.78, 0.98, 0.015, W.oakDark),
+      at(plane(0.92, 0.72, mat('#ffffff', { map: board.tex, roughness: 0.55 })), 0.016, 0, 0).rotateY(Math.PI / 2),
+      at(rbox(0.05, 0.02, 0.36, 0.008, W.oakDark), 0.035, -0.4, 0.2),
+      at(rbox(0.015, 0.015, 0.11, 0.006, COL.tomato), 0.05, -0.385, 0.12)
+    );
+    add('planning', 'Planning', '#/planning', at(planBoard, -2.185, 1.48, 0.72), [-2.15, 1.95, 0.72]);
 
-    /* Cabas à feuillage vert, au sol devant le banc : les courses */
+    /* Cabas à feuillage vert, au sol contre le mur du fond : les courses */
     const leaves = paint(256, 256, (g, w, h) => {
       g.fillStyle = '#FBFBF7';
       g.fillRect(0, 0, w, h);
@@ -655,15 +652,15 @@
     const leek = group(at(cyl(0.022, 0.022, 0.18, '#F4F1E4', 12), 0, 0, 0), at(cyl(0.028, 0.012, 0.16, COL.sage, 12), 0, 0.17, 0));
     leek.rotation.z = 0.35;
     bag.add(bread, at(leek, -0.08, 0.42, 0.02));
-    bag.rotation.y = 0.3;
-    add('courses', 'Courses', '#/courses', at(bag, -1.05, 0, SZ - 0.62), [-1.05, 0.58, SZ - 0.62]);
+    bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
+    add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32]);
 
-    K = { renderer, scene, camera, room, items, steam, textures: { postit, card, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
   function drawLive(info) {
-    const { postit, card, flyer } = K.textures;
+    const { postit, board, flyer } = K.textures;
     postit.redraw((g, w, h) => {
       g.fillStyle = '#FBEFC4';
       g.fillRect(0, 0, w, h);
@@ -676,19 +673,38 @@
       const list = info.soon.length ? info.soon.slice(0, 3) : [`${info.fridge} aliment${info.fridge > 1 ? 's' : ''}`];
       list.forEach((t, i) => g.fillText(String(t).slice(0, 16), 18, 110 + i * 42));
     });
-    card.redraw((g, w, h) => {
-      g.fillStyle = '#FFFDF9';
+    const clip = (g, t, max) => {
+      let x = String(t);
+      if (g.measureText(x).width <= max) return x;
+      while (x.length > 1 && g.measureText(x + '…').width > max) x = x.slice(0, -1);
+      return x + '…';
+    };
+    board.redraw((g, w, h) => {
+      g.fillStyle = '#FDFDFB';
       g.fillRect(0, 0, w, h);
-      g.fillStyle = COL.tomato;
-      g.fillRect(0, 0, w, 14);
-      g.fillStyle = '#8A7E76';
-      g.font = `600 30px ${SANS}`;
-      g.fillText(info.next ? info.next.when.toUpperCase() : 'CETTE SEMAINE', 34, 70);
       g.fillStyle = '#2B2622';
-      g.font = `italic 58px ${SERIF}`;
-      wrap(g, info.next ? info.next.name : 'Rien de prévu', w - 68)
-        .slice(0, 3)
-        .forEach((l, i) => g.fillText(l, 34, 140 + i * 58));
+      g.font = `italic 48px ${SERIF}`;
+      g.fillText('Cette semaine', 28, 58);
+      g.fillStyle = '#8A7E76';
+      g.font = `600 18px ${SANS}`;
+      g.fillText('MIDI', 190, 92);
+      g.fillText('SOIR', 415, 92);
+      const rowH = (h - 108) / 7;
+      (info.week || []).forEach((d, i) => {
+        const y = 102 + i * rowH;
+        if (d.today) {
+          g.fillStyle = 'rgba(228,87,46,0.13)';
+          g.fillRect(14, y, w - 28, rowH - 4);
+        }
+        const base = y + rowH * 0.62;
+        g.fillStyle = d.today ? COL.tomato : d.past ? '#B9AFA8' : '#2B2622';
+        g.font = `600 22px ${SANS}`;
+        g.fillText(d.label, 28, base);
+        g.fillStyle = d.past ? '#B9AFA8' : '#3A322C';
+        g.font = `21px ${SANS}`;
+        g.fillText(clip(g, d.midi || '—', 205), 190, base);
+        g.fillText(clip(g, d.soir || '—', 205), 415, base);
+      });
     });
     flyer.redraw((g, w, h) => {
       g.fillStyle = '#FFFFFF';
@@ -824,7 +840,7 @@
     K.look = portrait ? new T.Vector3(-0.7, 1.0, 0.0) : new T.Vector3(-0.8, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
-    K.R = Math.max((portrait ? 2.45 : 2.6) / Math.tan(vf / 2), (portrait ? 2.2 : 2.85) / Math.tan(hf / 2));
+    K.R = Math.max((portrait ? 2.7 : 2.9) / Math.tan(vf / 2), (portrait ? 2.45 : 3.2) / Math.tan(hf / 2));
     K.camera.updateProjectionMatrix();
   }
 
