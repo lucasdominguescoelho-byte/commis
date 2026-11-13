@@ -644,8 +644,9 @@
     const V3 = (x, y, z) => new T.Vector3(x, y, z);
     const box = (w, h, d, m) => mesh(new T.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m);
 
-    /* Frigo sous plan : caisson ouvert, porte sur charnière côté évier (elle s'ouvre vers la pièce,
-       loin de la porte d'entrée), étagères éclairées et bien garnies */
+    /* Frigo sous plan : caisson ouvert, porte sur charnière côté angle (pivot sur son coin avant, comme
+       une vraie charnière : elle ne rentre pas dans le mur), ouverte à 60° pour ne pas toucher
+       l'encadrement de la porte d'entrée ; étagères éclairées et bien garnies */
     const postit = paint(256, 256, () => {});
     const FW = 0.58 * S;
     const FX = sx(-1.89);
@@ -735,17 +736,18 @@
     D(cyl(0.022, 0.022, 0.11, '#C7352A', 14), 0.12, 0.19, -0.048);
     D(cyl(0.022, 0.022, 0.1, '#E9B925', 14), 0.18, 0.185, -0.048);
     D(cyl(0.03, 0.03, 0.08, glassM('#F2EAD8', 0.85), 14), -0.12, 0.175, -0.048);
-    const fHinge = at(group(at(fDoor, -FW / 2, 0, 0.015)), FW / 2, 0, 0.26);
+    const fHinge = at(group(at(fDoor, FW / 2, 0, -0.015)), -FW / 2, 0, 0.29);
     fridge.add(fHinge);
+    const F_OPEN = 1.0; // 57° : au-delà de 65°, la porte toucherait l'encadrement de la porte d'entrée
     add('frigo', 'Frigo', '#/frigo', at(fridge, FX, 0.42, -1.71), [FX, 0.38, -1.4],
       (t, h, o) => {
-        const peek = h * (1 - o) * (0.32 + 0.05 * Math.sin(t * 5));
-        fHinge.rotation.y = peek + 1.5 * o;
+        const peek = h * (1 - o) * (0.3 + 0.05 * Math.sin(t * 5));
+        fHinge.rotation.y = -(peek + (F_OPEN - peek) * o);
         fGlow.emissiveIntensity = Math.max(h * 0.45, o) * 0.85;
         fLight.intensity = Math.max(h * 0.35, o) * 1.4;
       },
-      // la caméra passe devant la porte ouverte (côté pièce), puis se glisse face au frigo
-      { pos: V3(FX, 0.44, -1.1), look: V3(FX, 0.36, -1.9), ctrl: V3(FX - 0.12, 0.9, 0.85) });
+      // la caméra arrive par le côté évier, la porte ouverte reste à sa gauche
+      { pos: V3(FX + 0.13, 0.44, -1.1), look: V3(FX - 0.03, 0.36, -1.9), ctrl: V3(FX + 0.8, 0.8, -0.35) });
 
     /* Plaque à induction et casserole (ouverte, avec sa sauce) : le repas du soir */
     // Sauce mijotée : plus sombre sur les bords, reflets d'huile, herbes
@@ -960,37 +962,37 @@
       },
       { pos: flUp.clone().add(flN.clone().multiplyScalar(0.3)), look: flUp, ctrl: flUp.clone().add(flN.clone().multiplyScalar(1.4)).add(V3(0, 0.35, 0)) });
 
-    /* Tirelire en céramique émaillée sur l'étagère du portemanteau : une pièce tombe dans la fente */
-    const glaze = new T.MeshPhysicalMaterial({ color: '#F4A7BA', roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2 });
-    const glazeDark = new T.MeshPhysicalMaterial({ color: '#EA8DA4', roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2 });
+    /* Tirelire en céramique mate satinée, toute ronde, sur l'étagère du portemanteau : une pièce tombe dans la fente */
+    const glaze = new T.MeshPhysicalMaterial({ color: '#F3A9BA', roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.6 });
+    const glazeSnout = new T.MeshPhysicalMaterial({ color: '#EE9DB0', roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.6 });
     const pigIn = group();
     const P = (o, x, y, z) => pigIn.add(at(o, x, y, z));
     const body = mesh(new T.SphereGeometry(0.08, 48, 32), glaze);
-    body.scale.set(1.28, 1, 1);
+    body.scale.set(1.22, 1, 1.02);
     P(body, 0, 0.1, 0);
-    const snout = mesh(new T.CylinderGeometry(0.033, 0.037, 0.03, 32), glazeDark);
-    snout.rotation.z = Math.PI / 2;
-    P(snout, 0.112, 0.097, 0);
+    const snout = mesh(new T.SphereGeometry(0.036, 32, 20), glazeSnout);
+    snout.scale.set(0.45, 0.85, 1);
+    P(snout, 0.1, 0.096, 0);
     [-1, 1].forEach((s) => {
-      const nostril = ball(0.0075, '#8E3B52', { roughness: 0.6 });
-      nostril.scale.set(0.35, 1.3, 0.85);
-      P(nostril, 0.127, 0.097, 0.012 * s);
-      P(ball(0.0095, '#1E1A1C', { roughness: 0.15 }), 0.086, 0.134, 0.041 * s);
-      P(ball(0.003, '#FFFFFF', { roughness: 0.1 }), 0.094, 0.138, 0.038 * s);
-      const ear = mesh(new T.ConeGeometry(0.028, 0.05, 24), glazeDark);
-      ear.scale.set(1, 1, 0.42);
-      ear.rotation.set(0.35 * s, 0, -0.45);
-      P(ear, 0.055, 0.172, 0.046 * s);
-      [0.062, -0.062].forEach((x) => P(cyl(0.019, 0.017, 0.045, glazeDark, 18), x, 0.023, 0.046 * s));
+      const nostril = ball(0.0065, '#A24B62', { roughness: 0.7 });
+      nostril.scale.set(0.3, 1.2, 0.8);
+      P(nostril, 0.1155, 0.096, 0.011 * s);
+      P(ball(0.009, '#2A2426', { roughness: 0.45 }), 0.083, 0.132, 0.04 * s);
+      P(ball(0.0026, '#FFFFFF', { roughness: 0.3 }), 0.0905, 0.1355, 0.037 * s);
+      const ear = mesh(new T.SphereGeometry(0.03, 24, 16), glaze);
+      ear.scale.set(0.75, 1, 0.32);
+      ear.rotation.set(0.35 * s, 0, -0.35);
+      P(ear, 0.056, 0.168, 0.045 * s);
+      [0.058, -0.058].forEach((x) => P(mesh(new T.CapsuleGeometry(0.017, 0.022, 6, 16), glaze), x, 0.028, 0.045 * s));
     });
     const tailPts = [];
     for (let k = 0; k <= 14; k++) {
       const a = k * 0.62;
-      const r = 0.013 - k * 0.0006;
-      tailPts.push(new T.Vector3(-0.1 - k * 0.0013, 0.112 + Math.sin(a) * r, Math.cos(a) * r - 0.013));
+      const r = 0.012 - k * 0.0005;
+      tailPts.push(new T.Vector3(-0.095 - k * 0.0012, 0.112 + Math.sin(a) * r, Math.cos(a) * r - 0.012));
     }
-    P(mesh(new T.TubeGeometry(new T.CatmullRomCurve3(tailPts), 40, 0.0034, 8), glazeDark), 0, 0, 0);
-    P(rbox(0.055, 0.008, 0.012, 0.003, '#7A3346'), -0.005, 0.179, 0);
+    P(mesh(new T.TubeGeometry(new T.CatmullRomCurve3(tailPts), 40, 0.0036, 10), glaze), 0, 0, 0);
+    P(rbox(0.05, 0.007, 0.011, 0.0034, '#8C4458'), -0.005, 0.1795, 0);
     const coin = cyl(0.024, 0.024, 0.004, '#E8B84A', 28, { metalness: 0.7, roughness: 0.28 });
     coin.rotation.x = Math.PI / 2;
     coin.visible = false;
@@ -1060,24 +1062,31 @@
       at(rbox(0.352, 0.002, 0.13, 0.001, lining), 0, 0.013, 0)
     );
     [0.074, -0.074].forEach((z) => bagIn.add(at(mesh(new T.TorusGeometry(0.085, 0.011, 8, 24, Math.PI), mat('#2F7A45')), 0, 0.34, z)));
-    // Dedans : une baguette, un poireau, des carottes fanes dehors, une pomme, une brique de lait
-    const bread = at(mesh(new T.CapsuleGeometry(0.027, 0.34, 6, 12), mat('#E2B172', { roughness: 0.7 })), 0.085, 0.25, -0.01);
-    bread.rotation.z = -0.24;
-    const leek = group(at(cyl(0.02, 0.02, 0.2, '#F4F1E4', 12), 0, 0, 0), at(cyl(0.026, 0.012, 0.18, COL.sage, 12), 0, 0.19, 0));
-    leek.rotation.z = 0.22;
-    at(leek, -0.08, 0.17, 0.028);
-    const carrots = group();
-    [-0.012, 0.0, 0.014].forEach((dx, i) => {
-      const body = at(mesh(new T.ConeGeometry(0.014, 0.17, 12), mat('#E8822E', { roughness: 0.6 })), dx, 0.0, (i - 1) * 0.012);
+    // Dedans, rien ne flotte : tout tient debout sur le fond ou repose sur une autre course.
+    // Au fond : brique de lait et paquet de pâtes ; debout contre les parois : baguette, poireau,
+    // carottes ; posées dessus : une pomme et une tomate. Les groupes ont leur origine au fond du sac.
+    const FLOOR = 0.012;
+    const milk = at(group(at(rbox(0.07, 0.2, 0.07, 0.006, '#FFFFFF'), 0, 0.1, 0), at(rbox(0.071, 0.04, 0.071, 0.004, '#3D7FD1'), 0, 0.17, 0)), 0.035, FLOOR, 0.02);
+    const pasta = at(group(at(rbox(0.1, 0.19, 0.055, 0.006, '#F2C230'), 0, 0.095, 0), at(rbox(0.101, 0.07, 0.056, 0.004, '#2F5FA8'), 0, 0.1, 0)), -0.055, FLOOR, -0.03);
+    const breadG = at(group(at(mesh(new T.CapsuleGeometry(0.026, 0.34, 6, 12), mat('#E2B172', { roughness: 0.7 })), 0, 0.2, 0)), 0.13, FLOOR, -0.032);
+    breadG.rotation.z = 0.08; // penchée vers l'intérieur, sans toucher la paroi
+    const leek = at(group(at(cyl(0.02, 0.02, 0.2, '#F4F1E4', 12), 0, 0.1, 0), at(cyl(0.026, 0.012, 0.18, COL.sage, 12), 0, 0.29, 0)), -0.145, FLOOR, 0.028);
+    leek.rotation.z = -0.08;
+    const carrots = at(group(), -0.06, FLOOR, 0.038);
+    [-0.016, 0.0, 0.016].forEach((dx, i) => {
+      const body = at(mesh(new T.ConeGeometry(0.014, 0.18, 12), mat('#E8822E', { roughness: 0.6 })), dx, 0.1, 0);
       body.rotation.z = Math.PI;
       carrots.add(body);
-      const top = at(mesh(new T.ConeGeometry(0.012, 0.1, 6), mat('#4E8A55', { roughness: 0.8 })), dx * 2, 0.13, (i - 1) * 0.015);
-      top.rotation.z = (i - 1) * 0.25;
+      const top = at(mesh(new T.ConeGeometry(0.012, 0.1, 6), mat('#4E8A55', { roughness: 0.8 })), dx * 1.8, 0.235, 0);
+      top.rotation.z = (i - 1) * 0.3;
       carrots.add(top);
     });
-    at(carrots, -0.13, 0.2, -0.03);
-    const apple = at(ball(0.036, '#C9352E', { roughness: 0.4 }), 0.0, 0.3, -0.03);
-    bagIn.add(bread, leek, carrots, apple, at(rbox(0.07, 0.2, 0.07, 0.006, '#FFFFFF'), 0.03, 0.11, 0.02), at(rbox(0.071, 0.04, 0.071, 0.004, '#3D7FD1'), 0.03, 0.17, 0.02));
+    const apple = group(at(ball(0.034, '#C9352E', { roughness: 0.4 }), 0, 0.034, 0), at(cyl(0.003, 0.003, 0.02, '#5A3E26', 6), 0, 0.072, 0));
+    at(apple, -0.045, FLOOR + 0.19, -0.03); // sur le paquet de pâtes
+    const tomato = group(at(ball(0.03, '#E0452B', { roughness: 0.35 }), 0, 0.028, 0), at(mesh(new T.ConeGeometry(0.014, 0.008, 5), mat('#4E8A55')), 0, 0.058, 0));
+    tomato.children[0].scale.set(1, 0.9, 1);
+    at(tomato, 0.035, FLOOR + 0.2, 0.02); // sur la brique de lait
+    bagIn.add(milk, pasta, breadG, leek, carrots, apple, tomato);
     const bag = group(bagIn);
     bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
     add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32],
@@ -1086,9 +1095,10 @@
         const hop = Math.sin(clamp01(o / 0.45) * Math.PI);
         bagIn.rotation.z = w * 0.1 * Math.sin(t * 4.5) + hop * 0.05;
         bagIn.position.y = hop * 0.07;
-        bread.position.y = 0.25 + w * 0.035 * Math.abs(Math.sin(t * 4.5)) + eo3(clamp01(o / 0.5)) * 0.06;
-        leek.position.y = 0.17 + w * 0.04 * Math.abs(Math.sin(t * 4.5 + 1)) + eo3(clamp01((o - 0.08) / 0.5)) * 0.07;
-        carrots.position.y = 0.2 + w * 0.03 * Math.abs(Math.sin(t * 4.5 + 2)) + eo3(clamp01((o - 0.15) / 0.5)) * 0.05;
+        // les courses ne quittent jamais le fond : elles oscillent seulement sur leur base
+        breadG.rotation.z = 0.08 + w * 0.05 * Math.sin(t * 4.5 + 0.6) + hop * 0.04;
+        leek.rotation.z = -0.08 + w * 0.05 * Math.sin(t * 4.5 + 1.4) - hop * 0.04;
+        carrots.rotation.z = w * 0.05 * Math.sin(t * 4.5 + 2.2);
       },
       { pos: V3(-1.78, 0.9, 0.32), look: V3(-1.92, 0.28, 0.32), ctrl: V3(-0.7, 1.45, 0.4) });
 
