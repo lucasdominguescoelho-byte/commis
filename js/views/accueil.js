@@ -72,6 +72,8 @@
         <div class="k3-stage"></div>
         <div class="k3-load"><span class="spin"></span>Préparation de la cuisine…</div>
         <div class="k3-labels" aria-label="Pièces de la cuisine"></div>
+        <div class="k3-veil" aria-hidden="true"></div>
+        <i class="k3-sab" aria-hidden="true"></i>
         <p class="k3-hint">${matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Cliquez sur un objet pour l’ouvrir' : 'Touchez un objet pour l’ouvrir'}</p>
         <button class="k3-mode" data-act="home.full" aria-label="${full ? 'Afficher le menu' : 'Plein écran'}"><span class="k3-mode-l"><span class="k3-mode-menu">Afficher le menu</span><span class="k3-mode-full">Plein écran</span></span><span class="logo-mark">${C.logoMark}</span></button>
       </section>`;
@@ -96,13 +98,11 @@
 
   Object.assign(C.acts, {
     // Plein écran (la pièce seule) ⇄ pièce avec le menu : le même logo, en bas à droite
+    // (le choix est gardé : en revenant sur l'accueil depuis une autre page, on retrouve le même mode)
     'home.full': () => {
-      const html = document.documentElement;
       C.ui.full = !C.ui.full;
-      html.classList.toggle('k3-full', C.ui.full);
-      html.classList.toggle('k3-unfold', !C.ui.full);
-      clearTimeout(C.ui.unfoldT);
-      C.ui.unfoldT = setTimeout(() => html.classList.remove('k3-unfold'), 450);
+      document.documentElement.classList.toggle('k3-full', C.ui.full);
+      if (C.k3d.mode) C.k3d.mode();
       const b = document.querySelector('.k3-mode');
       if (b) b.setAttribute('aria-label', C.ui.full ? 'Afficher le menu' : 'Plein écran');
     },

@@ -15,6 +15,10 @@
   const finePointer = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   C.k3d = {
+    // Plein écran ⇄ menu : la caméra glisse vers le nouveau cadrage, en même temps que la barre
+    mode() {
+      if (K && K.el) reframe(true);
+    },
     supported() {
       try {
         const c = document.createElement('canvas');
@@ -66,6 +70,9 @@
   const rbox = (w, h, d, r, color, o) => mesh(new RB(w, h, d, 4, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001)), typeof color === 'string' ? mat(color, o) : color);
   const cyl = (rt, rb, h, color, seg = 40, o) => mesh(new T.CylinderGeometry(rt, rb, h, seg), typeof color === 'string' ? mat(color, o) : color);
   const ball = (r, color, o) => mesh(new T.SphereGeometry(r, 32, 18), typeof color === 'string' ? mat(color, o) : color);
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const eo3 = (p) => 1 - Math.pow(1 - p, 3);
+  const eo5 = (p) => 1 - Math.pow(1 - p, 5); // même courbe que la barre de menu (cubic-bezier(0.22, 1, 0.36, 1))
   const group = (...kids) => {
     const g = new T.Group();
     kids.forEach((k) => k && g.add(k));
@@ -624,35 +631,92 @@
 
 
     const items = [];
-    const add = (key, name, route, obj, anchor) => {
+    // act(t, h, o) : pose l'objet à chaque image (h = survol 0→1, o = ouverture 0→1)
+    // dive : où la caméra finit en « entrant » dans l'objet (pos, look) et par où elle passe (ctrl)
+    const add = (key, name, route, obj, anchor, act, dive) => {
       obj.userData = { key, base: obj.position.clone() };
       obj.traverse((m) => (m.isMesh ? (m.userData.key = key) : null));
       room.add(obj);
-      items.push({ key, name, route, obj, anchor: new T.Vector3(...anchor), h: 0, target: 0 });
+      items.push({ key, name, route, obj, anchor: new T.Vector3(...anchor), h: 0, target: 0, o: 0, act, dive });
     };
+    const V3 = (x, y, z) => new T.Vector3(x, y, z);
+    const box = (w, h, d, m) => mesh(new T.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m);
 
-    /* Frigo sous plan, blanc, avec ses magnets et le post-it */
+    /* Frigo sous plan : caisson ouvert, porte sur charnière (côté angle), étagères éclairées */
     const postit = paint(256, 256, () => {});
+    const FW = 0.58 * S;
+    const FX = sx(-1.89);
+    const white = '#FAFAF9';
     const fridge = group(
-      rbox(0.58 * S, 0.84, 0.58, 0.02, '#FAFAF9'),
-      at(rbox(0.5 * S, 0.02, 0.012, 0.005, '#E4E4E2'), 0, 0.37, 0.292),
-      at(plane(0.17, 0.17, mat('#ffffff', { map: postit.tex })), 0.12, 0.12, 0.292),
-      at(rbox(0.06, 0.07, 0.008, 0.003, '#9B6F57'), -0.17, 0.2, 0.293),
-      at(rbox(0.055, 0.07, 0.008, 0.003, '#7AA0C2'), -0.08, 0.2, 0.293)
+      at(rbox(0.03, 0.84, 0.55, 0.004, white), -FW / 2 + 0.015, 0, -0.015),
+      at(rbox(0.03, 0.84, 0.55, 0.004, white), FW / 2 - 0.015, 0, -0.015),
+      at(rbox(FW, 0.03, 0.55, 0.004, white), 0, 0.405, -0.015),
+      at(rbox(FW, 0.03, 0.55, 0.004, white), 0, -0.405, -0.015),
+      at(rbox(FW, 0.84, 0.03, 0.004, white), 0, 0, -0.275)
     );
-    fridge.children[2].castShadow = false;
-    add('frigo', 'Frigo', '#/frigo', at(fridge, sx(-1.89), 0.42, -1.71), [sx(-1.89), 0.38, -1.4]);
+    const fGlow = new T.MeshStandardMaterial({ color: '#F1F5F6', emissive: '#FFF2D6', emissiveIntensity: 0, roughness: 0.6 });
+    fridge.add(at(new T.Mesh(new T.PlaneGeometry(FW - 0.06, 0.78), fGlow), 0, 0, -0.259));
+    const shelfMat = mat('#DDE9EE', { transparent: true, opacity: 0.55, roughness: 0.1 });
+    [-0.13, 0.12].forEach((y) => fridge.add(at(rbox(FW - 0.06, 0.008, 0.46, 0.003, shelfMat), 0, y, -0.02)));
+    fridge.add(
+      at(rbox(0.07, 0.18, 0.07, 0.008, '#FFFFFF'), -0.19, -0.3, -0.07),
+      at(rbox(0.07, 0.03, 0.071, 0.006, '#5C8FD6'), -0.19, -0.26, -0.07),
+      at(ball(0.032, '#D9412E'), 0.06, -0.358, 0.02),
+      at(ball(0.03, '#E0522F'), 0.13, -0.36, -0.03),
+      at(ball(0.03, '#8DBE4D'), 0.19, -0.36, 0.04),
+      at(rbox(0.11, 0.05, 0.08, 0.006, '#F2C94C'), -0.13, -0.097, -0.04),
+      at(cyl(0.028, 0.025, 0.06, '#FFFFFF', 18), 0.08, -0.092, -0.01),
+      at(cyl(0.028, 0.025, 0.06, '#FFFFFF', 18), 0.15, -0.092, -0.05),
+      at(cyl(0.029, 0.029, 0.006, '#F08AA0', 18), 0.08, -0.06, -0.01),
+      at(cyl(0.035, 0.035, 0.09, '#B8322F', 18), -0.16, 0.172, -0.06),
+      at(rbox(0.16, 0.05, 0.08, 0.008, '#E9DCC4'), 0.1, 0.152, -0.03)
+    );
+    const fLight = new T.PointLight('#FFF1D6', 0, 1.1, 2);
+    fLight.position.set(0, 0.2, 0.05);
+    fridge.add(fLight);
+    const fDoor = group(
+      rbox(FW, 0.84, 0.03, 0.012, white),
+      at(rbox(0.5 * S, 0.02, 0.012, 0.005, '#E4E4E2'), 0, 0.37, 0.017),
+      at(plane(0.17, 0.17, mat('#ffffff', { map: postit.tex })), 0.12, 0.12, 0.0165),
+      at(rbox(0.06, 0.07, 0.008, 0.003, '#9B6F57'), -0.17, 0.2, 0.018),
+      at(rbox(0.055, 0.07, 0.008, 0.003, '#7AA0C2'), -0.08, 0.2, 0.018)
+    );
+    fDoor.children[2].castShadow = false;
+    const fHinge = at(group(at(fDoor, FW / 2, 0, 0.015)), -FW / 2, 0, 0.26);
+    fridge.add(fHinge);
+    add('frigo', 'Frigo', '#/frigo', at(fridge, FX, 0.42, -1.71), [FX, 0.38, -1.4],
+      (t, h, o) => {
+        const peek = h * (1 - o) * (0.32 + 0.05 * Math.sin(t * 5));
+        fHinge.rotation.y = -(peek + 1.5 * o);
+        fGlow.emissiveIntensity = Math.max(h * 0.45, o) * 0.85;
+        fLight.intensity = Math.max(h * 0.35, o) * 1.4;
+      },
+      { pos: V3(FX, 0.43, -1.3), look: V3(FX, 0.38, -1.9), ctrl: V3(FX + 0.7, 0.75, -0.35) });
 
-    /* Plaque à induction et casserole : le repas du soir */
+    /* Plaque à induction et casserole (ouverte, avec sa sauce) : le repas du soir */
+    const potWall = mesh(new T.CylinderGeometry(0.135, 0.12, 0.15, 32, 1, true), mat('#3A3C3F', { roughness: 0.35, metalness: 0.3, side: T.DoubleSide }));
+    const lid = group(at(cyl(0.14, 0.14, 0.012, '#2F3133', 32, { roughness: 0.35, metalness: 0.3 }), 0, 0, 0), at(ball(0.018, '#151515'), 0, 0.012, 0));
+    const LID = { x: -0.08, y: 0.168, z: -0.02 };
     const stove = group(
       at(rbox(0.6, 0.008, 0.52, 0.01, '#B9BEC0', { metalness: 0.4, roughness: 0.3 }), 0, 0.0, 0),
       at(rbox(0.57, 0.012, 0.49, 0.01, '#141313', { roughness: 0.15 }), 0, 0.006, 0),
-      at(cyl(0.135, 0.12, 0.15, '#3A3C3F', 32, { roughness: 0.35, metalness: 0.3 }), -0.08, 0.087, -0.02),
-      at(cyl(0.14, 0.14, 0.012, '#2F3133', 32, { roughness: 0.35, metalness: 0.3 }), -0.08, 0.168, -0.02),
-      at(ball(0.018, '#151515'), -0.08, 0.18, -0.02),
+      at(potWall, -0.08, 0.087, -0.02),
+      at(cyl(0.12, 0.12, 0.01, '#2F3133', 32), -0.08, 0.017, -0.02),
+      at(cyl(0.128, 0.128, 0.006, '#C4472B', 32, { roughness: 0.5 }), -0.08, 0.13, -0.02),
+      at(lid, LID.x, LID.y, LID.z),
       at(rbox(0.05, 0.02, 0.03, 0.008, '#1D1E20'), -0.235, 0.14, -0.02),
       at(rbox(0.05, 0.02, 0.03, 0.008, '#1D1E20'), 0.075, 0.14, -0.02)
     );
+    [
+      [-0.05, 0.03],
+      [0.03, -0.05],
+      [-0.02, -0.07],
+      [0.06, 0.04],
+    ].forEach(([dx, dz]) => {
+      const leaf = at(ball(0.012, '#4E8A55'), -0.08 + dx, 0.134, -0.02 + dz);
+      leaf.scale.set(1.3, 0.35, 1);
+      stove.add(leaf);
+    });
     [
       [0.14, 0.12],
       [0.14, -0.12],
@@ -663,7 +727,15 @@
       stove.add(r);
     });
     const potX = sx(-0.7) - 0.08; // la casserole, pour la vapeur
-    add('cuisiner', 'Ce soir', '#/planning', at(stove, sx(-0.7), 0.906, -1.7), [potX, 1.64, -1.72]);
+    add('cuisiner', 'Ce soir', '#/planning', at(stove, sx(-0.7), 0.906, -1.7), [potX, 1.64, -1.72],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        const lo = Math.min(1, o * 1.6);
+        lid.position.set(LID.x - 0.1 * lo, LID.y + w * (0.012 + 0.01 * Math.abs(Math.sin(t * 16))) + 0.2 * lo, LID.z);
+        lid.rotation.z = w * 0.08 * Math.sin(t * 13) + 0.55 * lo;
+        K.steamBoost = Math.max(w, o * 2.2);
+      },
+      { pos: V3(potX + 0.05, 1.32, -1.62), look: V3(potX, 1.0, -1.72), ctrl: V3(potX + 1.0, 1.55, -0.85) });
     const steam = [];
     for (let i = 0; i < 4; i++) {
       const s = new T.Mesh(new T.SphereGeometry(0.035, 14, 10), new T.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0, depthWrite: false }));
@@ -671,7 +743,7 @@
       steam.push(s);
     }
 
-    /* Livre de recettes posé à plat sur le plan de travail */
+    /* Livre de recettes posé à plat : couverture et deux pages sur charnière (la tranche) */
     const cover = paint(256, 352, (g, w, h) => {
       g.fillStyle = COL.tomato;
       g.fillRect(0, 0, w, h);
@@ -685,50 +757,160 @@
       g.font = `600 20px ${SANS}`;
       g.fillText('COMMIS', w / 2, h / 2 + 46);
     });
-    const book = new T.Mesh(new T.BoxGeometry(0.22, 0.3, 0.035), [mat(COL.tomatoDark), mat(COL.tomatoDark), mat('#F3E9DD'), mat('#F3E9DD'), mat('#ffffff', { map: cover.tex }), mat(COL.tomato)]);
-    book.castShadow = book.receiveShadow = true;
-    book.rotation.x = -Math.PI / 2; // couverture vers le haut
-    const bookG = group(at(book, 0, 0.018, 0));
+    // Pages : recto (titre et dessin) et verso (ingrédients, dessiné tête-bêche pour se lire une fois tourné)
+    const recto = (title, color) =>
+      paint(256, 352, (g, w, h) => {
+        g.fillStyle = '#FBF5EC';
+        g.fillRect(0, 0, w, h);
+        g.fillStyle = color;
+        g.beginPath();
+        g.arc(w / 2, 74, 30, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#4E8A55';
+        g.fillRect(w / 2 - 3, 36, 6, 14);
+        g.fillStyle = COL.ink;
+        g.textAlign = 'center';
+        g.font = `italic 30px ${SERIF}`;
+        g.fillText(title, w / 2, 146);
+        g.fillStyle = 'rgba(58,50,44,0.28)';
+        for (let i = 0; i < 9; i++) g.fillRect(34, 176 + i * 17, i % 3 === 2 ? 120 : 188, 5);
+      });
+    const verso = () =>
+      paint(256, 352, (g, w, h) => {
+        g.translate(w, h);
+        g.rotate(Math.PI);
+        g.fillStyle = '#FBF5EC';
+        g.fillRect(0, 0, w, h);
+        g.fillStyle = COL.ink;
+        g.font = `italic 28px ${SERIF}`;
+        g.fillText('Ingrédients', 34, 70);
+        for (let i = 0; i < 8; i++) {
+          g.fillStyle = COL.tomato;
+          g.beginPath();
+          g.arc(40, 104 + i * 26, 4, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = 'rgba(58,50,44,0.3)';
+          g.fillRect(54, 100 + i * 26, i % 3 === 1 ? 110 : 160, 6);
+        }
+      });
+    const page = recto('Sauce tomate', COL.tomato);
+    const BW = 0.22;
+    const BD = 0.3;
+    const dark = mat(COL.tomatoDark);
+    const pageMat = mat('#ffffff', { map: page.tex, roughness: 0.9 });
+    const bookG = group(
+      at(box(BW, 0.006, BD, dark), 0, 0.003, 0),
+      at(box(0.208, 0.026, 0.288, [mat('#F3E9DD'), mat('#F3E9DD'), pageMat, mat('#F3E9DD'), mat('#F3E9DD'), mat('#F3E9DD')]), 0.004, 0.019, 0),
+      at(box(0.01, 0.036, BD, dark), -BW / 2 + 0.005, 0.018, 0)
+    );
+    const coverMesh = box(BW, 0.006, BD, [dark, dark, mat('#ffffff', { map: cover.tex }), mat('#F6E3D6'), mat(COL.tomato), mat(COL.tomato)]);
+    const bCover = at(group(at(coverMesh, BW / 2, 0, 0)), -BW / 2, 0.035, 0);
+    const leaves = [
+      ['Gratin de courge', '#E39A3B'],
+      ['Risotto', '#8DBE4D'],
+    ].map(([title, color], i) => {
+      const front = mesh(new T.PlaneGeometry(0.205, 0.284), mat('#ffffff', { map: recto(title, color).tex, roughness: 0.9 }), false);
+      front.rotation.x = -Math.PI / 2;
+      const back = mesh(new T.PlaneGeometry(0.205, 0.284), mat('#ffffff', { map: verso().tex, roughness: 0.9 }), false);
+      back.rotation.x = Math.PI / 2;
+      const leaf = group(at(front, 0, 0.0002, 0), back);
+      const hinge = at(group(at(leaf, 0.104, 0, 0)), -BW / 2 + 0.008, 0.0322 + (1 - i) * 0.0006, 0);
+      bookG.add(hinge);
+      return hinge;
+    });
+    bookG.add(bCover);
     bookG.rotation.y = Math.PI / 2 - 0.18; // le haut du livre vers le mur, lisible depuis le séjour
-    add('recettes', 'Recettes', '#/recettes', at(bookG, 1.3, 0.906, -1.62), [1.3, 1.12, -1.62]);
+    const BOOK = { x: 1.3, y: 0.906, z: -1.62, ry: bookG.rotation.y };
+    add('recettes', 'Recettes', '#/recettes', at(bookG, BOOK.x, BOOK.y, BOOK.z), [1.3, 1.12, -1.62],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        const peek = w * (0.32 + 0.1 * Math.sin(t * 6));
+        bCover.rotation.z = peek + (2.98 - peek) * eo3(clamp01(o / 0.7));
+        leaves.forEach((lf, i) => (lf.rotation.z = w * 0.05 * (1 - i) + (2.9 - i * 0.07) * eo3(clamp01((o - 0.2 - i * 0.12) / 0.5))));
+        bookG.position.y = BOOK.y + w * (0.018 + 0.008 * Math.sin(t * 6));
+        bookG.rotation.y = BOOK.ry + w * 0.08 * Math.sin(t * 3.2);
+      },
+      { pos: V3(1.43, 1.2, -1.63), look: V3(1.3, 0.94, -1.63), ctrl: V3(2.0, 1.6, -0.85) });
 
-    /* Prospectus des promotions, posés sur la table (lisibles depuis le séjour) */
+    /* Prospectus des promotions, posés sur la table : la feuille du dessus se soulève */
     const flyer = paint(384, 512, () => {});
     const flyerMesh = plane(0.2, 0.27, mat('#ffffff', { map: flyer.tex, roughness: 0.9 }));
     flyerMesh.rotation.x = -Math.PI / 2;
-    const flyers = group(at(rbox(0.2, 0.006, 0.27, 0.003, '#FFF1C2'), 0.015, 0, 0.02), at(flyerMesh, 0, 0.0045, 0));
+    const flyerBack = plane(0.2, 0.27, mat('#FFF7E2', { roughness: 0.9 }));
+    flyerBack.rotation.x = Math.PI / 2;
+    const sheet = group(at(flyerMesh, 0, 0.0012, 0), flyerBack);
+    const flyers = group(at(rbox(0.2, 0.006, 0.27, 0.003, '#FFF1C2'), 0.015, 0, 0.02), at(sheet, 0, 0.0045, 0));
     flyers.rotation.y = Math.PI / 2 + 0.12;
-    add('promotions', 'Promotions', '#/promotions', at(flyers, TX + 0.25, tableTop + 0.003, TZ - TL / 2 + 0.13), [TX + 0.25, tableTop + 0.24, TZ - TL / 2 + 0.13]);
+    const FL = V3(TX + 0.25, tableTop + 0.003, TZ - TL / 2 + 0.13);
+    const flN = V3(Math.cos(0.12), 0, -Math.sin(0.12)); // la face du prospectus levé regarde le séjour
+    const flUp = FL.clone().add(V3(0, 0.3, 0));
+    add('promotions', 'Promotions', '#/promotions', at(flyers, FL.x, FL.y, FL.z), [FL.x, tableTop + 0.24, FL.z],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        const up = eo3(clamp01(o / 0.6));
+        sheet.position.y = 0.0045 + w * (0.065 + 0.01 * Math.sin(t * 5)) + up * 0.3;
+        sheet.rotation.x = w * (0.38 + 0.06 * Math.sin(t * 4)) + up * (Math.PI / 2 - 0.12);
+        sheet.rotation.z = w * 0.06 * Math.sin(t * 3);
+      },
+      { pos: flUp.clone().add(flN.clone().multiplyScalar(0.3)), look: flUp, ctrl: flUp.clone().add(flN.clone().multiplyScalar(1.4)).add(V3(0, 0.35, 0)) });
 
-    /* Tirelire sur l'étagère du portemanteau */
-    const pig = group();
+    /* Tirelire sur l'étagère du portemanteau : une pièce tombe dans la fente */
+    const pigIn = group();
     const body = at(ball(0.075, COL.pink, { roughness: 0.55 }), 0, 0.07, 0);
     body.scale.set(1.15, 0.95, 0.9);
-    pig.add(body);
+    pigIn.add(body);
     const snout = at(cyl(0.024, 0.026, 0.025, '#F19484', 16), 0.09, 0.07, 0);
     snout.rotation.z = Math.PI / 2;
-    pig.add(snout);
+    pigIn.add(snout);
     [-1, 1].forEach((s) => {
-      pig.add(at(mesh(new T.ConeGeometry(0.018, 0.03, 10), mat('#F19484')), 0.045, 0.135, 0.03 * s));
-      pig.add(at(cyl(0.013, 0.013, 0.025, '#F19484', 8), 0.045, 0.012, 0.04 * s));
-      pig.add(at(cyl(0.013, 0.013, 0.025, '#F19484', 8), -0.045, 0.012, 0.04 * s));
-      pig.add(at(ball(0.007, COL.ink), 0.075, 0.095, 0.025 * s));
+      pigIn.add(at(mesh(new T.ConeGeometry(0.018, 0.03, 10), mat('#F19484')), 0.045, 0.135, 0.03 * s));
+      pigIn.add(at(cyl(0.013, 0.013, 0.025, '#F19484', 8), 0.045, 0.012, 0.04 * s));
+      pigIn.add(at(cyl(0.013, 0.013, 0.025, '#F19484', 8), -0.045, 0.012, 0.04 * s));
+      pigIn.add(at(ball(0.007, COL.ink), 0.075, 0.095, 0.025 * s));
     });
+    pigIn.add(at(rbox(0.045, 0.004, 0.009, 0.002, '#B5655A'), -0.01, 0.141, 0));
+    const coin = cyl(0.022, 0.022, 0.004, '#E8B84A', 24, { metalness: 0.6, roughness: 0.3 });
+    coin.rotation.x = Math.PI / 2;
+    coin.visible = false;
+    pigIn.add(coin);
+    const pig = group(pigIn);
     pig.rotation.y = 0.8; // le groin vers la pièce et le séjour, pas vers le mur
-    add('budget', 'Budget', '#/budget', at(pig, -1.5, 1.883, SZ - 0.1), [-1.5, 2.12, SZ - 0.1]);
+    const PG = V3(-1.5, 1.883, SZ - 0.1);
+    const pigN = V3(Math.cos(0.8), 0, -Math.sin(0.8));
+    add('budget', 'Budget', '#/budget', at(pig, PG.x, PG.y, PG.z), [-1.5, 2.12, SZ - 0.1],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        const drop = clamp01((o - 0.05) / 0.45);
+        coin.visible = o > 0.04 && drop < 1;
+        coin.position.set(-0.01, 0.34 - 0.2 * drop * drop, 0);
+        coin.rotation.y = 0;
+        const happy = o > 0.5 ? Math.sin(clamp01((o - 0.5) / 0.35) * Math.PI) : 0;
+        pigIn.position.y = w * 0.03 * Math.abs(Math.sin(t * 7)) + happy * 0.05;
+        pigIn.rotation.x = w * 0.14 * Math.sin(t * 7);
+        pigIn.rotation.z = happy * 0.12;
+      },
+      { pos: PG.clone().add(pigN.clone().multiplyScalar(0.34)).add(V3(0, 0.1, 0)), look: PG.clone().add(V3(0, 0.08, 0)), ctrl: PG.clone().add(pigN.clone().multiplyScalar(1.4)).add(V3(0, 0.3, 0)) });
 
     /* Le planning de la semaine : un tableau blanc sur le mur du fond, à gauche de la porte d'entrée */
     const board = paint(640, 512, () => {});
+    const marker = at(rbox(0.015, 0.015, 0.11, 0.006, COL.tomato), 0.05, -0.385, 0.12);
     const planBoard = group(
       rbox(0.03, 0.78, 0.98, 0.015, W.oakDark),
       at(plane(0.92, 0.72, mat('#ffffff', { map: board.tex, roughness: 0.55 })), 0.016, 0, 0).rotateY(Math.PI / 2),
       at(rbox(0.05, 0.02, 0.36, 0.008, W.oakDark), 0.035, -0.4, 0.2),
-      at(rbox(0.015, 0.015, 0.11, 0.006, COL.tomato), 0.05, -0.385, 0.12)
+      marker
     );
-    add('planning', 'Planning', '#/planning', at(planBoard, -2.185, 1.48, 0.72), [-2.15, 1.95, 0.72]);
+    const PB = V3(-2.185, 1.48, 0.72);
+    add('planning', 'Planning', '#/planning', at(planBoard, PB.x, PB.y, PB.z), [-2.15, 1.95, 0.72],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        planBoard.rotation.x = w * 0.045 * Math.sin(t * 3.4);
+        marker.position.z = 0.12 + w * 0.06 * Math.sin(t * 2.6);
+      },
+      { pos: V3(PB.x + 0.62, PB.y, PB.z), look: V3(PB.x, PB.y, PB.z), ctrl: V3(-0.4, 1.75, 0.5) });
 
     /* Cabas à feuillage vert, au sol contre le mur du fond : les courses */
-    const leaves = paint(256, 256, (g, w, h) => {
+    const leavesTex = paint(256, 256, (g, w, h) => {
       g.fillStyle = '#FBFBF7';
       g.fillRect(0, 0, w, h);
       for (let i = 0; i < 40; i++) {
@@ -742,17 +924,28 @@
         g.restore();
       }
     });
-    const leafMat = mat('#ffffff', { map: leaves.tex, roughness: 0.9 });
-    const bag = group(at(rbox(0.38, 0.34, 0.16, 0.03, leafMat), 0, 0.17, 0), at(mesh(new T.TorusGeometry(0.09, 0.012, 8, 24, Math.PI), mat('#2F7A45')), -0.08, 0.34, 0), at(mesh(new T.TorusGeometry(0.09, 0.012, 8, 24, Math.PI), mat('#2F7A45')), 0.08, 0.34, 0));
+    const leafMat = mat('#ffffff', { map: leavesTex.tex, roughness: 0.9 });
+    const bagIn = group(at(rbox(0.38, 0.34, 0.16, 0.03, leafMat), 0, 0.17, 0), at(mesh(new T.TorusGeometry(0.09, 0.012, 8, 24, Math.PI), mat('#2F7A45')), -0.08, 0.34, 0), at(mesh(new T.TorusGeometry(0.09, 0.012, 8, 24, Math.PI), mat('#2F7A45')), 0.08, 0.34, 0));
     const bread = at(mesh(new T.CapsuleGeometry(0.03, 0.34, 6, 12), mat('#E2B172')), 0.08, 0.44, 0.0);
     bread.rotation.z = -0.3;
     const leek = group(at(cyl(0.022, 0.022, 0.18, '#F4F1E4', 12), 0, 0, 0), at(cyl(0.028, 0.012, 0.16, COL.sage, 12), 0, 0.17, 0));
     leek.rotation.z = 0.35;
-    bag.add(bread, at(leek, -0.08, 0.42, 0.02));
+    at(leek, -0.08, 0.42, 0.02);
+    bagIn.add(bread, leek);
+    const bag = group(bagIn);
     bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
-    add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32]);
+    add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32],
+      (t, h, o) => {
+        const w = h * (1 - o);
+        const hop = Math.sin(clamp01(o / 0.45) * Math.PI);
+        bagIn.rotation.z = w * 0.1 * Math.sin(t * 4.5) + hop * 0.05;
+        bagIn.position.y = hop * 0.07;
+        bread.position.y = 0.44 + w * 0.045 * Math.abs(Math.sin(t * 4.5)) + eo3(clamp01(o / 0.5)) * 0.12;
+        leek.position.y = 0.42 + w * 0.05 * Math.abs(Math.sin(t * 4.5 + 1)) + eo3(clamp01((o - 0.08) / 0.5)) * 0.16;
+      },
+      { pos: V3(-1.78, 0.9, 0.32), look: V3(-1.92, 0.28, 0.32), ctrl: V3(-0.7, 1.45, 0.4) });
 
-    K = { renderer, scene, camera, room, items, steam, potX, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, potX, steamBoost: 0, steamPhase: 0, last: 0, tween: null, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
@@ -887,10 +1080,17 @@
     }
     K.ro.disconnect();
     K.ro.observe(el);
-    resize();
     K.anim = null;
+    K.tween = null;
     K.hover = null;
-    K.items.forEach((x) => (x.h = x.target = 0));
+    K.steamBoost = 0;
+    K.items.forEach((x) => {
+      x.h = x.target = x.o = 0;
+      x.act(0, 0, 0);
+    });
+    K.veil = el.parentNode.querySelector('.k3-veil');
+    el.parentNode.classList.remove('is-opening');
+    resize();
     el.parentNode.classList.add('is-ready');
     start();
   }
@@ -910,16 +1110,15 @@
     K.renderer.domElement.style.cursor = key ? 'pointer' : '';
   }
 
-  // Clic : la caméra s'approche de l'objet, puis la page s'ouvre
+  // Clic : l'objet s'ouvre (porte, couverture, couvercle…), puis la caméra entre dedans et la page s'ouvre
   function open(key) {
     const it = K.items.find((x) => x.key === key);
     if (!it || K.anim) return;
     if (reduced()) return C.go(it.route);
-    const from = K.camera.position.clone();
-    const look = K.look.clone();
-    const to = it.anchor.clone().add(from.clone().sub(it.anchor).normalize().multiplyScalar(2.0));
-    K.anim = { t: performance.now(), from, to, look0: look, look1: it.anchor.clone().add(new T.Vector3(0, -0.2, 0)), route: it.route };
+    K.tween = null;
+    K.anim = { t: performance.now(), it, from: K.camera.position.clone(), look0: K.look.clone(), ctrl: it.dive.ctrl, to: it.dive.pos, look1: it.dive.look, route: it.route };
     setHover(key);
+    K.el.parentNode.classList.add('is-opening');
   }
 
   function resize() {
@@ -929,16 +1128,42 @@
     K.renderer.setSize(w, h, false);
     K.camera.aspect = w / h;
     K.camera.fov = 46; // grand angle, comme une photo prise depuis le séjour : les deux murs latéraux restent visibles
-    // Vue depuis le côté ouvert (est). Même cadrage avec ou sans menu : la pièce seule, aussi grande
-    // que possible et centrée. Téléphone : vue un peu plus plongeante, la pièce prend toute la largeur.
+    K.camera.updateProjectionMatrix();
+    reframe(false);
+  }
+
+  // Place de la barre du haut et des onglets du bas par-dessus la pièce (rien en plein écran)
+  function insets() {
+    const shown = (sel) => {
+      const e = document.querySelector(sel);
+      return e && getComputedStyle(e).display !== 'none' ? e.offsetHeight : 0;
+    };
+    const sab = K.el.parentNode.querySelector('.k3-sab');
+    const safe = sab ? sab.offsetHeight : 0;
+    if (document.documentElement.classList.contains('k3-full')) return { top: 0, bottom: safe };
+    return { top: Math.max(shown('.side'), shown('.topbar')), bottom: Math.max(shown('.tabs'), safe) };
+  }
+
+  // Cadrage : vue depuis le côté ouvert (est), la pièce entière aussi grande que possible et centrée
+  // dans la place laissée par le menu. Téléphone : vue un peu plus plongeante, toute la largeur.
+  // animate : la caméra glisse de l'ancien cadrage au nouveau (changement de mode).
+  function reframe(animate) {
+    const { w, h } = K.size;
+    const cur = K.look ? { R: K.R, y: K.look.y } : null;
     const portrait = w / h < 0.9;
     K.base = { az: Math.PI / 2, el: portrait ? 0.62 : 0.34 };
     K.look = new T.Vector3(-0.7, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
     K.R = (portrait ? 2.3 : 3.75) / Math.tan(hf / 2);
-    K.camera.updateProjectionMatrix();
-    fitRoom(portrait ? 30 : 40, h - (portrait ? 76 : 30), portrait ? -Infinity : Math.max(16, w * 0.035));
+    const ins = insets();
+    fitRoom(ins.top + (portrait ? 30 : 40), h - ins.bottom - (portrait ? 76 : 30), portrait ? -Infinity : Math.max(16, w * 0.035));
+    const goal = { R: K.R, y: K.look.y };
+    if (animate && cur && !reduced()) {
+      K.R = cur.R;
+      K.look.y = cur.y;
+      K.tween = { t: performance.now(), from: cur, to: goal };
+    } else K.tween = null;
   }
 
   // Point de la scène → position à l'écran (px), avec la caméra déjà placée
@@ -983,11 +1208,16 @@
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+  // Courbe de Bézier quadratique : la caméra passe devant l'objet avant d'y entrer
+  const bez = (out, a, c, b, e) => out.set(0, 0, 0).addScaledVector(a, (1 - e) * (1 - e)).addScaledVector(c, 2 * (1 - e) * e).addScaledVector(b, e * e);
+
   function frame(now) {
     if (!K.el || !K.el.isConnected) return stop();
     K.raf = requestAnimationFrame(frame);
     if (document.hidden) return;
     const t = (now - K.t0) / 1000;
+    const dt = Math.min(0.05, Math.max(0, (now - (K.last || now)) / 1000));
+    K.last = now;
     const calm = reduced();
     // Léger balancement sur écran tactile (pas de souris)
     if (!finePointer() && !calm) {
@@ -996,44 +1226,50 @@
     }
     K.off.az += (K.offT.az - K.off.az) * 0.06;
     K.off.el += (K.offT.el - K.off.el) * 0.06;
+    // Plein écran ⇄ menu : glissement du cadrage
+    if (K.tween) {
+      const p = clamp01((now - K.tween.t) / 560);
+      const e = eo5(p);
+      K.R = K.tween.from.R + (K.tween.to.R - K.tween.from.R) * e;
+      K.look.y = K.tween.from.y + (K.tween.to.y - K.tween.from.y) * e;
+      if (p >= 1) K.tween = null;
+    }
     const az = K.base.az + K.off.az;
     const el = K.base.el + K.off.el;
     const cam = K.camera;
-    if (K.anim) {
-      const p = Math.min(1, (now - K.anim.t) / 700);
-      const e = ease(p);
-      cam.position.lerpVectors(K.anim.from, K.anim.to, e);
-      cam.lookAt(new T.Vector3().lerpVectors(K.anim.look0, K.anim.look1, e));
+    const a = K.anim;
+    if (a) {
+      // 0 → 0,5 : l'objet s'ouvre ; la caméra démarre doucement, passe devant l'objet et entre ;
+      // la page se dévoile sur la fin
+      const p = clamp01((now - a.t) / 1250);
+      a.it.o = eo3(clamp01(p / 0.5));
+      const c = ease(clamp01((p - 0.06) / 0.94));
+      bez(cam.position, a.from, a.ctrl, a.to, c);
+      cam.lookAt(new T.Vector3().lerpVectors(a.look0, a.look1, clamp01(c * 1.35))); // le regard suit le déplacement
+      if (K.veil) K.veil.style.opacity = clamp01((p - 0.8) / 0.2).toFixed(3);
       if (p >= 1) {
-        const route = K.anim.route;
         K.anim = null;
-        C.go(route);
+        C.go(a.route);
         return;
       }
     } else {
       cam.position.set(K.look.x + K.R * Math.cos(el) * Math.sin(az), K.look.y + K.R * Math.sin(el), K.look.z + K.R * Math.cos(el) * Math.cos(az));
       cam.lookAt(K.look);
     }
-    // Survol : l'objet se soulève un peu et se réchauffe
+    // Survol : chaque objet a son petit mouvement (le livre s'entrouvre, le frigo s'éclaire…)
     K.items.forEach((x) => {
-      x.h += (x.target - x.h) * 0.18;
-      const o = x.obj;
-      o.position.y = o.userData.base.y + 0.03 * x.h;
-      o.scale.setScalar(1 + 0.035 * x.h);
-      if (Math.abs(x.target - x.h) > 0.002 || x.h > 0.002)
-        o.traverse((m) => {
-          if (m.isMesh && m.material && m.material.emissive) {
-            m.material.emissive.set('#E4572E');
-            m.material.emissiveIntensity = 0.1 * x.h;
-          }
-        });
+      x.h += (x.target - x.h) * Math.min(1, dt * 9);
+      if (x.h < 0.001 && x.target === 0) x.h = 0;
+      x.act(calm ? 0 : t, calm ? x.h * 0.4 : x.h, x.o);
     });
-    // Vapeur
+    // Vapeur : plus forte quand on survole la casserole ou qu'on soulève le couvercle
+    const boost = calm ? 0 : K.steamBoost;
+    K.steamPhase += dt * (0.35 + 0.45 * boost);
     K.steam.forEach((s, i) => {
-      const p = calm ? 0.4 : (t * 0.35 + i / K.steam.length) % 1;
-      s.position.set(K.potX + Math.sin(p * 6 + i) * 0.025, 1.1 + p * 0.42, -1.72);
-      s.scale.setScalar(0.6 + p * 1.3);
-      s.material.opacity = calm ? 0 : Math.sin(p * Math.PI) * 0.32;
+      const p = calm ? 0.4 : (K.steamPhase + i / K.steam.length) % 1;
+      s.position.set(K.potX + Math.sin(p * 6 + i) * 0.025, 1.1 + p * (0.42 + 0.12 * boost), -1.72);
+      s.scale.setScalar((0.6 + p * 1.3) * (1 + 0.35 * boost));
+      s.material.opacity = calm ? 0 : Math.sin(p * Math.PI) * Math.min(0.75, 0.32 * (1 + 1.3 * boost));
     });
     K.renderer.render(K.scene, cam);
     placePins();
@@ -1046,7 +1282,7 @@
       const b = K.pins[x.key];
       if (!b) return;
       v.copy(x.anchor);
-      v.y += 0.03 * x.h;
+      v.y += 0.02 * x.h;
       v.project(K.camera);
       // Les étiquettes restent dans le cadre (petits écrans)
       const half = (b.offsetWidth || 80) / 2 + 8;

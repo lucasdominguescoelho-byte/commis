@@ -59,12 +59,14 @@
     shell(route);
     root.classList.toggle('fade', changed);
     root.dataset.view = route.view; // dispositions propres à une page (ex. accueil)
-    // Plein écran de la cuisine 3D : seulement à l'arrivée sur l'accueil, jusqu'à ce qu'on en sorte
-    if (route.view !== 'accueil') C.ui.full = false;
+    // Cuisine 3D : plein écran par défaut ; le mode choisi (plein écran ou menu) est gardé
+    // pendant la visite, la barre de menu passe alors par-dessus la pièce (k3-home)
     const html = document.documentElement;
-    html.classList.toggle('k3-full', !!C.ui.full && !C.k3dFailed && !!C.k3d && C.k3d.supported());
+    const home = route.view === 'accueil' && !C.k3dFailed && !!C.k3d && C.k3d.supported();
+    html.classList.toggle('k3-home', home);
+    html.classList.toggle('k3-full', home && !!C.ui.full);
     C.views[route.view].render(root, route.param);
-    if (!root.querySelector('.k3')) html.classList.remove('k3-full');
+    if (!root.querySelector('.k3')) html.classList.remove('k3-full', 'k3-home');
     document.title = `${TITLES[route.view]} — ${C.APP}`;
     if (changed) window.scrollTo(0, 0);
     C.sheets.forEach((s) => s.refresh && s.refresh());
@@ -119,7 +121,7 @@
     setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500); // après l'affichage
   }
 
-  C.ui.full = C.route().view === 'accueil'; // on arrive sur la pièce en plein écran
+  C.ui.full = true; // on arrive sur la pièce en plein écran
   C.load()
     .then(() => {
       C.eng.refreshEstimates();
