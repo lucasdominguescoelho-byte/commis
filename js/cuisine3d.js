@@ -208,12 +208,14 @@
     });
     room.add(at(plane(KW, 0.55, mat('#ffffff', { map: subway.tex, roughness: 0.5 })), KX, 1.175, -1.994));
 
-    const low = (x0, x1) => room.add(at(rbox(x1 - x0, 0.84, 0.56, 0.02, W.mint), (x0 + x1) / 2, 0.44, -1.72));
+    // Les meubles gardent leur dessin (de -2.2 à 1.05), étirés jusqu'à K1 : chaque section est un peu plus longue
+    const S = (K1 - K0) / 3.25;
+    const sx = (x) => K0 + (x - K0) * S;
+    const low = (x0, x1) => room.add(at(rbox((x1 - x0) * S, 0.84, 0.56, 0.02, W.mint), sx((x0 + x1) / 2), 0.44, -1.72));
     low(-1.6, -1.0);
     low(-1.0, -0.4);
     low(-0.4, 0.42);
-    low(0.42, 1.02);
-    low(1.02, 1.62);
+    low(0.42, 1.05 - 0.03 / S);
     room.add(at(rbox(0.03, 0.86, 0.6, 0.01, '#FBFBFA'), K1 - 0.015, 0.43, -1.7)); // joue de fin
     const marble = paint(1024, 256, (g, w, h) => {
       g.fillStyle = W.marble;
@@ -239,97 +241,102 @@
     top.position.set(KX, 0.9015, -1.69);
     room.add(top);
 
-    const door = (w, h, x, y, color) => room.add(at(rbox(w, h, 0.02, 0.008, color || W.mintDoor), x, y, -1.43));
+    // Façades : la poignée toujours en haut à gauche de chaque porte et de chaque tiroir
     const knob = (x, y) => room.add(at(ball(0.018, '#1E1D1C', { roughness: 0.4 }), x, y, -1.41));
+    const door = (w, h, x, y, ky, color) => {
+      room.add(at(rbox(w * S, h, 0.02, 0.008, color || W.mintDoor), sx(x), y, -1.43));
+      if (ky != null) knob(sx(x) - (w * S) / 2 + 0.07, ky);
+    };
     // Évier : façade avec bandeau à deux boutons ronds
-    door(0.58, 0.62, -1.3, 0.34);
+    door(0.58, 0.62, -1.3, 0.34, 0.6);
     door(0.58, 0.18, -1.3, 0.76);
-    knob(-1.52, 0.6);
     [-1.36, -1.24].forEach((x) => {
-      const ring = at(cyl(0.028, 0.028, 0.012, '#2A2A2A', 24), x, 0.76, -1.415);
+      const ring = at(cyl(0.028, 0.028, 0.012, '#2A2A2A', 24), sx(x), 0.76, -1.415);
       ring.rotation.x = Math.PI / 2;
       room.add(ring);
     });
     // Four encastré sous la plaque
     door(0.58, 0.12, -0.7, 0.06);
-    room.add(at(rbox(0.58, 0.6, 0.02, 0.01, '#F1F1EF'), -0.7, 0.44, -1.43));
-    room.add(at(rbox(0.46, 0.42, 0.012, 0.01, '#1B1A1A', { roughness: 0.25 }), -0.7, 0.4, -1.418));
-    room.add(at(rbox(0.58, 0.12, 0.02, 0.01, '#F6F6F4'), -0.7, 0.8, -1.43));
+    room.add(at(rbox(0.58 * S, 0.6, 0.02, 0.01, '#F1F1EF'), sx(-0.7), 0.44, -1.43));
+    room.add(at(rbox(0.46 * S, 0.42, 0.012, 0.01, '#1B1A1A', { roughness: 0.25 }), sx(-0.7), 0.4, -1.418));
+    room.add(at(rbox(0.58 * S, 0.12, 0.02, 0.01, '#F6F6F4'), sx(-0.7), 0.8, -1.43));
     for (let i = 0; i < 5; i++) {
-      const k = at(cyl(0.014, 0.014, 0.012, '#D7D7D5', 16), -0.9 + i * 0.1, 0.8, -1.415);
+      const k = at(cyl(0.014, 0.014, 0.012, '#D7D7D5', 16), sx(-0.9 + i * 0.1), 0.8, -1.415);
       k.rotation.x = Math.PI / 2;
       room.add(k);
     }
-    room.add(at(rbox(0.46, 0.022, 0.03, 0.01, '#E9E9E7', { roughness: 0.3, metalness: 0.2 }), -0.7, 0.66, -1.4));
-    room.add(at(rbox(0.15, 0.42, 0.012, 0.006, '#4A4644'), -0.62, 0.46, -1.385)); // torchon
+    room.add(at(rbox(0.46 * S, 0.022, 0.03, 0.01, '#E9E9E7', { roughness: 0.3, metalness: 0.2 }), sx(-0.7), 0.66, -1.4));
+    room.add(at(rbox(0.15, 0.42, 0.012, 0.006, '#4A4644'), sx(-0.62), 0.46, -1.385)); // torchon
     // Colonne de tiroirs, puis un dernier meuble à porte
     [
       [0.765, 0.18],
       [0.5, 0.31],
       [0.185, 0.3],
-    ].forEach(([y, h]) => {
-      door(0.8, h, 0.01, y);
-      knob(0.01, y + h / 2 - 0.05);
-    });
-    door(0.58, 0.8, 0.72, 0.44);
-    knob(0.48, 0.74);
-    door(0.58, 0.8, 1.32, 0.44);
-    knob(1.56, 0.74);
+    ].forEach(([y, h]) => door(0.8, h, 0.01, y, y + h / 2 - 0.05));
+    door(0.58, 0.8, 0.72, 0.44, 0.74);
 
     // Évier inox et robinet (rien autour), cafetière et bouilloire dans l'angle
-    room.add(at(rbox(0.5, 0.012, 0.42, 0.04, '#C9CFD2', { roughness: 0.35, metalness: 0.4 }), -1.3, 0.906, -1.72));
-    room.add(at(rbox(0.4, 0.006, 0.32, 0.04, '#9EA7AB', { roughness: 0.3, metalness: 0.4 }), -1.3, 0.912, -1.72));
-    room.add(at(cyl(0.02, 0.022, 0.26, steel(), 16), -1.3, 1.03, -1.95));
-    const spout = at(cyl(0.015, 0.015, 0.2, steel(), 12), -1.3, 1.15, -1.86);
+    room.add(at(rbox(0.5 * S, 0.012, 0.42, 0.04, '#C9CFD2', { roughness: 0.35, metalness: 0.4 }), sx(-1.3), 0.906, -1.72));
+    room.add(at(rbox(0.4 * S, 0.006, 0.32, 0.04, '#9EA7AB', { roughness: 0.3, metalness: 0.4 }), sx(-1.3), 0.912, -1.72));
+    room.add(at(cyl(0.02, 0.022, 0.26, steel(), 16), sx(-1.3), 1.03, -1.95));
+    const spout = at(cyl(0.015, 0.015, 0.2, steel(), 12), sx(-1.3), 1.15, -1.86);
     spout.rotation.x = Math.PI / 2.4;
     room.add(spout);
     room.add(at(rbox(0.2, 0.32, 0.24, 0.03, '#1E1E1F', { roughness: 0.4 }), -2.06, 1.06, -1.86)); // cafetière
     const kettle = group(at(cyl(0.075, 0.085, 0.2, steel(), 24), 0, 0.1, 0), at(mesh(new T.TorusGeometry(0.06, 0.012, 8, 20, Math.PI), mat('#222')), 0, 0.2, 0));
     room.add(at(kettle, -2.08, 0.9, -1.56));
 
-    // Plan de droite, sobre : un pot à cuillères en bois près de la plaque, une planche à découper
-    const crock = group(at(cyl(0.055, 0.05, 0.15, '#F2EEE6', 24, { roughness: 0.45 }), 0, 0.075, 0));
-    [
-      [-0.018, 0.2, 0.012],
-      [0.02, -0.15, -0.01],
-      [0.0, 0.05, 0.02],
-    ].forEach(([dx, tilt, dz]) => {
-      const spoon = group(at(cyl(0.007, 0.007, 0.26, W.oakDark, 8), 0, 0.13, 0), at(ball(0.022, W.oakDark), 0, 0.27, 0));
-      spoon.children[1].scale.set(1, 1.5, 0.45);
-      spoon.rotation.z = tilt;
-      crock.add(at(spoon, dx, 0.02, dz));
-    });
-    room.add(at(crock, -0.25, 0.906, -1.86));
+    // Plan de droite : huile d'olive, bloc à couteaux, petite bougie, terrarium ; planche à découper au bout
+    const oil = group(at(cyl(0.035, 0.035, 0.2, mat('#5E6A2A', { transparent: true, opacity: 0.85, roughness: 0.15 }), 18), 0, 0.1, 0), at(cyl(0.016, 0.02, 0.07, mat('#3F4520'), 12), 0, 0.235, 0));
+    room.add(at(oil, 0.03, 0.9, -1.9));
+    const block = at(rbox(0.11, 0.2, 0.15, 0.015, '#3B2F28'), 0.2, 1.0, -1.9);
+    block.rotation.x = -0.25;
+    room.add(block);
+    for (let i = 0; i < 4; i++) room.add(at(rbox(0.018, 0.09, 0.03, 0.006, '#151414'), 0.165 + i * 0.024, 1.14, -1.93));
+    const candle = group(
+      at(cyl(0.036, 0.036, 0.075, mat('#F3D3D8', { transparent: true, opacity: 0.7, roughness: 0.15 }), 20), 0, 0.0375, 0),
+      at(cyl(0.031, 0.031, 0.05, '#FBF4EA', 20), 0, 0.03, 0),
+      at(cyl(0.002, 0.002, 0.014, '#2B2622', 6), 0, 0.062, 0)
+    );
+    const flame = at(new T.Mesh(new T.SphereGeometry(0.008, 12, 8), new T.MeshBasicMaterial({ color: '#FFC46B' })), 0, 0.076, 0);
+    flame.scale.set(1, 1.9, 1);
+    candle.add(flame);
+    room.add(at(candle, 0.36, 0.906, -1.66));
+    room.add(at(cyl(0.11, 0.11, 0.025, '#2A2827', 28), 0.62, 0.915, -1.84));
+    room.add(at(mesh(new T.CapsuleGeometry(0.1, 0.12, 8, 24), new T.MeshStandardMaterial({ color: '#EAF3F5', transparent: true, opacity: 0.28, roughness: 0.05 }), false), 0.62, 1.06, -1.84));
+    room.add(at(ball(0.05, '#6E8B5A'), 0.62, 0.96, -1.84));
     const boardCut = group(rbox(0.3, 0.4, 0.022, 0.03, W.oak), at(rbox(0.07, 0.1, 0.022, 0.03, W.oak), 0, 0.23, 0));
     boardCut.rotation.x = -0.12;
-    room.add(at(boardCut, 1.36, 1.11, -1.95));
+    room.add(at(boardCut, 1.43, 1.11, -1.95));
     // Rouleau d'essuie-tout sous le meuble haut (comme sur la photo)
-    const roll = at(cyl(0.05, 0.05, 0.24, '#FBFBFA', 20), 0.6, 1.36, -1.9);
+    const roll = at(cyl(0.05, 0.05, 0.24, '#FBFBFA', 20), 1.0, 1.36, -1.9);
     roll.rotation.z = Math.PI / 2;
     room.add(roll);
 
     // Meubles hauts vert d'eau, hotte blanche éclairée
-    const high = (x0, x1, y0) => room.add(at(rbox(x1 - x0, 2.2 - y0, 0.34, 0.015, W.mint), (x0 + x1) / 2, (2.2 + y0) / 2, -1.83));
+    const high = (x0, x1, y0) => room.add(at(rbox((x1 - x0) * S, 2.2 - y0, 0.34, 0.015, W.mint), sx((x0 + x1) / 2), (2.2 + y0) / 2, -1.83));
     high(K0, -0.95, 1.45);
     high(-0.95, -0.35, 1.76);
-    high(-0.35, K1, 1.45);
-    const hdoor = (x0, x1, y0, kx) => {
-      room.add(at(rbox(x1 - x0 - 0.012, 2.2 - y0 - 0.012, 0.02, 0.008, W.mintDoor), (x0 + x1) / 2, (2.2 + y0) / 2, -1.65));
-      room.add(at(ball(0.017, '#1E1D1C', { roughness: 0.4 }), kx, y0 + 0.07, -1.635));
+    high(-0.35, 1.05, 1.45);
+    const hdoor = (x0, x1, y0) => {
+      const a = sx(x0);
+      const b = sx(x1);
+      room.add(at(rbox(b - a - 0.012, 2.2 - y0 - 0.012, 0.02, 0.008, W.mintDoor), (a + b) / 2, (2.2 + y0) / 2, -1.65));
+      room.add(at(ball(0.017, '#1E1D1C', { roughness: 0.4 }), a + 0.07, y0 + 0.07, -1.635));
     };
-    hdoor(K0, -1.575, 1.45, -1.63);
-    hdoor(-1.575, -0.95, 1.45, -1.52);
-    hdoor(-0.95, -0.35, 1.76, -0.65);
-    hdoor(-0.35, 0.35, 1.45, -0.29);
-    hdoor(0.35, 1.0, 1.45, 0.41);
-    hdoor(1.0, K1, 1.45, 1.59);
-    room.add(at(rbox(0.6, 0.11, 0.44, 0.02, '#F6F6F4'), -0.65, 1.7, -1.78));
-    const glow = at(plane(0.34, 0.1, new T.MeshBasicMaterial({ color: '#FFE9C9' })), -0.65, 1.643, -1.72);
+    hdoor(K0, -1.575, 1.45);
+    hdoor(-1.575, -0.95, 1.45);
+    hdoor(-0.95, -0.35, 1.76);
+    hdoor(-0.35, 0.35, 1.45);
+    hdoor(0.35, 1.05, 1.45);
+    const HX = sx(-0.65); // hotte au-dessus de la plaque
+    room.add(at(rbox(0.6 * S, 0.11, 0.44, 0.02, '#F6F6F4'), HX, 1.7, -1.78));
+    const glow = at(plane(0.34 * S, 0.1, new T.MeshBasicMaterial({ color: '#FFE9C9' })), HX, 1.643, -1.72);
     glow.rotation.x = Math.PI / 2;
     room.add(glow);
     const hoodLight = new T.SpotLight('#FFD9A8', 5, 2.4, 0.95, 0.7, 1.4);
-    hoodLight.position.set(-0.65, 1.62, -1.75);
-    hoodLight.target.position.set(-0.65, 0.9, -1.65);
+    hoodLight.position.set(HX, 1.62, -1.75);
+    hoodLight.target.position.set(HX, 0.9, -1.65);
     room.add(hoodLight, hoodLight.target);
     // Affiche encadrée sur la joue du meuble haut, côté séjour : une tomate, dessin simple
     const posterTex = paint(320, 480, (g, w, h) => {
@@ -529,12 +536,10 @@
       e.rotation.y = -Math.PI / 2; // côté est, regarde vers -x
       room.add(at(e, TX + 0.62, 0, z));
     });
-    // Sur la table : un sous-verre et un verre devant chaque chaise, la lampe au milieu, le prospectus au coin avant droit
+    // Sur la table : un sous-verre et un verre devant les deux chaises du fond, la lampe au milieu, le prospectus au coin avant droit
     [
       [-1, TZ + 0.3, '#D2343A'],
-      [1, TZ + 0.3, '#3E9B55'],
       [-1, TZ - 0.29, '#3E9B55'],
-      [1, TZ - 0.29, '#D2343A'],
     ].forEach(([side, z, c]) => {
       const x = TX + side * 0.25;
       room.add(at(cyl(0.065, 0.065, 0.008, '#8A776B', 40, { roughness: 0.95 }), x, tableTop + 0.004, z));
@@ -628,14 +633,14 @@
     /* Frigo sous plan, blanc, avec ses magnets et le post-it */
     const postit = paint(256, 256, () => {});
     const fridge = group(
-      rbox(0.58, 0.84, 0.58, 0.02, '#FAFAF9'),
-      at(rbox(0.5, 0.02, 0.012, 0.005, '#E4E4E2'), 0, 0.37, 0.292),
+      rbox(0.58 * S, 0.84, 0.58, 0.02, '#FAFAF9'),
+      at(rbox(0.5 * S, 0.02, 0.012, 0.005, '#E4E4E2'), 0, 0.37, 0.292),
       at(plane(0.17, 0.17, mat('#ffffff', { map: postit.tex })), 0.12, 0.12, 0.292),
       at(rbox(0.06, 0.07, 0.008, 0.003, '#9B6F57'), -0.17, 0.2, 0.293),
       at(rbox(0.055, 0.07, 0.008, 0.003, '#7AA0C2'), -0.08, 0.2, 0.293)
     );
     fridge.children[2].castShadow = false;
-    add('frigo', 'Frigo', '#/frigo', at(fridge, -1.89, 0.42, -1.71), [-1.89, 0.38, -1.4]);
+    add('frigo', 'Frigo', '#/frigo', at(fridge, sx(-1.89), 0.42, -1.71), [sx(-1.89), 0.38, -1.4]);
 
     /* Plaque à induction et casserole : le repas du soir */
     const stove = group(
@@ -656,7 +661,8 @@
       r.rotation.x = Math.PI / 2;
       stove.add(r);
     });
-    add('cuisiner', 'Ce soir', '#/planning', at(stove, -0.7, 0.906, -1.7), [-0.78, 1.64, -1.72]);
+    const potX = sx(-0.7) - 0.08; // la casserole, pour la vapeur
+    add('cuisiner', 'Ce soir', '#/planning', at(stove, sx(-0.7), 0.906, -1.7), [potX, 1.64, -1.72]);
     const steam = [];
     for (let i = 0; i < 4; i++) {
       const s = new T.Mesh(new T.SphereGeometry(0.035, 14, 10), new T.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0, depthWrite: false }));
@@ -745,7 +751,7 @@
     bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
     add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32]);
 
-    K = { renderer, scene, camera, room, items, steam, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, potX, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
@@ -1054,7 +1060,7 @@
     // Vapeur
     K.steam.forEach((s, i) => {
       const p = calm ? 0.4 : (t * 0.35 + i / K.steam.length) % 1;
-      s.position.set(-0.78 + Math.sin(p * 6 + i) * 0.025, 1.1 + p * 0.42, -1.72);
+      s.position.set(K.potX + Math.sin(p * 6 + i) * 0.025, 1.1 + p * 0.42, -1.72);
       s.scale.setScalar(0.6 + p * 1.3);
       s.material.opacity = calm ? 0 : Math.sin(p * Math.PI) * 0.32;
     });
