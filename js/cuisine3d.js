@@ -88,9 +88,14 @@
     const tex = new T.CanvasTexture(c);
     tex.colorSpace = T.SRGBColorSpace;
     tex.anisotropy = 8;
+    // Chaque dessin repart d'un repère neuf : sinon une page dessinée tête-bêche (verso du livre)
+    // se retournerait une fois sur deux en revenant sur l'accueil
     const redraw = (fn) => {
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.clearRect(0, 0, w, h);
+      g.save();
       (fn || draw)(g, w, h);
+      g.restore();
       tex.needsUpdate = true;
     };
     redraw(draw);
@@ -962,37 +967,56 @@
       },
       { pos: flUp.clone().add(flN.clone().multiplyScalar(0.3)), look: flUp, ctrl: flUp.clone().add(flN.clone().multiplyScalar(1.4)).add(V3(0, 0.35, 0)) });
 
-    /* Tirelire en céramique mate satinée, toute ronde, sur l'étagère du portemanteau : une pièce tombe dans la fente */
-    const glaze = new T.MeshPhysicalMaterial({ color: '#F3A9BA', roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.6 });
-    const glazeSnout = new T.MeshPhysicalMaterial({ color: '#EE9DB0', roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.6 });
+    /* Tirelire en céramique mate satinée, moulée d'un seul morceau : une sphère dont la surface pousse
+       doucement en groin, en quatre petits pieds et en deux petites oreilles (aucune pièce rapportée).
+       Seuls les yeux, les narines, la fente et la queue sont des détails posés dessus. */
+    const glaze = new T.MeshPhysicalMaterial({ color: '#F3A9BA', roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.6 });
+    const PIG_R = 0.08;
+    const PIG_S = V3(1.2, 1, 1.03); // ovale, un peu plus long que haut
+    const bumps = [
+      // direction, hauteur, largeur (rad), forme (2 = arrondi, 4 = bout plat aux bords arrondis)
+      [V3(1, -0.06, 0), 0.19, 0.3, 3], // groin
+      ...[1, -1].flatMap((sx) => [1, -1].map((sz) => [V3(0.5 * sx, -0.8, 0.46 * sz), 0.13, 0.26, 2])), // pieds courts et ronds
+      ...[1, -1].map((sz) => [V3(0.4, 0.86, 0.32 * sz), 0.075, 0.17, 2]), // petites oreilles arrondies
+    ].map(([d, a, w, k]) => [d.normalize(), a, w, k]);
+    const swell = (dir) => bumps.reduce((acc, [c, a, w, k]) => acc + a * Math.exp(-Math.pow(dir.angleTo(c) / w, k) / 2), 1);
+    // point de la surface dans la direction donnée (repère de la tirelire)
+    const onPig = (dx, dy, dz, out = 0) => {
+      const d = V3(dx, dy, dz).normalize();
+      return d.multiplyScalar(PIG_R * swell(d) + out).multiply(PIG_S);
+    };
+    const pigGeo = new T.SphereGeometry(PIG_R, 128, 96);
+    const gp = pigGeo.attributes.position;
+    const pv = new T.Vector3();
+    for (let i = 0; i < gp.count; i++) {
+      pv.fromBufferAttribute(gp, i);
+      const d = pv.clone().normalize();
+      pv.copy(d).multiplyScalar(PIG_R * swell(d)).multiply(PIG_S);
+      gp.setXYZ(i, pv.x, pv.y, pv.z);
+    }
+    pigGeo.computeVertexNormals();
+    pigGeo.computeBoundingBox();
+    const PIG_Y = -pigGeo.boundingBox.min.y; // posée sur ses pieds
     const pigIn = group();
-    const P = (o, x, y, z) => pigIn.add(at(o, x, y, z));
-    const body = mesh(new T.SphereGeometry(0.08, 48, 32), glaze);
-    body.scale.set(1.22, 1, 1.02);
-    P(body, 0, 0.1, 0);
-    const snout = mesh(new T.SphereGeometry(0.036, 32, 20), glazeSnout);
-    snout.scale.set(0.45, 0.85, 1);
-    P(snout, 0.1, 0.096, 0);
+    const P = (o, v) => pigIn.add(at(o, v.x, v.y + PIG_Y, v.z));
+    P(mesh(pigGeo, glaze), V3(0, 0, 0));
     [-1, 1].forEach((s) => {
-      const nostril = ball(0.0065, '#A24B62', { roughness: 0.7 });
-      nostril.scale.set(0.3, 1.2, 0.8);
-      P(nostril, 0.1155, 0.096, 0.011 * s);
-      P(ball(0.009, '#2A2426', { roughness: 0.45 }), 0.083, 0.132, 0.04 * s);
-      P(ball(0.0026, '#FFFFFF', { roughness: 0.3 }), 0.0905, 0.1355, 0.037 * s);
-      const ear = mesh(new T.SphereGeometry(0.03, 24, 16), glaze);
-      ear.scale.set(0.75, 1, 0.32);
-      ear.rotation.set(0.35 * s, 0, -0.35);
-      P(ear, 0.056, 0.168, 0.045 * s);
-      [0.058, -0.058].forEach((x) => P(mesh(new T.CapsuleGeometry(0.017, 0.022, 6, 16), glaze), x, 0.028, 0.045 * s));
+      const nostril = ball(0.0058, '#B05A70', { roughness: 0.7 });
+      nostril.scale.set(0.35, 1.25, 0.85);
+      P(nostril, onPig(1, -0.06, 0.1 * s, -0.0015));
+      P(ball(0.0078, '#2A2426', { roughness: 0.45 }), onPig(0.78, 0.4, 0.34 * s, -0.002));
+      P(ball(0.0022, '#FFFFFF', { roughness: 0.3 }), onPig(0.8, 0.43, 0.31 * s, 0.003));
     });
     const tailPts = [];
-    for (let k = 0; k <= 14; k++) {
+    for (let k = 0; k <= 12; k++) {
       const a = k * 0.62;
-      const r = 0.012 - k * 0.0005;
-      tailPts.push(new T.Vector3(-0.095 - k * 0.0012, 0.112 + Math.sin(a) * r, Math.cos(a) * r - 0.012));
+      const r = 0.009 - k * 0.0004;
+      tailPts.push(new T.Vector3(-0.003 - k * 0.0011, Math.sin(a) * r, Math.cos(a) * r - 0.009));
     }
-    P(mesh(new T.TubeGeometry(new T.CatmullRomCurve3(tailPts), 40, 0.0036, 10), glaze), 0, 0, 0);
-    P(rbox(0.05, 0.007, 0.011, 0.0034, '#8C4458'), -0.005, 0.1795, 0);
+    const tail = mesh(new T.TubeGeometry(new T.CatmullRomCurve3(tailPts), 36, 0.0032, 10), glaze);
+    P(tail, onPig(-1, 0.12, 0, -0.002));
+    const slot = rbox(0.046, 0.006, 0.01, 0.003, '#8C4458');
+    P(slot, onPig(0, 1, 0, -0.0022));
     const coin = cyl(0.024, 0.024, 0.004, '#E8B84A', 28, { metalness: 0.7, roughness: 0.28 });
     coin.rotation.x = Math.PI / 2;
     coin.visible = false;
@@ -1007,7 +1031,7 @@
         const w = h * (1 - o);
         const drop = clamp01((o - 0.05) / 0.45);
         coin.visible = o > 0.04 && drop < 1;
-        coin.position.set(-0.005, 0.38 - 0.21 * drop * drop, 0);
+        coin.position.set(0, PIG_Y + 0.29 - 0.2 * drop * drop, 0);
         const happy = o > 0.5 ? Math.sin(clamp01((o - 0.5) / 0.35) * Math.PI) : 0;
         pigIn.position.y = w * 0.03 * Math.abs(Math.sin(t * 7)) + happy * 0.05;
         pigIn.rotation.x = w * 0.12 * Math.sin(t * 7);

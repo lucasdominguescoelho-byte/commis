@@ -3,9 +3,14 @@
 
 Sources (pages publiques, lues une fois par jour) :
   - Lidl   : site officiel lidl.ch, en français (« Promotions de la semaine »)
-  - Migros : aktionis.ch, agrégateur suisse d'actions, en allemand
-  - Coop   : aktionis.ch, idem
+  - Migros : rabatt-kompass.ch (version française) : les actions du catalogue romand,
+             celles valables à Sainte-Croix et dans le canton de Vaud ; complétées par
+             aktionis.ch (prix habituel, rabais, conditionnement) quand le même produit
+             y figure au même prix
+  - Coop   : idem, catalogue « Les actions Coop » (FR)
 Migros et Coop refusent l'accès automatisé à leur propre site : on ne le contourne pas.
+aktionis.ch seul ne suffit pas : il suit les prospectus alémaniques et ne connaît aucun
+magasin vaudois (des actions « webshop + magasins choisis » y passaient pour valables).
 
 Les noms allemands sont reconnus grâce au dictionnaire DICO ci-dessous, qui donne
 un libellé français, un rayon et le mot-clé reliant la promotion aux ingrédients
@@ -282,13 +287,16 @@ def reconnaitre(texte, langue, cat_source):
 
 # --------------------------------------------------------------------------- utilitaires
 
-def telecharger(url, cache=None):
+def telecharger(url, cache=None, ajax=False):
     if cache:
         f = os.path.join(cache, re.sub(r'[^a-zA-Z0-9]+', '_', url)[-150:] + '.html')
         if os.path.exists(f):
             with open(f, encoding='utf-8') as h:
                 return h.read()
-    req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept-Language': 'fr-CH,fr;q=0.9,de;q=0.6'})
+    entetes = {'User-Agent': UA, 'Accept-Language': 'fr-CH,fr;q=0.9,de;q=0.6'}
+    if ajax:
+        entetes['X-Requested-With'] = 'XMLHttpRequest'
+    req = urllib.request.Request(url, headers=entetes)
     with urllib.request.urlopen(req, timeout=30) as r:
         texte = r.read().decode('utf-8', errors='replace')
     if cache:
@@ -513,6 +521,200 @@ def aktionis(magasin, cache=None):
     return sortie
 
 
+# --------------------------------------------------------------------------- rabatt-kompass (Migros, Coop en Suisse romande)
+
+RK = 'https://fr.rabatt-kompass.ch'
+# Le catalogue romand mêle aux actions alimentaires des jouets, des habits, de la vaisselle, de la droguerie :
+# on ne garde que ce qui est reconnu comme nourriture ou boisson (un nom inconnu est écarté).
+RK_EXCLUS = (r'\b(?:papier|hygien|lessive|detergent|adoucissant|shampo|savon|gel douche|dentifrice|brosse|couches?|lingettes?|mouchoirs?'
+             r'|essuie|deodorant|rasoir|cosmeti|maquillage|beauty|creme (?:pour|de jour|de nuit|solaire|mains)|serviettes|tampons|litiere'
+             r'|pour chats?|pour chiens?|aliment pour|animaux|fleurs?|bouquet|plantes?|orchidee|poinsettia|bougies?|piles?|ampoules?|vaisselle'
+             r'|nettoy|poubelle|aluminium|film alimentaire|vitamines?|medica|pastilles|gorge|bain de bouche|listerine|thermometre|figurine'
+             r'|jouets?|jeux?|puzzle|poupees?|barbie|baby born|peluche|coffret|disney|pokemon|tonies|lego|playmobil|monopoly|furby|carte cadeau'
+             r'|gilet|veste|pull|chaussettes?|collants?|bag|menagere|couverts|casseroles?|poeles?|ustensiles?|cigarettes?|tabac|charbon|engrais|terreau)')
+RK_RAYONS = [
+    (r'\b(?:boissons?|eaux? minerales?|eau gazeuse|jus|nectar|bieres?|vins?|prosecco|champagne|cremant|mousseux|cafes?|the|ice tea|limonade'
+     r'|sirop|coca|pepsi|red bull|energy drink|capri sun|granini|rivella|soda|smoothie|whisky|vodka|gin|rhum|liqueur|cidre'
+     r'|nescafe|nespresso|dolce gusto|capsules|lungo|espresso|chateauneuf|amarone|valpolicella|merlot|chasselas|pinot|bordeaux|rioja'
+     r'|chianti|primitivo|riesling|sauvignon|chardonnay|rose diamond)\b', 'bois'),
+    (r'\bnoix de jambon\b', 'vp'),
+    (r'\b(?:pizzas?)\b.*\brefrigere|\brefrigere.*\bpizzas?\b', 'epi'),
+    (r'\b(?:sucre glace|chocolats?|biscuits?|cookies|bonbons?|chips|raviolis?|ravioli|tortell\w*|lasagnes?|gnocchi|spaghetti|nouilles|pates'
+     r'|falafels?|muesli|cereales|confiture|miel|noix|cajou|pistaches?|amandes?|noisettes?|cacahuetes?|huiles?|vinaigre|sucre|farine'
+     r'|riz|lentilles|pois chiches|sauces?|ketchup|mayonnaise|moutarde|bouillon|epices?|sel|poivre|conserves?|houmous|tomates? concassees'
+     r'|tomates? pelees|puree|soupes?|kinder|nutella|ovomaltine|crackers|apero|aperitif|olives|cornichons|thon en boite)\b', 'epi'),
+    (r'\b(?:creme glacee|glaces?|surgel\w*|congel\w*|frites|pizzas?|nuggets)\b', 'surg'),
+    (r'\b(?:poulets?|boeuf|porc|veau|agneau|dinde|canard|viandes?|steaks?|escalopes?|cotelettes?|saucisses?|cervelas|jambons?|lard|salami'
+     r'|chipolatas?|emince|hache|entrecotes?|filets?|roti|charbonnade|fondue chinoise|cordons? bleus?|paupiettes?|poissons?|saumon|truites?'
+     r'|thon|crevettes?|cabillaud|morue|dorades?|moules|scampi|merlu|colin|fruits de mer|viande sechee|bresaola|mortadelle|lardons|burgers?'
+     r'|hamburgers?|kebab|gibier|chevreuil|cerf|cuisses?|ailes?|haut de cuisse|hauts de cuisses)\b', 'vp'),
+    (r'\b(?:fromages?|gruyere|emmental|raclette|mozzarella|yogourts?|yaourts?|lait|creme|beurre|oeufs?|sere|cottage|mascarpone|feta|tilsit'
+     r'|vacherin|tete de moine|appenzell\w*|parmesan|grana|gorgonzola|brie|camembert|cheddar|ricotta|burrata|halloumi|fondue|skyr|kefir'
+     r'|quark|tomme)\b', 'lait'),
+    (r'\b(?:pains?|tresses?|croissants?|baguettes?|gateaux?|tartes?|panettone|cakes?|brioches?|toasts?|zopf|bretzels?|muffins?|beignets?'
+     r'|biscottes?)\b', 'boul'),
+    (r'\b(?:pommes?|poires?|bananes?|oranges?|mandarines?|clementines?|citrons?|raisins?|kiwis?|ananas|mangues?|fraises?|framboises?'
+     r'|myrtilles?|baies|tomates?|salades?|carottes?|choux?|courges?|courgettes?|poivrons?|oignons?|ail|patates?|champignons?|brocolis?'
+     r'|epinards?|poireaux?|celeris?|fenouils?|concombres?|avocats?|chataignes?|legumes?|fruits?|herbes|aubergines?|asperges?|haricots?'
+     r'|petits pois|radis|betteraves?|endives?|cresson|roquette|grenades?|figues?|kakis?|dattes?|melons?|pasteques?|abricots?|peches?'
+     r'|prunes?|cerises?|physalis|patates? douces?)\b', 'fl'),
+]
+# Plats préparés et sucreries : leur nom cite des ingrédients (« raviolis aux œufs ») sans en être
+RK_PREPARE = r'\b(?:raviolis?|tortell\w*|pizzas?|lasagnes?|chocolats?|biscuits?|cookies|chips|bonbons?|kinder|falafels?|houmous|soupes?)\b'
+# Mots trop courants pour dire à eux seuls que deux noms désignent le même produit
+RK_COMMUNS = set('coop migros suisse bio naturaplan naturafarm classic qualite prix garantie fine food betty bossi produits refrigeres '
+                 'tous toutes avec sans pack paquet duo trio quattro sorte sortes divers diverses assortiment fairtrade spécialité '
+                 'specialite delicorn karma anna best extra nature frais fraiche fraiches entier entiere'.split())
+
+
+def rk_exclu(nom):
+    return bool(re.search(RK_EXCLUS, norm(nom)))
+
+
+def rk_rayon(nom):
+    """Rayon d'après le nom, ou None si le nom ne dit pas ce que c'est (« Rio Mare » : seule la marque)."""
+    t = norm(nom)
+    return next((c for p, c in RK_RAYONS if re.search(p, t)), None)
+
+
+def rk_dates(txt):
+    """« 12.11. - 18.11.2026 » ou « 30.12.2026 - 5.1.2027 » → (début, fin) ISO."""
+    m = re.search(r'(\d{1,2})\.(\d{1,2})\.(\d{4})?\s*-\s*(\d{1,2})\.(\d{1,2})\.(\d{4})', txt or '')
+    if not m:
+        return '', ''
+    j1, m1, a1, j2, m2, a2 = m.groups()
+    a1 = a1 or (int(a2) - 1 if int(m1) > int(m2) else a2)
+    return date_iso(j1, m1, a1), date_iso(j2, m2, a2)
+
+
+def rk_cartes(fragment):
+    cartes = []
+    for bloc in fragment.split('class="product-card ')[1:]:
+        noms = re.findall(r'<img[^>]*\balt="([^"]*)"', bloc)
+        images = re.findall(r'<img[^>]*\bsrc="([^"]*)"', bloc)
+        dates = re.search(r'product-availability">\s*([^<]*?)\s*<', bloc)
+        px = re.search(r'product-price">([^<]+)<', bloc)
+        cartes.append({
+            'nom': propre(noms[1]) if len(noms) > 1 else '',
+            'dates': dates.group(1) if dates else '',
+            'prix': prix(px.group(1).replace('\xa0', ' ')) if px else None,
+            'image': images[1] if len(images) > 1 else '',
+        })
+    # le lien du produit précède la classe dans la balise <a>
+    liens = re.findall(r'<a href="([^"]+)" class="product-card ', fragment)
+    for c, lien in zip(cartes, liens):
+        c['lien'] = lien
+    return cartes
+
+
+def rabatt_kompass(magasin, cache=None):
+    """Les produits en action du catalogue français de la semaine (pages de 12, chargées comme sur le site)."""
+    cartes = []
+    for page_no in range(1, 41):
+        url = f'{RK}/{magasin}-pubs?productCardGrid-page={page_no}&productCardGrid-order=asc&productCardGrid-column=0&do=productCardGrid-showProducts'
+        brut = telecharger(url, cache, ajax=True)
+        try:
+            brut = ''.join(json.loads(brut).get('snippets', {}).values())
+        except ValueError:
+            pass
+        lot = rk_cartes(brut)
+        if not lot:
+            break
+        cartes += lot
+    # semaine d'action : du jeudi au mercredi (quand la date manque)
+    jeudi = AUJOURDHUI - dt.timedelta(days=(AUJOURDHUI.weekday() - 3) % 7)
+    sortie, vus = [], set()
+    for c in cartes:
+        nom = re.sub('[\u200b-\u200d\ufeff]', '', c['nom'])
+        nom = propre(re.sub(r'\(\s*\d+\s*(?:kg|g|l|dl|cl|ml|pce|pièce)\s*=\s*[\d.,–-]+\s*\)', ' ', nom, flags=re.I))
+        nom = re.sub(r'\s*,\s*$', '', nom)
+        if nom.isupper():
+            nom = nom.capitalize()
+        if not nom or not c['prix']:
+            continue
+        if rk_exclu(nom):
+            continue
+        rayon = rk_rayon(nom)  # None : gardé seulement si aktionis.ch confirme un produit alimentaire (voir romandie)
+        debut, fin = rk_dates(c['dates'])
+        approx = not fin
+        if approx:
+            debut, fin = jeudi.isoformat(), (jeudi + dt.timedelta(days=6)).isoformat()
+        if fin < AUJOURDHUI.isoformat():
+            continue
+        cle = (norm(nom), c['prix'], debut)
+        if cle in vus:
+            continue
+        vus.add(cle)
+        r = None if re.search(RK_PREPARE, norm(nom)) else reconnaitre(nom, 'fr', rayon or 'autre')
+        image = c['image']
+        if image.startswith('/'):
+            image = RK + image
+        sortie.append({
+            'externalId': f"rk-{magasin}-{norm(nom).replace(' ', '-')[:48]}-{debut}",
+            'name': nom,
+            'store': magasin,
+            'category': r[1] if r else rayon,
+            'promoPrice': c['prix'],
+            'regularPrice': None,
+            'discountPct': None,
+            'unitLabel': conditionnement(nom),
+            'validFrom': debut,
+            'validTo': fin,
+            'approxDates': approx,
+            'match': r[2] if r else '',
+            'photo': image,
+            'url': c.get('lien') or f'{RK}/{magasin}-pubs',
+            'note': '',
+        })
+    return sortie
+
+
+def mots(s):
+    return {w for w in norm(s).split() if len(w) >= 4 and w not in RK_COMMUNS}
+
+
+def completer(romandes, alemaniques):
+    """Prix habituel, rabais et conditionnement repris d'aktionis.ch quand c'est sûrement le même produit :
+    même magasin, même prix d'action, et le même ingrédient reconnu ou un mot distinctif commun (marque…)."""
+    par_prix = {}
+    for a in alemaniques:
+        if a.get('promoPrice'):
+            par_prix.setdefault((a['store'], round(a['promoPrice'], 2)), []).append(a)
+    n = 0
+    for p in romandes:
+        cands = []
+        for a in par_prix.get((p['store'], round(p['promoPrice'], 2)), []):
+            communs = mots(p['name']) & mots(a.get('origName') or a['name'])
+            meme = bool(p['match']) and p['match'] == a.get('match')
+            if meme or communs:
+                cands.append((len(communs) + (2 if meme else 0), a))
+        cands.sort(key=lambda x: -x[0])
+        if not cands or (len(cands) > 1 and cands[0][0] == cands[1][0]):
+            continue
+        a = cands[0][1]
+        n += 1
+        p['regularPrice'] = a.get('regularPrice')
+        p['discountPct'] = a.get('discountPct')
+        p['unitLabel'] = p['unitLabel'] or a.get('unitLabel') or ''
+        p['note'] = a.get('note') or ''
+        if not p['category']:
+            p['category'] = a['category']  # aktionis.ch ne liste que l'alimentaire
+        if not p['match'] and a.get('match'):
+            p['match'] = a['match']
+            p['category'] = a['category']
+    return n
+
+
+def romandie(magasin, cache=None):
+    lot = rabatt_kompass(magasin, cache)
+    try:
+        n = completer(lot, aktionis(magasin, cache))
+        print(f'{magasin}: {n}/{len(lot)} complétées par aktionis.ch (prix habituel, rabais)', file=sys.stderr)
+    except Exception as e:  # le complément est facultatif
+        print(f'{magasin}: complément aktionis.ch indisponible ({e})', file=sys.stderr)
+    return [p for p in lot if p['category']]
+
+
 # --------------------------------------------------------------------------- principal
 
 def main():
@@ -531,8 +733,8 @@ def main():
 
     promos, sources = [], {}
     for magasin, fn, origine in [('lidl', lambda: lidl(a.cache), 'lidl.ch'),
-                                 ('migros', lambda: aktionis('migros', a.cache), 'aktionis.ch'),
-                                 ('coop', lambda: aktionis('coop', a.cache), 'aktionis.ch')]:
+                                 ('migros', lambda: romandie('migros', a.cache), 'rabatt-kompass.ch (catalogue romand)'),
+                                 ('coop', lambda: romandie('coop', a.cache), 'rabatt-kompass.ch (catalogue romand)')]:
         try:
             lot = fn()
             if not lot:

@@ -21,14 +21,17 @@ Mises à jour chaque matin par GitHub Actions (`.github/workflows/promotions.yml
 | Magasin | Source | Langue |
 | --- | --- | --- |
 | Lidl | site officiel lidl.ch, « Promotions de la semaine » | français |
-| Migros | aktionis.ch (agrégateur suisse d'actions) | allemand, traduit |
-| Coop | aktionis.ch | allemand, traduit |
+| Migros | rabatt-kompass.ch (version française) : catalogue romand de la semaine | français |
+| Coop | rabatt-kompass.ch : catalogue « Les actions Coop » (FR) | français |
 
-Migros et Coop bloquent l'accès automatisé à leurs propres sites ; Commis ne contourne pas ce blocage et passe par l'agrégateur.
+Migros et Coop bloquent l'accès automatisé à leurs propres sites ; Commis ne contourne pas ce blocage et passe par des agrégateurs.
 
-- **Traduction** : un dictionnaire (`DICO` dans `outils/promotions.py`) reconnaît ~180 produits courants (viande, poisson, légumes, fromages, épicerie…) et leur donne un nom français, un rayon et un mot-clé qui les relie aux ingrédients des recettes. Un produit non reconnu garde son nom allemand et n'est relié à aucune recette.
-- **Dates** : Lidl et Migros donnent les dates exactes. Coop souvent pas : la fin est alors estimée au dimanche (« env. » dans l'app).
-- **Limites** : les actions Migros varient selon les coopératives régionales ; les prix « dès 2 articles » ou « exemple » sont signalés.
+- **Romandie** : seules les actions des catalogues **français** sont gardées, celles valables en Suisse romande (Sainte-Croix, canton de Vaud). aktionis.ch, utilisé avant, suit les prospectus alémaniques et ne connaît aucun magasin vaudois : des actions « webshop + magasins choisis » y passaient pour valables.
+- **Alimentaire seulement** : le catalogue Coop mêle jouets, habits, droguerie ; un produit n'est gardé que s'il est reconnu comme nourriture ou boisson (`RK_RAYONS`, `RK_EXCLUS` dans `outils/promotions.py`).
+- **Rabais** : rabatt-kompass.ch ne donne que le prix d'action. Le prix habituel, le rabais et le conditionnement sont repris d'aktionis.ch quand le même produit y figure au même prix (même ingrédient reconnu ou même marque) ; sinon la promotion s'affiche sans pourcentage.
+- **Reconnaissance** : un dictionnaire (`DICO`) reconnaît ~180 produits courants (viande, poisson, légumes, fromages, épicerie…) et leur donne un rayon et un mot-clé qui les relie aux ingrédients des recettes. Les plats préparés (raviolis, pizzas…) ne sont pas reliés aux ingrédients cités dans leur nom.
+- **Dates** : les trois sources donnent les dates exactes (actions du jeudi au mercredi).
+- **Limites** : certaines actions Coop ne sont proposées que dans les grands magasins ; le catalogue ne le précise pas.
 - **Ajouter un produit au dictionnaire** : ajouter une ligne `E('Libellé', 'rayon', 'mot-clé', [motifs allemands], [motifs français])` avant les entrées plus générales.
 
 Les promotions saisies à la main ou importées (*Promotions → ↑*) ne sont jamais écrasées par la mise à jour. Format d'import : voir l'en-tête de `js/sources.js`.
