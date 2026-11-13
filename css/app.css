@@ -1001,7 +1001,7 @@ html.is-cooking { overflow: hidden; }
 
 /* ---------- Accueil : cuisine 3D ---------- */
 [data-view='accueil']:has(.k3) { max-width: none; padding-top: 0; padding-bottom: 0; }
-.k3 { position: relative; height: calc(100dvh - 68px); min-height: 520px; margin: 0 calc(-1 * clamp(24px, 4vw, 56px)); overflow: hidden; background: radial-gradient(120% 90% at 60% 55%, #FFF4EA 0%, #FDE9DB 55%, #F8DCC8 100%); }
+.k3 { position: relative; height: calc(100dvh - 68px); min-height: 520px; margin: 0 calc(-1 * clamp(24px, 4vw, 56px)); overflow: hidden; background: radial-gradient(70% 55% at 58% 60%, rgba(255, 236, 205, 0.95) 0%, rgba(255, 236, 205, 0) 70%), linear-gradient(180deg, #FCE3CB 0%, #F6CDA8 55%, #EDB48A 100%); }
 .k3-stage { position: absolute; inset: 0; }
 .k3-canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; opacity: 0; transition: opacity 500ms ease; }
 .k3.is-ready .k3-canvas { opacity: 1; }

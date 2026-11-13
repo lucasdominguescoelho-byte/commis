@@ -118,7 +118,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
     renderer.setClearColor(0x000000, 0);
@@ -128,9 +128,9 @@
     const camera = new T.PerspectiveCamera(30, 1, 0.05, 60);
 
     // La lumière entre par le côté ouvert (le séjour) pour que les trois murs restent éclairés.
-    scene.add(new T.HemisphereLight('#FFF6EC', '#D9C0B2', 1.35));
-    const sun = new T.DirectionalLight('#FFEFE0', 1.7);
-    sun.position.set(6.5, 7, 1.2);
+    scene.add(new T.HemisphereLight('#FFEBD6', '#C89B80', 1.2));
+    const sun = new T.DirectionalLight('#FFD2A0', 2.3); // soleil doré qui entre par le séjour
+    sun.position.set(6.5, 4.6, 1.8);
     sun.castShadow = true;
     const sm = window.innerWidth < 760 ? 1024 : 2048;
     sun.shadow.mapSize.set(sm, sm);
@@ -138,8 +138,11 @@
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.015;
     scene.add(sun);
-    const fill = new T.DirectionalLight('#F3F6FF', 0.4);
+    const fill = new T.DirectionalLight('#FFF1E4', 0.35);
     fill.position.set(4, 3, -3);
+    const ceiling = new T.PointLight('#FFD7AE', 1.6, 6, 1.2); // le plafonnier de la pièce
+    ceiling.position.set(-0.4, 2.35, 0);
+    scene.add(ceiling);
     scene.add(fill);
 
     const room = new T.Group();
@@ -523,9 +526,99 @@
     shade.scale.set(1, 0.55, 1);
     lamp.add(shade);
     room.add(at(lamp, TX - 0.24, tableTop, TZ + 0.46));
-    const lampLight = new T.PointLight('#FFD8A6', 1.4, 2.2, 1.6);
+    const lampLight = new T.PointLight('#FFC98F', 2.4, 2.6, 1.5);
     lampLight.position.set(TX - 0.24, tableTop + 0.22, TZ + 0.46);
     room.add(lampLight);
+
+    /* Tapis vert au milieu de la pièce */
+    const rr = (g, x, y, w, h, r) => {
+      g.beginPath();
+      g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r);
+      g.arcTo(x, y, x + w, y, r);
+      g.closePath();
+    };
+    const rugTex = paint(768, 512, (g, w, h) => {
+      g.fillStyle = '#365F47';
+      rr(g, 0, 0, w, h, 36);
+      g.fill();
+      g.fillStyle = '#4C7C5F';
+      rr(g, 30, 30, w - 60, h - 60, 24);
+      g.fill();
+      g.strokeStyle = '#A9C79F';
+      g.lineWidth = 5;
+      rr(g, 52, 52, w - 104, h - 104, 18);
+      g.stroke();
+      g.strokeStyle = 'rgba(169,199,159,0.45)';
+      g.lineWidth = 3;
+      for (let i = -6; i <= 6; i++) {
+        g.beginPath();
+        g.moveTo(w / 2 + i * 52, 80);
+        g.lineTo(w / 2 + i * 52 + 110, h / 2);
+        g.lineTo(w / 2 + i * 52, h - 80);
+        g.stroke();
+      }
+      for (let i = 0; i < 2600; i++) {
+        g.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+        g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+    });
+    const rug = plane(1.9, 1.26, mat('#ffffff', { map: rugTex.tex, roughness: 1, transparent: true }));
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(-0.1, 0.006, -0.25);
+    room.add(rug);
+    [-1, 1].forEach((sd) => {
+      for (let i = 0; i < 16; i++) room.add(at(rbox(0.012, 0.004, 0.06, 0.002, '#EDE6D6'), -0.1 + sd * 0.975, 0.007, -0.25 - 0.55 + i * 0.073).rotateY(Math.PI / 2));
+    });
+
+    // Ombres douces au pied des murs (donnent du relief sans calcul coûteux)
+    const aoTex = paint(32, 128, (g, w, h) => {
+      const grd = g.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, 'rgba(70,40,25,0.3)');
+      grd.addColorStop(1, 'rgba(70,40,25,0)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, w, h);
+    });
+    const aoMat = new T.MeshBasicMaterial({ map: aoTex.tex, transparent: true, depthWrite: false });
+    const ao = (w, x, z, turn) => {
+      const m = new T.Mesh(new T.PlaneGeometry(w, 0.32), aoMat);
+      m.rotateX(-Math.PI / 2);
+      m.rotateZ(turn);
+      m.position.set(x, 0.004, z);
+      room.add(m);
+    };
+    ao(1.15, 1.625, -1.84, 0); // mur de la cuisine, à droite des meubles
+    ao(4.0, -2.04, 0, Math.PI / 2); // mur du fond
+    ao(4.4, 0, 1.84, Math.PI); // mur de la table
+
+    // Coupe de fruits sur le plan de travail
+    const bowl = mesh(new T.SphereGeometry(0.13, 32, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat('#FBFAF7', { side: T.DoubleSide, roughness: 0.4 }));
+    bowl.scale.set(1, 0.55, 1);
+    const fruits = group(at(bowl, 0, 0.075, 0), at(ball(0.045, '#F08A24'), -0.04, 0.085, 0.02), at(ball(0.045, '#F29331'), 0.04, 0.09, -0.02), at(ball(0.042, '#9DBF45'), 0.0, 0.12, 0.04), at(ball(0.043, '#C83A32'), 0.05, 0.085, 0.05));
+    room.add(at(fruits, 0.45, 0.9, -1.66));
+    // Plante retombante sur les meubles hauts
+    const pothos = group(at(cyl(0.08, 0.065, 0.14, '#C9714B'), 0, 0.07, 0));
+    for (let i = 0; i < 14; i++) {
+      const leaf = at(ball(0.045, i % 2 ? '#4E8A55' : '#6FA866'), Math.sin(i * 1.7) * 0.09, 0.15 - (i > 5 ? (i - 5) * 0.06 : 0), 0.06 + (i > 5 ? 0.06 : Math.cos(i) * 0.05));
+      leaf.scale.set(1.1, 0.7, 1.1);
+      pothos.add(leaf);
+    }
+    room.add(at(pothos, 0.75, 2.2, -1.82));
+    // Horloge au-dessus de la porte d'entrée (à l'heure réelle)
+    const clockHands = [];
+    const clock = group(at(cyl(0.13, 0.13, 0.02, '#FBFAF7', 40), 0, 0, 0), at(mesh(new T.TorusGeometry(0.13, 0.012, 8, 40), mat('#2B2622')), 0, 0, 0));
+    clock.children[0].rotation.x = Math.PI / 2;
+    [0.085, 0.11].forEach((len, i) => {
+      const hand = new T.Group();
+      hand.add(at(rbox(0.008, len, 0.006, 0.003, '#2B2622'), 0, len / 2, 0));
+      hand.position.z = 0.013 + i * 0.003;
+      clock.add(hand);
+      clockHands.push(hand);
+    });
+    clock.rotation.y = Math.PI / 2;
+    room.add(at(clock, -2.18, 2.32, -0.85));
 
     const items = [];
     const add = (key, name, route, obj, anchor) => {
@@ -545,7 +638,7 @@
       at(rbox(0.055, 0.07, 0.008, 0.003, '#7AA0C2'), -0.08, 0.2, 0.293)
     );
     fridge.children[2].castShadow = false;
-    add('frigo', 'Frigo', '#/frigo', at(fridge, -1.89, 0.42, -1.71), [-1.89, 0.86, -1.4]);
+    add('frigo', 'Frigo', '#/frigo', at(fridge, -1.89, 0.42, -1.71), [-1.89, 0.38, -1.4]);
 
     /* Plaque à induction et casserole : le repas du soir */
     const stove = group(
@@ -566,7 +659,7 @@
       r.rotation.x = Math.PI / 2;
       stove.add(r);
     });
-    add('cuisiner', 'Ce soir', '#/planning', at(stove, -0.7, 0.906, -1.7), [-0.78, 1.25, -1.72]);
+    add('cuisiner', 'Ce soir', '#/planning', at(stove, -0.7, 0.906, -1.7), [-0.78, 1.64, -1.72]);
     const steam = [];
     for (let i = 0; i < 4; i++) {
       const s = new T.Mesh(new T.SphereGeometry(0.035, 14, 10), new T.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0, depthWrite: false }));
@@ -655,11 +748,15 @@
     bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
     add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32]);
 
-    K = { renderer, scene, camera, room, items, steam, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, clockHands, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
   function drawLive(info) {
+    const now = new Date();
+    const [hh, mm] = K.clockHands;
+    hh.rotation.z = -(((now.getHours() % 12) + now.getMinutes() / 60) / 12) * Math.PI * 2;
+    mm.rotation.z = -(now.getMinutes() / 60) * Math.PI * 2;
     const { postit, board, flyer } = K.textures;
     postit.redraw((g, w, h) => {
       g.fillStyle = '#FBEFC4';
@@ -836,11 +933,11 @@
     const portrait = w / h < 0.9;
     // Ordinateur : la pièce se place en bas à droite, le titre garde le coin supérieur gauche.
     // Vue depuis le côté ouvert (est), légèrement décalée vers le sud pour mieux voir la cuisine
-    K.base = portrait ? { az: Math.PI / 2, el: 0.82 } : { az: Math.PI / 2, el: 0.56 };
-    K.look = portrait ? new T.Vector3(-0.7, 1.0, 0.0) : new T.Vector3(-0.8, 1.22, 0.05);
+    K.base = portrait ? { az: Math.PI / 2, el: 0.5 } : { az: Math.PI / 2, el: 0.34 };
+    K.look = portrait ? new T.Vector3(-0.7, 1.4, 0.0) : new T.Vector3(-0.7, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
-    K.R = Math.max((portrait ? 2.7 : 2.9) / Math.tan(vf / 2), (portrait ? 2.45 : 3.2) / Math.tan(hf / 2));
+    K.R = Math.max((portrait ? 2.85 : 2.85) / Math.tan(vf / 2), (portrait ? 2.45 : 3.75) / Math.tan(hf / 2));
     K.camera.updateProjectionMatrix();
   }
 
