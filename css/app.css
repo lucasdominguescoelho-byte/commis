@@ -1034,3 +1034,8 @@ html.nuit .note--ok { border-color: #3b4d31; color: #c8e2b8; }
 html.nuit .note--ok .ic, html.nuit .note--ok b { color: #d9efcb; }
 html.nuit .note--err { border-color: #5a2a22; }
 html.nuit .note--test { border-color: #5a3420; }
+/* Réglages › Synchronisation : le guide en trois étapes */
+.sync-steps { margin: 0 0 16px; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+.sync-steps b { color: var(--ink); }
+.sync-steps .link { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; white-space: nowrap; }
+.set code, .sync-steps code { font: 500 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--wash); border-radius: 6px; padding: 1px 6px; color: var(--ink); }

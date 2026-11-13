@@ -33,12 +33,42 @@
   };
 
   /* ---------- Mode nuit : ambiance sombre et chaude ---------- */
+  // Lever et coucher du soleil, calculés sur l'appareil (algorithme de l'« Almanac for Computers »,
+  // précis à une ou deux minutes) pour un point moyen de Suisse romande.
+  const LIEU = { lat: 46.6, lon: 6.6 };
+  C.sunTimes = (date = new Date(), lat = LIEU.lat, lon = LIEU.lon) => {
+    const rad = Math.PI / 180;
+    const y = date.getFullYear();
+    const mo = date.getMonth();
+    const d = date.getDate();
+    const n = Math.round((Date.UTC(y, mo, d) - Date.UTC(y, 0, 0)) / 864e5);
+    const lngH = lon / 15;
+    const at = (rising) => {
+      const t = n + ((rising ? 6 : 18) - lngH) / 24;
+      const M = 0.9856 * t - 3.289;
+      let L = M + 1.916 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 282.634;
+      L = ((L % 360) + 360) % 360;
+      let RA = Math.atan(0.91764 * Math.tan(L * rad)) / rad;
+      RA = ((RA % 360) + 360) % 360;
+      RA = (RA + Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90) / 15;
+      const sinDec = 0.39782 * Math.sin(L * rad);
+      const cosDec = Math.cos(Math.asin(sinDec));
+      const cosH = (Math.cos(90.833 * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
+      if (cosH > 1 || cosH < -1) return null; // pas de lever ni de coucher (jamais en Suisse)
+      const H = (rising ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
+      const T = H + RA - 0.06571 * t - 6.622;
+      const UT = (((T - lngH) % 24) + 24) % 24;
+      return new Date(Date.UTC(y, mo, d) + UT * 3600e3);
+    };
+    return { rise: at(true), set: at(false) };
+  };
   C.night = () => {
     const t = C.S.settings.theme || 'jour';
     if (t === 'nuit') return true;
     if (t !== 'auto') return false;
-    const h = new Date().getHours();
-    return h >= 20 || h < 7;
+    const now = new Date();
+    const { rise, set } = C.sunTimes(now);
+    return !rise || !set ? now.getHours() >= 20 || now.getHours() < 7 : now < rise || now >= set;
   };
   C.applyTheme = () => {
     const n = C.night();
@@ -51,7 +81,9 @@
     } catch (e) {}
     if (C.k3d && C.k3d.night) C.k3d.night(n);
   };
-  setInterval(() => C.S.settings.theme === 'auto' && C.applyTheme(), 5 * 60 * 1000);
+  // En automatique : vérifié chaque minute, et au retour sur l'app
+  setInterval(() => C.S.settings.theme === 'auto' && C.applyTheme(), 60 * 1000);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && C.S.settings.theme === 'auto' && C.applyTheme());
   const themeBtn = (size) => `<button class="ibtn theme-t" data-act="theme.toggle" aria-label="Mode nuit" title="Mode nuit">${icon('moon', size)}${icon('sun', size)}</button>`;
 
   function shell(route) {
