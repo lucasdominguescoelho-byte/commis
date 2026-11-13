@@ -273,36 +273,45 @@
     door(0.58, 0.8, 0.72, 0.44);
     knob(0.48, 0.74);
 
-    // Évier inox, robinet, égouttoir, cafetière et bouilloire
+    // Évier inox, robinet, savon, cafetière et bouilloire
     room.add(at(rbox(0.5, 0.012, 0.42, 0.04, '#C9CFD2', { roughness: 0.35, metalness: 0.4 }), -1.3, 0.906, -1.72));
     room.add(at(rbox(0.4, 0.006, 0.32, 0.04, '#9EA7AB', { roughness: 0.3, metalness: 0.4 }), -1.3, 0.912, -1.72));
     room.add(at(cyl(0.02, 0.022, 0.26, steel(), 16), -1.3, 1.03, -1.95));
     const spout = at(cyl(0.015, 0.015, 0.2, steel(), 12), -1.3, 1.15, -1.86);
     spout.rotation.x = Math.PI / 2.4;
     room.add(spout);
-    room.add(at(rbox(0.36, 0.014, 0.4, 0.01, '#2B2B2B'), -1.78, 0.907, -1.72));
-    const pan = at(cyl(0.13, 0.11, 0.06, '#222222', 28), -1.8, 0.99, -1.8);
-    pan.rotation.x = -0.9;
-    room.add(pan);
-    const lid = at(cyl(0.12, 0.12, 0.008, mat('#CFE0E6', { transparent: true, opacity: 0.5, roughness: 0.1 }), 28), -1.72, 0.96, -1.6);
-    lid.rotation.z = 0.5;
-    room.add(lid);
-    room.add(at(rbox(0.07, 0.11, 0.05, 0.01, '#E8603F'), -1.58, 0.97, -1.95));
+    const soap = group(at(cyl(0.032, 0.035, 0.13, '#F4F1EA', 20, { roughness: 0.35 }), 0, 0.065, 0), at(cyl(0.008, 0.008, 0.03, steel(), 8), 0, 0.145, 0), at(rbox(0.04, 0.008, 0.012, 0.003, steel()), 0.014, 0.16, 0));
+    room.add(at(soap, -1.56, 0.906, -1.93));
     room.add(at(rbox(0.2, 0.32, 0.24, 0.03, '#1E1E1F', { roughness: 0.4 }), -2.06, 1.06, -1.86)); // cafetière
     const kettle = group(at(cyl(0.075, 0.085, 0.2, steel(), 24), 0, 0.1, 0), at(mesh(new T.TorusGeometry(0.06, 0.012, 8, 20, Math.PI), mat('#222')), 0, 0.2, 0));
     room.add(at(kettle, -2.04, 0.9, -1.58));
 
-    // Plan de droite : huile d'olive, bloc à couteaux, cloche en verre, bougie
-    const oil = group(at(cyl(0.035, 0.035, 0.2, mat('#5E6A2A', { transparent: true, opacity: 0.85, roughness: 0.15 }), 18), 0, 0.1, 0), at(cyl(0.016, 0.02, 0.07, mat('#3F4520'), 12), 0, 0.235, 0));
-    room.add(at(oil, -0.28, 0.9, -1.9));
-    const block = at(rbox(0.11, 0.2, 0.15, 0.015, '#3B2F28'), -0.12, 1.0, -1.9);
+    // Plan de droite, rangé : pot à ustensiles, bloc à couteaux, huile d'olive, cloche en verre
+    const crock = group(at(cyl(0.055, 0.05, 0.15, '#F2EEE6', 24, { roughness: 0.45 }), 0, 0.075, 0));
+    [
+      [-0.018, 0.2, 0.012],
+      [0.02, -0.15, -0.01],
+      [0.0, 0.05, 0.02],
+    ].forEach(([dx, tilt, dz]) => {
+      const spoon = group(at(cyl(0.007, 0.007, 0.26, W.oakDark, 8), 0, 0.13, 0), at(ball(0.022, W.oakDark), 0, 0.27, 0));
+      spoon.children[1].scale.set(1, 1.5, 0.45);
+      spoon.rotation.z = tilt;
+      crock.add(at(spoon, dx, 0.02, dz));
+    });
+    room.add(at(crock, -0.27, 0.906, -1.88));
+    const block = at(rbox(0.11, 0.2, 0.15, 0.015, '#3B2F28'), -0.1, 1.0, -1.9);
     block.rotation.x = -0.25;
     room.add(block);
-    for (let i = 0; i < 4; i++) room.add(at(rbox(0.018, 0.09, 0.03, 0.006, '#151414'), -0.155 + i * 0.024, 1.14, -1.93));
-    room.add(at(cyl(0.11, 0.11, 0.025, '#2A2827', 28), 0.14, 0.915, -1.86));
-    room.add(at(mesh(new T.CapsuleGeometry(0.1, 0.12, 8, 24), new T.MeshStandardMaterial({ color: '#EAF3F5', transparent: true, opacity: 0.28, roughness: 0.05 }), false), 0.14, 1.06, -1.86));
-    room.add(at(ball(0.05, '#6E8B5A'), 0.14, 0.96, -1.86));
-    room.add(at(cyl(0.035, 0.035, 0.07, mat('#F5D3DA', { transparent: true, opacity: 0.85 }), 18), 0.02, 0.935, -1.6));
+    for (let i = 0; i < 4; i++) room.add(at(rbox(0.018, 0.09, 0.03, 0.006, '#151414'), -0.135 + i * 0.024, 1.14, -1.93));
+    const oil = group(at(cyl(0.035, 0.035, 0.2, mat('#5E6A2A', { transparent: true, opacity: 0.85, roughness: 0.15 }), 18), 0, 0.1, 0), at(cyl(0.016, 0.02, 0.07, mat('#3F4520'), 12), 0, 0.235, 0));
+    room.add(at(oil, 0.05, 0.9, -1.9));
+    room.add(at(cyl(0.11, 0.11, 0.025, '#2A2827', 28), 0.25, 0.915, -1.84));
+    room.add(at(mesh(new T.CapsuleGeometry(0.1, 0.12, 8, 24), new T.MeshStandardMaterial({ color: '#EAF3F5', transparent: true, opacity: 0.28, roughness: 0.05 }), false), 0.25, 1.06, -1.84));
+    room.add(at(ball(0.05, '#6E8B5A'), 0.25, 0.96, -1.84));
+    // Planche à découper en chêne appuyée contre la crédence
+    const boardCut = group(rbox(0.3, 0.4, 0.022, 0.03, W.oak), at(rbox(0.07, 0.1, 0.022, 0.03, W.oak), 0, 0.23, 0));
+    boardCut.rotation.x = -0.12;
+    room.add(at(boardCut, 0.86, 1.11, -1.95));
     // Rouleau d'essuie-tout sous le meuble haut (comme sur la photo)
     const roll = at(cyl(0.05, 0.05, 0.24, '#FBFBFA', 20), 0.6, 1.36, -1.9);
     roll.rotation.z = Math.PI / 2;
@@ -513,21 +522,26 @@
       e.rotation.y = -Math.PI / 2; // côté est, regarde vers -x
       room.add(at(e, TX + 0.62, 0, z));
     });
-    // Sur la table : sets ovales face à face, tasses, lampe champignon au bout contre le mur
-    [-1, 1].forEach((s) => {
-      const placemat = at(cyl(0.15, 0.15, 0.005, '#7D6F68', 40), TX + s * 0.2, tableTop + 0.003, TZ - 0.32);
-      placemat.scale.set(1.15, 1, 1.55);
-      room.add(placemat);
+    // Sur la table, de gauche à droite : deux sous-verres côte à côte avec un verre chacun,
+    // la lampe champignon au milieu, le prospectus au bord (plus bas)
+    [
+      [TZ + 0.42, '#D2343A'],
+      [TZ + 0.22, '#3E9B55'],
+    ].forEach(([z, c]) => {
+      room.add(at(cyl(0.07, 0.07, 0.008, '#8A776B', 40, { roughness: 0.95 }), TX + 0.04, tableTop + 0.004, z));
+      const glass = group(
+        at(cyl(0.036, 0.031, 0.1, mat(c, { transparent: true, opacity: 0.55, roughness: 0.08 }), 24), 0, 0.05, 0),
+        at(cyl(0.031, 0.029, 0.055, mat('#EAF6FA', { transparent: true, opacity: 0.6, roughness: 0.05 }), 20), 0, 0.03, 0)
+      );
+      room.add(at(glass, TX + 0.04, tableTop + 0.008, z));
     });
-    room.add(at(cyl(0.042, 0.037, 0.095, '#D2343A', 20), TX + 0.26, tableTop + 0.05, TZ - 0.12));
-    room.add(at(cyl(0.038, 0.033, 0.085, '#3E9B55', 20), TX + 0.22, tableTop + 0.045, TZ + 0.43));
     const lamp = group(at(cyl(0.065, 0.075, 0.018, '#FAFAF8', 24), 0, 0.009, 0), at(cyl(0.011, 0.015, 0.2, '#FAFAF8', 12), 0, 0.115, 0));
-    const shade = at(mesh(new T.SphereGeometry(0.115, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat('#FFFFFF', { emissive: '#FFE6C4', emissiveIntensity: 0.55 })), 0, 0.2, 0);
+    const shade = at(mesh(new T.SphereGeometry(0.115, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat('#FFFFFF', { emissive: '#FFC27A', emissiveIntensity: 0.85 })), 0, 0.2, 0);
     shade.scale.set(1, 0.55, 1);
     lamp.add(shade);
-    room.add(at(lamp, TX - 0.24, tableTop, TZ + 0.46));
-    const lampLight = new T.PointLight('#FFC98F', 2.4, 2.6, 1.5);
-    lampLight.position.set(TX - 0.24, tableTop + 0.22, TZ + 0.46);
+    room.add(at(lamp, TX - 0.02, tableTop, TZ - 0.04));
+    const lampLight = new T.PointLight('#FFAE5E', 3.2, 2.8, 1.4);
+    lampLight.position.set(TX - 0.02, tableTop + 0.2, TZ - 0.04);
     room.add(lampLight);
 
     /* Tapis vert au milieu de la pièce */
@@ -598,27 +612,6 @@
     bowl.scale.set(1, 0.55, 1);
     const fruits = group(at(bowl, 0, 0.075, 0), at(ball(0.045, '#F08A24'), -0.04, 0.085, 0.02), at(ball(0.045, '#F29331'), 0.04, 0.09, -0.02), at(ball(0.042, '#9DBF45'), 0.0, 0.12, 0.04), at(ball(0.043, '#C83A32'), 0.05, 0.085, 0.05));
     room.add(at(fruits, 0.45, 0.9, -1.66));
-    // Plante retombante sur les meubles hauts
-    const pothos = group(at(cyl(0.08, 0.065, 0.14, '#C9714B'), 0, 0.07, 0));
-    for (let i = 0; i < 14; i++) {
-      const leaf = at(ball(0.045, i % 2 ? '#4E8A55' : '#6FA866'), Math.sin(i * 1.7) * 0.09, 0.15 - (i > 5 ? (i - 5) * 0.06 : 0), 0.06 + (i > 5 ? 0.06 : Math.cos(i) * 0.05));
-      leaf.scale.set(1.1, 0.7, 1.1);
-      pothos.add(leaf);
-    }
-    room.add(at(pothos, 0.75, 2.2, -1.82));
-    // Horloge au-dessus de la porte d'entrée (à l'heure réelle)
-    const clockHands = [];
-    const clock = group(at(cyl(0.13, 0.13, 0.02, '#FBFAF7', 40), 0, 0, 0), at(mesh(new T.TorusGeometry(0.13, 0.012, 8, 40), mat('#2B2622')), 0, 0, 0));
-    clock.children[0].rotation.x = Math.PI / 2;
-    [0.085, 0.11].forEach((len, i) => {
-      const hand = new T.Group();
-      hand.add(at(rbox(0.008, len, 0.006, 0.003, '#2B2622'), 0, len / 2, 0));
-      hand.position.z = 0.013 + i * 0.003;
-      clock.add(hand);
-      clockHands.push(hand);
-    });
-    clock.rotation.y = Math.PI / 2;
-    room.add(at(clock, -2.18, 2.32, -0.85));
 
     const items = [];
     const add = (key, name, route, obj, anchor) => {
@@ -667,7 +660,7 @@
       steam.push(s);
     }
 
-    /* Livre de recettes debout contre la crédence */
+    /* Livre de recettes posé à plat sur le plan de travail */
     const cover = paint(256, 352, (g, w, h) => {
       g.fillStyle = COL.tomato;
       g.fillRect(0, 0, w, h);
@@ -683,10 +676,10 @@
     });
     const book = new T.Mesh(new T.BoxGeometry(0.22, 0.3, 0.035), [mat(COL.tomatoDark), mat(COL.tomatoDark), mat('#F3E9DD'), mat('#F3E9DD'), mat('#ffffff', { map: cover.tex }), mat(COL.tomato)]);
     book.castShadow = book.receiveShadow = true;
-    const bookG = group(at(book, 0, 0.15, 0));
-    bookG.rotation.x = -0.16;
-    bookG.rotation.y = -0.35; // tourné vers le séjour
-    add('recettes', 'Recettes', '#/recettes', at(bookG, 0.85, 0.9, -1.9), [0.85, 1.3, -1.88]);
+    book.rotation.x = -Math.PI / 2; // couverture vers le haut
+    const bookG = group(at(book, 0, 0.018, 0));
+    bookG.rotation.y = Math.PI / 2 - 0.18; // le haut du livre vers le mur, lisible depuis le séjour
+    add('recettes', 'Recettes', '#/recettes', at(bookG, 0.78, 0.906, -1.62), [0.78, 1.12, -1.62]);
 
     /* Prospectus des promotions, posés sur la table (lisibles depuis le séjour) */
     const flyer = paint(384, 512, () => {});
@@ -694,7 +687,7 @@
     flyerMesh.rotation.x = -Math.PI / 2;
     const flyers = group(at(rbox(0.2, 0.006, 0.27, 0.003, '#FFF1C2'), 0.015, 0, 0.02), at(flyerMesh, 0, 0.0045, 0));
     flyers.rotation.y = Math.PI / 2 + 0.22;
-    add('promotions', 'Promotions', '#/promotions', at(flyers, TX - 0.04, tableTop + 0.003, TZ + 0.17), [TX - 0.04, tableTop + 0.28, TZ + 0.17]);
+    add('promotions', 'Promotions', '#/promotions', at(flyers, TX + 0.03, tableTop + 0.003, TZ - TL / 2 + 0.15), [TX + 0.03, tableTop + 0.26, TZ - TL / 2 + 0.15]);
 
     /* Tirelire sur l'étagère du portemanteau */
     const pig = group();
@@ -748,15 +741,11 @@
     bag.rotation.y = Math.PI / 2 - 0.35; // le grand côté vers le séjour
     add('courses', 'Courses', '#/courses', at(bag, -1.92, 0, 0.32), [-1.92, 0.62, 0.32]);
 
-    K = { renderer, scene, camera, room, items, steam, clockHands, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
+    K = { renderer, scene, camera, room, items, steam, textures: { postit, board, flyer }, el: null, info: null, ray: new T.Raycaster(), pointer: new T.Vector2(), hover: null, off: { az: 0, el: 0 }, offT: { az: 0, el: 0 }, anim: null, raf: 0, t0: performance.now(), size: { w: 1, h: 1 } };
   }
 
   /* ---------- Textures en direct ---------- */
   function drawLive(info) {
-    const now = new Date();
-    const [hh, mm] = K.clockHands;
-    hh.rotation.z = -(((now.getHours() % 12) + now.getMinutes() / 60) / 12) * Math.PI * 2;
-    mm.rotation.z = -(now.getMinutes() / 60) * Math.PI * 2;
     const { postit, board, flyer } = K.textures;
     postit.redraw((g, w, h) => {
       g.fillStyle = '#FBEFC4';
@@ -937,8 +926,52 @@
     K.look = portrait ? new T.Vector3(-0.7, 1.4, 0.0) : new T.Vector3(-0.7, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
-    K.R = Math.max((portrait ? 2.85 : 2.85) / Math.tan(vf / 2), (portrait ? 2.45 : 3.75) / Math.tan(hf / 2));
+    K.R = Math.max((portrait ? 2.85 : 2.85) / Math.tan(vf / 2), (portrait ? 2.3 : 3.75) / Math.tan(hf / 2));
     K.camera.updateProjectionMatrix();
+    // Ordinateur : le bord avant du sol se cale en bas de l'écran, la pièce remonte sous le menu
+    if (portrait) fitBottom(h - 92); // téléphone : la pièce, un peu plus grande, remonte vers le titre
+    else {
+      fitBottom(h - 26);
+      // …sans passer sous le titre : si le haut du mur de gauche touche le texte, on redescend d'autant
+      const head = K.el.closest('.k3')?.querySelector('.k3-head');
+      const hr = head && head.getBoundingClientRect();
+      if (hr && hr.height) {
+        const er = K.el.getBoundingClientRect();
+        const gap = wallTopUnder(hr.right - er.left + 16) - (hr.bottom - er.top + 14);
+        if (gap < 0) fitBottom(h - 26 - gap);
+      }
+    }
+  }
+
+  // Hauteur à l'écran (px) du haut du mur de gauche à l'abscisse x ; Infinity s'il n'y arrive pas
+  function wallTopUnder(x) {
+    const p = (v) => {
+      v.project(K.camera);
+      return { x: ((v.x + 1) / 2) * K.size.w, y: ((1 - v.y) / 2) * K.size.h };
+    };
+    const back = p(new T.Vector3(-2.32, 2.5, 2.12));
+    const front = p(new T.Vector3(2.2, 2.5, 2.12));
+    if (x < front.x) return Infinity;
+    if (x >= back.x) return back.y;
+    return front.y + ((x - front.x) / (back.x - front.x)) * (back.y - front.y);
+  }
+
+  // Monte ou descend le point visé jusqu'à ce que le bord avant du sol tombe sur la ligne voulue (en px)
+  function fitBottom(target) {
+    const cam = K.camera;
+    const edge = new T.Vector3();
+    const { az, el } = K.base;
+    const unitPx = K.size.h / (2 * Math.tan((cam.fov * Math.PI) / 360));
+    for (let i = 0; i < 4; i++) {
+      cam.position.set(K.look.x + K.R * Math.cos(el) * Math.sin(az), K.look.y + K.R * Math.sin(el), K.look.z + K.R * Math.cos(el) * Math.cos(az));
+      cam.lookAt(K.look);
+      cam.updateMatrixWorld();
+      edge.set(2.2, 0, 0);
+      const depth = edge.clone().applyMatrix4(cam.matrixWorldInverse).z * -1;
+      edge.project(cam);
+      const y = ((1 - edge.y) / 2) * K.size.h;
+      K.look.y -= ((y - target) * depth) / unitPx / Math.cos(el);
+    }
   }
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
