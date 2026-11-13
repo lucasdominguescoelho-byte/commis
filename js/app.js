@@ -62,7 +62,7 @@
     // Plein écran de la cuisine 3D : seulement à l'arrivée sur l'accueil, jusqu'à ce qu'on en sorte
     if (route.view !== 'accueil') C.ui.full = false;
     const html = document.documentElement;
-    html.classList.toggle('k3-full', !!C.ui.full && !C.ui.homeClassic && !C.k3dFailed && !!C.k3d && C.k3d.supported());
+    html.classList.toggle('k3-full', !!C.ui.full && !C.k3dFailed && !!C.k3d && C.k3d.supported());
     C.views[route.view].render(root, route.param);
     if (!root.querySelector('.k3')) html.classList.remove('k3-full');
     document.title = `${TITLES[route.view]} — ${C.APP}`;

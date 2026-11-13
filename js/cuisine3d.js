@@ -39,6 +39,7 @@
         })
         .catch((e) => {
           console.warn('Cuisine 3D indisponible :', e);
+          loading = null; // « Réessayer » relance le chargement
           C.k3dFailed = true;
           if (C.route().view === 'accueil') C.render();
         });
@@ -928,37 +929,16 @@
     K.renderer.setSize(w, h, false);
     K.camera.aspect = w / h;
     K.camera.fov = 46; // grand angle, comme une photo prise depuis le séjour : les deux murs latéraux restent visibles
-    // Cadrage : toute la pièce visible, plus serrée en portrait (téléphone)
+    // Vue depuis le côté ouvert (est). Même cadrage avec ou sans menu : la pièce seule, aussi grande
+    // que possible et centrée. Téléphone : vue un peu plus plongeante, la pièce prend toute la largeur.
     const portrait = w / h < 0.9;
-    // Ordinateur : la pièce se place en bas à droite, le titre garde le coin supérieur gauche.
-    // Vue depuis le côté ouvert (est), légèrement décalée vers le sud pour mieux voir la cuisine
-    K.base = portrait ? { az: Math.PI / 2, el: 0.5 } : { az: Math.PI / 2, el: 0.34 };
-    K.look = portrait ? new T.Vector3(-0.7, 1.4, 0.0) : new T.Vector3(-0.7, 1.22, 0.05);
+    K.base = { az: Math.PI / 2, el: portrait ? 0.62 : 0.34 };
+    K.look = new T.Vector3(-0.7, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
-    const wide = (portrait ? 2.3 : 3.75) / Math.tan(hf / 2);
-    K.R = Math.max(2.85 / Math.tan(vf / 2), wide);
+    K.R = (portrait ? 2.3 : 3.75) / Math.tan(hf / 2);
     K.camera.updateProjectionMatrix();
-    // Plein écran (arrivée sur le site) : la pièce seule, aussi grande que possible et centrée
-    if (document.documentElement.classList.contains('k3-full')) {
-      K.R = wide;
-      // téléphone : vue un peu plus plongeante pour remplir la hauteur, la pièce prend toute la largeur
-      if (portrait) K.base = { az: Math.PI / 2, el: 0.62 };
-      fitRoom(portrait ? 30 : 40, h - (portrait ? 76 : 30), portrait ? -Infinity : Math.max(16, w * 0.035));
-    }
-    // Ordinateur : le bord avant du sol se cale en bas de l'écran, la pièce remonte sous le menu
-    else if (portrait) fitBottom(h - 92); // téléphone : la pièce, un peu plus grande, remonte vers le titre
-    else {
-      fitBottom(h - 26);
-      // …sans passer sous le titre : si le haut du mur de gauche touche le texte, on redescend d'autant
-      const head = K.el.closest('.k3')?.querySelector('.k3-head');
-      const hr = head && head.getBoundingClientRect();
-      if (hr && hr.height) {
-        const er = K.el.getBoundingClientRect();
-        const gap = wallTopUnder(hr.right - er.left + 16) - (hr.bottom - er.top + 14);
-        if (gap < 0) fitBottom(h - 26 - gap);
-      }
-    }
+    fitRoom(portrait ? 30 : 40, h - (portrait ? 76 : 30), portrait ? -Infinity : Math.max(16, w * 0.035));
   }
 
   // Point de la scène → position à l'écran (px), avec la caméra déjà placée
@@ -977,15 +957,6 @@
       if (top >= topMin && side >= sideMin) return fitBottom(bottomMax - (top - topMin) / 2);
       K.R *= 1.04;
     }
-  }
-
-  // Hauteur à l'écran (px) du haut du mur de gauche à l'abscisse x ; Infinity s'il n'y arrive pas
-  function wallTopUnder(x) {
-    const back = toScreen(-2.32, 2.5, 2.12);
-    const front = toScreen(2.2, 2.5, 2.12);
-    if (x < front.x) return Infinity;
-    if (x >= back.x) return back.y;
-    return front.y + ((x - front.x) / (back.x - front.x)) * (back.y - front.y);
   }
 
   // Monte ou descend le point visé jusqu'à ce que le bord avant du sol tombe sur la ligne voulue (en px)
