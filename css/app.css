@@ -946,8 +946,10 @@ html.k3-full .tabs { transform: translateY(100%); }
 html.k3-full .side, html.k3-full .topbar, html.k3-full .tabs { opacity: 0; visibility: hidden; pointer-events: none; transition: transform 560ms var(--k3-ease), opacity 280ms ease 60ms, visibility 0s linear 560ms; }
 html.k3-full .k3 { --k3-b: env(safe-area-inset-bottom); }
 .k3-sab { position: absolute; width: 0; height: env(safe-area-inset-bottom); visibility: hidden; pointer-events: none; }
-/* Ouverture d'un objet : le voile couleur de page couvre la fin du plongeon */
-.k3-veil { position: absolute; inset: 0; z-index: 4; background: #FFFAF6; opacity: 0; pointer-events: none; }
+/* Ouverture d'un objet : la dernière image de la pièce se fond dans la page qui s'ouvre */
+.k3-snap { position: fixed; z-index: 60; pointer-events: none; transform-origin: 50% 55%; transition: opacity 620ms cubic-bezier(0.22, 1, 0.36, 1), transform 760ms cubic-bezier(0.22, 1, 0.36, 1), filter 620ms ease; }
+.k3-snap.is-gone { opacity: 0; transform: scale(1.06); filter: blur(5px); }
+@media (prefers-reduced-motion: reduce) { .k3-snap { display: none; } }
 .k3.is-opening .k3-hint, .k3.is-opening .k3-mode { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   html.k3-home .side, html.k3-home .topbar, html.k3-home .tabs, .k3-mode, .k3-hint { transition: none; }

@@ -40,6 +40,13 @@
     const soon = C.S.fridge.filter((f) => E.expiresIn(f) != null && E.expiresIn(f) <= 3);
     const plan = C.S.plans[wid];
     const today = C.today();
+    // Le livre ouvert montre le prochain repas, sinon une recette validée (favorite d'abord)
+    const lib = C.S.recipes.filter((r) => r.validated);
+    const bookR = (next && next.r) || lib.find((r) => r.favorite) || lib[0] || C.S.recipes[0];
+    const ingLine = (i) => {
+      const q = C.fmtQty(i.qty, i.unit);
+      return q ? `${q} ${i.name.charAt(0).toLowerCase()}${i.name.slice(1)}` : i.name;
+    };
     const dish = (d, slot) => {
       const s = plan && plan.slots[`${d}-${slot}`];
       const r = s && C.recipe(s.recipeId);
@@ -60,6 +67,10 @@
       best: best && best.pct ? { name: best.p.name, pct: best.pct, store: C.storeById(best.p.store).name } : null,
       recipes: C.S.recipes.length,
       toTest: C.S.recipes.filter((r) => r.toTest && !r.validated).length,
+      book: bookR
+        ? { next: !!(next && next.r === bookR), name: bookR.name, description: bookR.description || '', servings: bookR.servings, time: bookR.prepTime, ingredients: (bookR.ingredients || []).filter((i) => i && i.name).map(ingLine), steps: (bookR.steps || []).filter(Boolean) }
+        : null,
+      bookOthers: C.S.recipes.filter((r) => r !== bookR && r.name).slice(0, 2).map((r) => r.name),
     };
   }
 
@@ -72,7 +83,6 @@
         <div class="k3-stage"></div>
         <div class="k3-load"><span class="spin"></span>Préparation de la cuisine…</div>
         <div class="k3-labels" aria-label="Pièces de la cuisine"></div>
-        <div class="k3-veil" aria-hidden="true"></div>
         <i class="k3-sab" aria-hidden="true"></i>
         <p class="k3-hint">${matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Cliquez sur un objet pour l’ouvrir' : 'Touchez un objet pour l’ouvrir'}</p>
         <button class="k3-mode" data-act="home.full" aria-label="${full ? 'Afficher le menu' : 'Plein écran'}"><span class="k3-mode-l"><span class="k3-mode-menu">Afficher le menu</span><span class="k3-mode-full">Plein écran</span></span><span class="logo-mark">${C.logoMark}</span></button>
