@@ -3,7 +3,7 @@
    la première fois), d'après ses photos. Chaque objet ouvre une page : frigo → Frigo, livre → Recettes,
    tableau de la semaine → Planning, cabas → Courses, prospectus sur la table → Promotions, tirelire → Budget, casserole → le repas du soir.
    Les objets affichent des informations en direct (plat du soir sur l'ardoise, post-it du frigo, meilleure promo).
-   Sans WebGL ou sans réseau, l'accueil revient tout seul à la vue résumé. */
+   Sans WebGL ou sans réseau, l'accueil affiche un court message (le menu reste disponible). */
 (function () {
   'use strict';
   const C = window.C;
