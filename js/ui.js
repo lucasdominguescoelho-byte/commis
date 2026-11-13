@@ -32,6 +32,7 @@
     copy: '<rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>',
     move: '<path d="M4 8.5h13.5l-3-3M20 15.5H6.5l3 3"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    expand: '<path d="M4.5 9.5v-5h5M14.5 4.5h5v5M19.5 14.5v5h-5M9.5 19.5h-5v-5"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>',
     fridge: '<rect x="5.5" y="3" width="13" height="18" rx="2.5"/><path d="M5.5 10h13M8.5 6v1.5M8.5 13v3"/>',
     barcode: '<path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17M8 8v8M11 8v8M14 8v8M16.5 8v8"/>',

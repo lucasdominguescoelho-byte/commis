@@ -186,13 +186,13 @@
     room.add(at(rbox(0.12, 2.5, 4.24, 0.03, W.wall), -2.26, 1.25, 0));
     room.add(at(rbox(4.52, 2.5, 0.12, 0.03, W.wall), -0.06, 1.25, 2.06));
     const skirt = '#D7B9AB';
-    room.add(at(rbox(1.15, 0.07, 0.012, 0.004, skirt), 1.625, 0.035, -1.994));
+    room.add(at(rbox(0.55, 0.07, 0.012, 0.004, skirt), 1.925, 0.035, -1.994));
     room.add(at(rbox(0.012, 0.07, 3.98, 0.004, skirt), -2.194, 0.035, 0));
     room.add(at(rbox(4.38, 0.07, 0.012, 0.004, skirt), 0, 0.035, 1.994));
 
-    /* Cuisine en ligne, de l'angle (x = -2.2) jusqu'à x = 1.05 */
+    /* Cuisine en ligne, de l'angle (x = -2.2) jusqu'à x = 1.65 (vers le séjour) */
     const K0 = -2.2;
-    const K1 = 1.05;
+    const K1 = 1.65;
     const KW = K1 - K0;
     const KX = (K0 + K1) / 2;
     const subway = paint(1024, 172, (g, w, h) => {
@@ -213,6 +213,7 @@
     low(-1.0, -0.4);
     low(-0.4, 0.42);
     low(0.42, 1.02);
+    low(1.02, 1.62);
     room.add(at(rbox(0.03, 0.86, 0.6, 0.01, '#FBFBFA'), K1 - 0.015, 0.43, -1.7)); // joue de fin
     const marble = paint(1024, 256, (g, w, h) => {
       g.fillStyle = W.marble;
@@ -272,21 +273,21 @@
     });
     door(0.58, 0.8, 0.72, 0.44);
     knob(0.48, 0.74);
+    door(0.58, 0.8, 1.32, 0.44);
+    knob(1.56, 0.74);
 
-    // Évier inox, robinet, savon, cafetière et bouilloire
+    // Évier inox et robinet (rien autour), cafetière et bouilloire dans l'angle
     room.add(at(rbox(0.5, 0.012, 0.42, 0.04, '#C9CFD2', { roughness: 0.35, metalness: 0.4 }), -1.3, 0.906, -1.72));
     room.add(at(rbox(0.4, 0.006, 0.32, 0.04, '#9EA7AB', { roughness: 0.3, metalness: 0.4 }), -1.3, 0.912, -1.72));
     room.add(at(cyl(0.02, 0.022, 0.26, steel(), 16), -1.3, 1.03, -1.95));
     const spout = at(cyl(0.015, 0.015, 0.2, steel(), 12), -1.3, 1.15, -1.86);
     spout.rotation.x = Math.PI / 2.4;
     room.add(spout);
-    const soap = group(at(cyl(0.032, 0.035, 0.13, '#F4F1EA', 20, { roughness: 0.35 }), 0, 0.065, 0), at(cyl(0.008, 0.008, 0.03, steel(), 8), 0, 0.145, 0), at(rbox(0.04, 0.008, 0.012, 0.003, steel()), 0.014, 0.16, 0));
-    room.add(at(soap, -1.56, 0.906, -1.93));
     room.add(at(rbox(0.2, 0.32, 0.24, 0.03, '#1E1E1F', { roughness: 0.4 }), -2.06, 1.06, -1.86)); // cafetière
     const kettle = group(at(cyl(0.075, 0.085, 0.2, steel(), 24), 0, 0.1, 0), at(mesh(new T.TorusGeometry(0.06, 0.012, 8, 20, Math.PI), mat('#222')), 0, 0.2, 0));
-    room.add(at(kettle, -2.04, 0.9, -1.58));
+    room.add(at(kettle, -2.08, 0.9, -1.56));
 
-    // Plan de droite, rangé : pot à ustensiles, bloc à couteaux, huile d'olive, cloche en verre
+    // Plan de droite, sobre : un pot à cuillères en bois près de la plaque, une planche à découper
     const crock = group(at(cyl(0.055, 0.05, 0.15, '#F2EEE6', 24, { roughness: 0.45 }), 0, 0.075, 0));
     [
       [-0.018, 0.2, 0.012],
@@ -298,20 +299,10 @@
       spoon.rotation.z = tilt;
       crock.add(at(spoon, dx, 0.02, dz));
     });
-    room.add(at(crock, -0.27, 0.906, -1.88));
-    const block = at(rbox(0.11, 0.2, 0.15, 0.015, '#3B2F28'), -0.1, 1.0, -1.9);
-    block.rotation.x = -0.25;
-    room.add(block);
-    for (let i = 0; i < 4; i++) room.add(at(rbox(0.018, 0.09, 0.03, 0.006, '#151414'), -0.135 + i * 0.024, 1.14, -1.93));
-    const oil = group(at(cyl(0.035, 0.035, 0.2, mat('#5E6A2A', { transparent: true, opacity: 0.85, roughness: 0.15 }), 18), 0, 0.1, 0), at(cyl(0.016, 0.02, 0.07, mat('#3F4520'), 12), 0, 0.235, 0));
-    room.add(at(oil, 0.05, 0.9, -1.9));
-    room.add(at(cyl(0.11, 0.11, 0.025, '#2A2827', 28), 0.25, 0.915, -1.84));
-    room.add(at(mesh(new T.CapsuleGeometry(0.1, 0.12, 8, 24), new T.MeshStandardMaterial({ color: '#EAF3F5', transparent: true, opacity: 0.28, roughness: 0.05 }), false), 0.25, 1.06, -1.84));
-    room.add(at(ball(0.05, '#6E8B5A'), 0.25, 0.96, -1.84));
-    // Planche à découper en chêne appuyée contre la crédence
+    room.add(at(crock, -0.25, 0.906, -1.86));
     const boardCut = group(rbox(0.3, 0.4, 0.022, 0.03, W.oak), at(rbox(0.07, 0.1, 0.022, 0.03, W.oak), 0, 0.23, 0));
     boardCut.rotation.x = -0.12;
-    room.add(at(boardCut, 0.86, 1.11, -1.95));
+    room.add(at(boardCut, 1.36, 1.11, -1.95));
     // Rouleau d'essuie-tout sous le meuble haut (comme sur la photo)
     const roll = at(cyl(0.05, 0.05, 0.24, '#FBFBFA', 20), 0.6, 1.36, -1.9);
     roll.rotation.z = Math.PI / 2;
@@ -330,7 +321,8 @@
     hdoor(-1.575, -0.95, 1.45, -1.52);
     hdoor(-0.95, -0.35, 1.76, -0.65);
     hdoor(-0.35, 0.35, 1.45, -0.29);
-    hdoor(0.35, K1, 1.45, 0.41);
+    hdoor(0.35, 1.0, 1.45, 0.41);
+    hdoor(1.0, K1, 1.45, 1.59);
     room.add(at(rbox(0.6, 0.11, 0.44, 0.02, '#F6F6F4'), -0.65, 1.7, -1.78));
     const glow = at(plane(0.34, 0.1, new T.MeshBasicMaterial({ color: '#FFE9C9' })), -0.65, 1.643, -1.72);
     glow.rotation.x = Math.PI / 2;
@@ -339,25 +331,40 @@
     hoodLight.position.set(-0.65, 1.62, -1.75);
     hoodLight.target.position.set(-0.65, 0.9, -1.65);
     room.add(hoodLight, hoodLight.target);
-    // Affiche (abstraite) sur la joue du meuble haut, côté séjour
-    const posterTex = paint(256, 384, (g, w, h) => {
-      const grd = g.createLinearGradient(0, 0, w, h);
-      grd.addColorStop(0, '#E0507A');
-      grd.addColorStop(1, '#8E1D3D');
-      g.fillStyle = grd;
+    // Affiche encadrée sur la joue du meuble haut, côté séjour : une tomate, dessin simple
+    const posterTex = paint(320, 480, (g, w, h) => {
+      g.fillStyle = '#F7F0E6';
       g.fillRect(0, 0, w, h);
-      g.fillStyle = 'rgba(20,10,15,0.75)';
-      [[80, 210, 46], [150, 190, 40], [118, 270, 52], [190, 260, 34]].forEach(([x, y, r]) => {
+      g.fillStyle = '#DDE7D6';
+      g.fillRect(0, h * 0.64, w, h * 0.36);
+      g.fillStyle = COL.tomato;
+      g.beginPath();
+      g.ellipse(w / 2, h * 0.45, 92, 84, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.28)';
+      g.beginPath();
+      g.ellipse(w / 2 - 34, h * 0.4, 22, 34, -0.5, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#4E8A55';
+      [-0.9, -0.3, 0.3, 0.9].forEach((a) => {
+        g.save();
+        g.translate(w / 2, h * 0.45 - 80);
+        g.rotate(a);
         g.beginPath();
-        g.arc(x, y, r, 0, Math.PI * 2);
+        g.ellipse(0, -16, 8, 22, 0, 0, Math.PI * 2);
         g.fill();
+        g.restore();
       });
-      g.fillStyle = '#FFE4EC';
-      g.fillRect(22, 22, w - 44, 30);
+      g.fillRect(w / 2 - 3, h * 0.45 - 112, 6, 26);
+      g.fillStyle = COL.ink;
+      g.textAlign = 'center';
+      g.font = `italic 40px ${SERIF}`;
+      g.fillText('Tomate', w / 2, h * 0.83);
+      g.font = `600 13px ${SANS}`;
+      g.fillText('MARCHÉ  ·  SAISON', w / 2, h * 0.9);
     });
-    const poster = at(plane(0.32, 0.48, mat('#ffffff', { map: posterTex.tex })), K1 + 0.004, 1.84, -1.82);
-    poster.rotation.y = Math.PI / 2;
-    room.add(poster);
+    const poster = group(rbox(0.014, 0.52, 0.36, 0.006, W.oakDark), at(plane(0.3, 0.46, mat('#ffffff', { map: posterTex.tex, roughness: 0.8 })), 0.0075, 0, 0).rotateY(Math.PI / 2));
+    room.add(at(poster, K1 + 0.008, 1.84, -1.82));
 
     /* Porte d'entrée bleue : vantail plein dans un huisserie grise, paumelles, poignée, clé */
     const DZ = -0.85; // centre de la porte sur le mur ouest
@@ -522,26 +529,28 @@
       e.rotation.y = -Math.PI / 2; // côté est, regarde vers -x
       room.add(at(e, TX + 0.62, 0, z));
     });
-    // Sur la table, de gauche à droite : deux sous-verres côte à côte avec un verre chacun,
-    // la lampe champignon au milieu, le prospectus au bord (plus bas)
+    // Sur la table : un sous-verre et un verre devant chaque chaise, la lampe au milieu, le prospectus au coin avant droit
     [
-      [TZ + 0.42, '#D2343A'],
-      [TZ + 0.22, '#3E9B55'],
-    ].forEach(([z, c]) => {
-      room.add(at(cyl(0.07, 0.07, 0.008, '#8A776B', 40, { roughness: 0.95 }), TX + 0.04, tableTop + 0.004, z));
+      [-1, TZ + 0.3, '#D2343A'],
+      [1, TZ + 0.3, '#3E9B55'],
+      [-1, TZ - 0.29, '#3E9B55'],
+      [1, TZ - 0.29, '#D2343A'],
+    ].forEach(([side, z, c]) => {
+      const x = TX + side * 0.25;
+      room.add(at(cyl(0.065, 0.065, 0.008, '#8A776B', 40, { roughness: 0.95 }), x, tableTop + 0.004, z));
       const glass = group(
-        at(cyl(0.036, 0.031, 0.1, mat(c, { transparent: true, opacity: 0.55, roughness: 0.08 }), 24), 0, 0.05, 0),
-        at(cyl(0.031, 0.029, 0.055, mat('#EAF6FA', { transparent: true, opacity: 0.6, roughness: 0.05 }), 20), 0, 0.03, 0)
+        at(cyl(0.034, 0.03, 0.1, mat(c, { transparent: true, opacity: 0.55, roughness: 0.08 }), 24), 0, 0.05, 0),
+        at(cyl(0.029, 0.027, 0.055, mat('#EAF6FA', { transparent: true, opacity: 0.6, roughness: 0.05 }), 20), 0, 0.03, 0)
       );
-      room.add(at(glass, TX + 0.04, tableTop + 0.008, z));
+      room.add(at(glass, x, tableTop + 0.008, z));
     });
     const lamp = group(at(cyl(0.065, 0.075, 0.018, '#FAFAF8', 24), 0, 0.009, 0), at(cyl(0.011, 0.015, 0.2, '#FAFAF8', 12), 0, 0.115, 0));
     const shade = at(mesh(new T.SphereGeometry(0.115, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat('#FFFFFF', { emissive: '#FFC27A', emissiveIntensity: 0.85 })), 0, 0.2, 0);
     shade.scale.set(1, 0.55, 1);
     lamp.add(shade);
-    room.add(at(lamp, TX - 0.02, tableTop, TZ - 0.04));
+    room.add(at(lamp, TX, tableTop, TZ));
     const lampLight = new T.PointLight('#FFAE5E', 3.2, 2.8, 1.4);
-    lampLight.position.set(TX - 0.02, tableTop + 0.2, TZ - 0.04);
+    lampLight.position.set(TX, tableTop + 0.2, TZ);
     room.add(lampLight);
 
     /* Tapis vert au milieu de la pièce */
@@ -603,15 +612,10 @@
       m.position.set(x, 0.004, z);
       room.add(m);
     };
-    ao(1.15, 1.625, -1.84, 0); // mur de la cuisine, à droite des meubles
+    ao(0.55, 1.925, -1.84, 0); // mur de la cuisine, à droite des meubles
     ao(4.0, -2.04, 0, Math.PI / 2); // mur du fond
     ao(4.4, 0, 1.84, Math.PI); // mur de la table
 
-    // Coupe de fruits sur le plan de travail
-    const bowl = mesh(new T.SphereGeometry(0.13, 32, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat('#FBFAF7', { side: T.DoubleSide, roughness: 0.4 }));
-    bowl.scale.set(1, 0.55, 1);
-    const fruits = group(at(bowl, 0, 0.075, 0), at(ball(0.045, '#F08A24'), -0.04, 0.085, 0.02), at(ball(0.045, '#F29331'), 0.04, 0.09, -0.02), at(ball(0.042, '#9DBF45'), 0.0, 0.12, 0.04), at(ball(0.043, '#C83A32'), 0.05, 0.085, 0.05));
-    room.add(at(fruits, 0.45, 0.9, -1.66));
 
     const items = [];
     const add = (key, name, route, obj, anchor) => {
@@ -679,15 +683,15 @@
     book.rotation.x = -Math.PI / 2; // couverture vers le haut
     const bookG = group(at(book, 0, 0.018, 0));
     bookG.rotation.y = Math.PI / 2 - 0.18; // le haut du livre vers le mur, lisible depuis le séjour
-    add('recettes', 'Recettes', '#/recettes', at(bookG, 0.78, 0.906, -1.62), [0.78, 1.12, -1.62]);
+    add('recettes', 'Recettes', '#/recettes', at(bookG, 1.3, 0.906, -1.62), [1.3, 1.12, -1.62]);
 
     /* Prospectus des promotions, posés sur la table (lisibles depuis le séjour) */
     const flyer = paint(384, 512, () => {});
     const flyerMesh = plane(0.2, 0.27, mat('#ffffff', { map: flyer.tex, roughness: 0.9 }));
     flyerMesh.rotation.x = -Math.PI / 2;
     const flyers = group(at(rbox(0.2, 0.006, 0.27, 0.003, '#FFF1C2'), 0.015, 0, 0.02), at(flyerMesh, 0, 0.0045, 0));
-    flyers.rotation.y = Math.PI / 2 + 0.22;
-    add('promotions', 'Promotions', '#/promotions', at(flyers, TX + 0.03, tableTop + 0.003, TZ - TL / 2 + 0.15), [TX + 0.03, tableTop + 0.26, TZ - TL / 2 + 0.15]);
+    flyers.rotation.y = Math.PI / 2 + 0.12;
+    add('promotions', 'Promotions', '#/promotions', at(flyers, TX + 0.25, tableTop + 0.003, TZ - TL / 2 + 0.13), [TX + 0.25, tableTop + 0.24, TZ - TL / 2 + 0.13]);
 
     /* Tirelire sur l'étagère du portemanteau */
     const pig = group();
@@ -926,10 +930,18 @@
     K.look = portrait ? new T.Vector3(-0.7, 1.4, 0.0) : new T.Vector3(-0.7, 1.22, 0.05);
     const vf = (K.camera.fov * Math.PI) / 180;
     const hf = 2 * Math.atan(Math.tan(vf / 2) * K.camera.aspect);
-    K.R = Math.max((portrait ? 2.85 : 2.85) / Math.tan(vf / 2), (portrait ? 2.3 : 3.75) / Math.tan(hf / 2));
+    const wide = (portrait ? 2.3 : 3.75) / Math.tan(hf / 2);
+    K.R = Math.max(2.85 / Math.tan(vf / 2), wide);
     K.camera.updateProjectionMatrix();
+    // Plein écran (arrivée sur le site) : la pièce seule, aussi grande que possible et centrée
+    if (document.documentElement.classList.contains('k3-full')) {
+      K.R = wide;
+      // téléphone : vue un peu plus plongeante pour remplir la hauteur, la pièce prend toute la largeur
+      if (portrait) K.base = { az: Math.PI / 2, el: 0.62 };
+      fitRoom(portrait ? 30 : 40, h - (portrait ? 76 : 30), portrait ? -Infinity : Math.max(16, w * 0.035));
+    }
     // Ordinateur : le bord avant du sol se cale en bas de l'écran, la pièce remonte sous le menu
-    if (portrait) fitBottom(h - 92); // téléphone : la pièce, un peu plus grande, remonte vers le titre
+    else if (portrait) fitBottom(h - 92); // téléphone : la pièce, un peu plus grande, remonte vers le titre
     else {
       fitBottom(h - 26);
       // …sans passer sous le titre : si le haut du mur de gauche touche le texte, on redescend d'autant
@@ -943,14 +955,28 @@
     }
   }
 
+  // Point de la scène → position à l'écran (px), avec la caméra déjà placée
+  const toScreen = (x, y, z) => {
+    const v = new T.Vector3(x, y, z).project(K.camera);
+    return { x: ((v.x + 1) / 2) * K.size.w, y: ((1 - v.y) / 2) * K.size.h };
+  };
+
+  // La plus grande pièce qui tient entre topMin et bottomMax (px), centrée dans cette bande
+  function fitRoom(topMin, bottomMax, sideMin) {
+    for (let k = 0; k < 16; k++) {
+      fitBottom(bottomMax);
+      const top = Math.min(...[-2.12, 2.12].map((z) => toScreen(-2.32, 2.5, z).y), ...[-2.12, 2.12].map((z) => toScreen(2.2, 2.5, z).y));
+      // les deux murs latéraux restent entiers, avec une petite marge
+      const side = Math.min(...[0, 2.5].map((y) => Math.min(toScreen(2.26, y, 2.12).x, K.size.w - toScreen(2.26, y, -2.12).x)));
+      if (top >= topMin && side >= sideMin) return fitBottom(bottomMax - (top - topMin) / 2);
+      K.R *= 1.04;
+    }
+  }
+
   // Hauteur à l'écran (px) du haut du mur de gauche à l'abscisse x ; Infinity s'il n'y arrive pas
   function wallTopUnder(x) {
-    const p = (v) => {
-      v.project(K.camera);
-      return { x: ((v.x + 1) / 2) * K.size.w, y: ((1 - v.y) / 2) * K.size.h };
-    };
-    const back = p(new T.Vector3(-2.32, 2.5, 2.12));
-    const front = p(new T.Vector3(2.2, 2.5, 2.12));
+    const back = toScreen(-2.32, 2.5, 2.12);
+    const front = toScreen(2.2, 2.5, 2.12);
     if (x < front.x) return Infinity;
     if (x >= back.x) return back.y;
     return front.y + ((x - front.x) / (back.x - front.x)) * (back.y - front.y);
@@ -962,16 +988,20 @@
     const edge = new T.Vector3();
     const { az, el } = K.base;
     const unitPx = K.size.h / (2 * Math.tan((cam.fov * Math.PI) / 360));
-    for (let i = 0; i < 4; i++) {
+    const place = () => {
       cam.position.set(K.look.x + K.R * Math.cos(el) * Math.sin(az), K.look.y + K.R * Math.sin(el), K.look.z + K.R * Math.cos(el) * Math.cos(az));
       cam.lookAt(K.look);
       cam.updateMatrixWorld();
+    };
+    for (let i = 0; i < 5; i++) {
+      place();
       edge.set(2.2, 0, 0);
       const depth = edge.clone().applyMatrix4(cam.matrixWorldInverse).z * -1;
       edge.project(cam);
       const y = ((1 - edge.y) / 2) * K.size.h;
       K.look.y -= ((y - target) * depth) / unitPx / Math.cos(el);
     }
+    place();
   }
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);

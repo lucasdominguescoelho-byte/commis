@@ -1012,7 +1012,35 @@ html.is-cooking { overflow: hidden; }
 .k3-t em { color: var(--citron); }
 .k3-s { margin-top: 10px; color: var(--ink-2); font-size: 15px; }
 .k3-s b { color: var(--citron-text); font-weight: 600; }
-.k3-switch { position: absolute; right: clamp(24px, 4vw, 56px); top: 34px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.k3-tools { position: absolute; right: clamp(24px, 4vw, 56px); top: 34px; display: flex; gap: 8px; }
+.k3-tools .btn { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.k3-enter { width: 34px; padding: 0; justify-content: center; }
+/* Plein écran : la pièce seule, le logo en bas à droite remet le menu */
+.k3-exit { position: absolute; right: 20px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 3; display: none; padding: 0; border: 0; border-radius: 14px; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.k3-exit .logo-mark { width: 46px; height: 46px; border-radius: 14px; box-shadow: 0 1px 2px rgba(70, 35, 15, 0.12), 0 12px 26px -12px rgba(70, 35, 15, 0.55); transition: transform 160ms ease-out; }
+.k3-exit .logo-mark svg { width: 25px; height: 25px; }
+.k3-exit-l { position: absolute; right: calc(100% + 10px); top: 50%; margin-top: -15px; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--ink); background: rgba(255, 255, 255, 0.86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 7px 12px; border-radius: 999px; opacity: 0; transform: translateX(6px); transition: opacity 180ms ease-out, transform 180ms ease-out; pointer-events: none; }
+.k3-exit:active .logo-mark { transform: scale(0.95); }
+.k3-exit:focus-visible { outline: none; }
+.k3-exit:focus-visible .logo-mark { outline: 2px solid var(--citron); outline-offset: 3px; }
+.k3-exit:focus-visible .k3-exit-l { opacity: 1; transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .k3-exit:hover .logo-mark { transform: scale(1.06); }
+  .k3-exit:hover .k3-exit-l { opacity: 1; transform: none; }
+}
+html.k3-full .side, html.k3-full .topbar, html.k3-full .tabs, html.k3-full .k3-head, html.k3-full .k3-tools { display: none; }
+html.k3-full .k3 { height: 100dvh; min-height: 0; }
+html.k3-full .k3-exit { display: flex; }
+html.k3-full .k3-hint { bottom: calc(24px + env(safe-area-inset-bottom)); }
+@keyframes k3-down { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes k3-up { from { opacity: 0; transform: translateY(10px); } }
+@keyframes k3-fade { from { opacity: 0; } }
+html.k3-unfold .side, html.k3-unfold .topbar { animation: k3-down 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+html.k3-unfold .tabs { animation: k3-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+html.k3-unfold .k3-head, html.k3-unfold .k3-tools { animation: k3-fade 320ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  html.k3-unfold .side, html.k3-unfold .topbar, html.k3-unfold .tabs, html.k3-unfold .k3-head, html.k3-unfold .k3-tools { animation: none; }
+}
 .k3-hint { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 13px; color: var(--ink-2); background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 7px 14px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
 .k3-labels { position: absolute; inset: 0; pointer-events: none; }
 .k3-pin { position: absolute; left: 0; top: 0; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 12px 7px; border-radius: 14px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 1px 2px rgba(120, 60, 30, 0.08), 0 8px 20px -10px rgba(120, 60, 30, 0.35); white-space: nowrap; opacity: 0; transition: opacity 260ms ease, background-color 160ms ease, box-shadow 200ms ease; will-change: transform; }
@@ -1034,7 +1062,9 @@ html.is-cooking { overflow: hidden; }
   .k3-head { left: 16px; top: 14px; right: 120px; }
   .k3-t { font-size: 36px; }
   .k3-s { font-size: 13.5px; }
-  .k3-switch { right: 12px; top: 16px; }
+  .k3-tools { right: 12px; top: 16px; flex-direction: column; align-items: flex-end; }
+  .k3-enter { width: 38px; }
+  .k3-exit { right: 16px; }
   .k3-pin { padding: 5px 10px 6px; }
   .k3-pin b { font-size: 12px; }
   .k3-hint { bottom: 14px; font-size: 12px; }

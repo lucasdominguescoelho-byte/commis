@@ -76,7 +76,11 @@
         <header class="k3-head"><p class="eyebrow">Semaine ${C.weekNo(wid)} · ${C.fmtDate(C.today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           <h1 class="k3-t">Votre <em>cuisine</em></h1>
           <p class="k3-s">${t.savings >= 0.05 ? `<b>${C.chf(t.savings)}</b> économisés cette semaine · ` : ''}${t.meals} repas sur 14 prévus</p></header>
-        <button class="btn btn--ghost btn--sm k3-switch" data-act="home.classic">${icon('book', 16)} Vue résumé</button>
+        <div class="k3-tools">
+          <button class="btn btn--ghost btn--sm k3-switch" data-act="home.classic">${icon('book', 16)} Vue résumé</button>
+          <button class="btn btn--ghost btn--sm k3-enter" data-act="home.full" aria-label="Plein écran" title="Plein écran">${icon('expand', 17)}</button>
+        </div>
+        <button class="k3-exit" data-act="home.full" aria-label="Afficher le menu"><span class="k3-exit-l">Afficher le menu</span><span class="logo-mark">${C.logoMark}</span></button>
         <p class="k3-hint">${matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Cliquez sur un objet pour l’ouvrir' : 'Touchez un objet pour l’ouvrir'}</p>
       </section>`;
     C.k3d.mount(root.querySelector('.k3-stage'), homeInfo());
@@ -194,10 +198,24 @@
     'home.week': () => { C.ui.week = C.weekId(); },
     'home.classic': () => { C.ui.homeClassic = true; C.render(); },
     'home.room': () => { C.ui.homeClassic = false; C.render(); },
+    // Plein écran : la pièce seule ; le logo en bas à droite remet le menu (et inversement)
+    'home.full': () => {
+      const html = document.documentElement;
+      C.ui.full = !C.ui.full;
+      html.classList.toggle('k3-full', C.ui.full);
+      html.classList.toggle('k3-unfold', !C.ui.full);
+      clearTimeout(C.ui.unfoldT);
+      C.ui.unfoldT = setTimeout(() => html.classList.remove('k3-unfold'), 450);
+      const next = document.querySelector(C.ui.full ? '.k3-exit' : '.k3-enter');
+      if (next) next.focus({ preventScroll: true });
+    },
     'home.people': (el) => C.save.settings({ household: Math.max(1, Math.min(12, C.S.settings.household + Number(el.dataset.d))) }),
     'home.generate': () => {
       C.ui.week = C.weekId();
       C.acts['plan.generate']();
     },
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.documentElement.classList.contains('k3-full') && !document.querySelector('#ob, .sheet.is-open')) C.acts['home.full']();
   });
 })();
