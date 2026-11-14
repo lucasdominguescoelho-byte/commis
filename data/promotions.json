@@ -1,25 +1,25 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-13T17:55:06+00:00",
+ "generatedAt": "2026-11-14T11:38:18+00:00",
  "sources": {
   "lidl": {
    "ok": true,
    "count": 57,
    "origine": "lidl.ch",
-   "updatedAt": "2026-11-13T17:55:05+00:00"
+   "updatedAt": "2026-11-14T11:36:47+00:00"
   },
   "migros": {
    "ok": true,
    "count": 34,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-13T17:55:05+00:00"
+   "updatedAt": "2026-11-14T11:37:21+00:00"
   },
   "coop": {
    "ok": true,
    "count": 45,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-13T17:55:06+00:00"
+   "updatedAt": "2026-11-14T11:38:18+00:00"
   }
  },
  "promotions": [
@@ -1638,8 +1638,8 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 4.5,
-   "regularPrice": 5.4,
-   "discountPct": 16,
+   "regularPrice": null,
+   "discountPct": null,
    "unitLabel": "",
    "validFrom": "2026-11-12",
    "validTo": "2026-11-18",
@@ -2080,9 +2080,9 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 13.95,
-   "regularPrice": 15.6,
-   "discountPct": 10,
-   "unitLabel": "250 g",
+   "regularPrice": null,
+   "discountPct": null,
+   "unitLabel": "",
    "validFrom": "2026-11-12",
    "validTo": "2026-11-18",
    "approxDates": false,
