@@ -767,6 +767,14 @@
     el.setAttribute('aria-pressed', on);
   };
 
+  // Vocabulaire donné à la dictée : vos plats préférés, les classiques, puis les jours et repas
+  // (en dernier : c'est la fin qui compte le plus si la liste est trop longue)
+  const vocabulaireDictee = () => {
+    const perso = C.S.recipes.filter((r) => (r.favorite || r.validated) && r.name.split(/\s+/).length <= 4).slice(0, 8).map((r) => r.name);
+    const plats = [...new Set([...perso, ...CLASSIQUES.map((c) => c.name)])];
+    return `${plats.join(', ')}. Repas léger, rapide, sans viande, du poisson, pas cher, copieux. Lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche, demain, ce soir, ce midi-là. Midi et soir.`;
+  };
+
   function micro() {
     const st = C.ui.env;
     if (dictee) {
@@ -776,6 +784,7 @@
     const ta = document.getElementById('env-text');
     const base = ta ? ta.value.trim() : '';
     dictee = C.dictee.demarrer({
+      vocabulaire: vocabulaireDictee(),
       texte(t) {
         t = t.replace(/\bje dis (?=midi|soir)/gi, 'jeudi ').replace(/\bpattes\b/gi, 'pâtes'); // confusions de la dictée
         const el = document.getElementById('env-text');
@@ -922,5 +931,5 @@
     const cl = CLASSIQUES.find((d) => d.cle.test(normaliser(texte)));
     return cl ? { name: cl.name, category: cl.category, prepTime: cl.prepTime, ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice() } : null;
   };
-  C.envies = { comprendre, preparer, classique, proposer, illustrerEnvies, photoPlat }; // aussi pour vérifier depuis la console
+  C.envies = { comprendre, preparer, classique, proposer, illustrerEnvies, photoPlat, vocabulaireDictee }; // aussi pour vérifier depuis la console
 })();

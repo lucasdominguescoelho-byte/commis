@@ -1,12 +1,16 @@
 /* Commis — dictée vocale, gratuite et sans clé.
 
    Deux moteurs :
-     - « intégrée » : Whisper (modèle libre d'OpenAI) qui tourne sur l'appareil grâce à Transformers.js.
-       Le modèle (~100 Mo avec le moteur) se télécharge une seule fois puis reste en cache ; l'audio ne
-       quitte jamais l'appareil. C'est le moteur par défaut sur ordinateur, où la dictée des navigateurs
-       est souvent bloquée (Safari sans dictée macOS, Brave, Arc, Firefox…).
+     - « intégrée » : Whisper (modèle libre d'OpenAI) qui tourne sur l'appareil grâce à Transformers.js,
+       dans un fil séparé (Web Worker) pour que la page et l'écoute ne se figent jamais. L'audio ne quitte
+       jamais l'appareil ; le modèle se télécharge une seule fois puis reste en cache.
+         · avec la carte graphique (WebGPU : Chrome, Safari récent…) : Whisper « small », bien plus juste
+           en français (~300 Mo, ≈ 1 s par phrase) ;
+         · sinon : Whisper « base » (~100 Mo, ≈ 2-3 s par phrase).
+       On lui donne aussi le vocabulaire de Commis (jours, midi/soir, plats) : il les reconnaît beaucoup mieux.
+       C'est le moteur par défaut sur ordinateur, où la dictée des navigateurs est souvent bloquée.
      - « navigateur » : la reconnaissance vocale du téléphone (Siri, Google), instantanée. Si elle
-       échoue, Commis passe tout seul à la dictée intégrée et s'en souvient.
+       échoue, Commis passe à la dictée intégrée et s'en souvient.
    Le son est capté directement (Web Audio), sans MediaRecorder : même comportement partout, et arrêt
    automatique quand on se tait. */
 (function () {
@@ -16,21 +20,22 @@
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const Ctx = window.AudioContext || window.webkitAudioContext;
   const CLE = 'commis-dictee'; // 'integree' ou 'navigateur' quand un moteur a été retenu pour cet appareil
+  const CLE_GPU = 'commis-dictee-gpu'; // 'non' si la carte graphique a échoué ici
   const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
-  const MODELE = 'Xenova/whisper-base';
-  const TAILLE = '100 Mo';
+  const GPU = { modele: 'onnx-community/whisper-small', dtype: { encoder_model: 'q4', decoder_model_merged: 'q4' }, device: 'webgpu', fichier: 'whisper-small', taille: '300 Mo' };
+  const CPU = { modele: 'Xenova/whisper-base', dtype: 'q8', device: 'wasm', fichier: 'whisper-base', taille: '100 Mo' };
 
-  const lire = () => {
+  const lire = (k = CLE) => {
     try {
-      return localStorage.getItem(CLE);
+      return localStorage.getItem(k);
     } catch (e) {
       return null;
     }
   };
-  const ecrire = (v) => {
+  const ecrire = (v, k = CLE) => {
     try {
-      if (v) localStorage.setItem(CLE, v);
-      else localStorage.removeItem(CLE);
+      if (v) localStorage.setItem(k, v);
+      else localStorage.removeItem(k);
     } catch (e) {
       /* stockage indisponible : tant pis */
     }
@@ -45,9 +50,18 @@
     return SR ? 'navigateur' : micro ? 'integree' : null;
   };
 
-  /* ---------- Modèle Whisper (chargé à la demande, une seule fois) ----------
-     Il tourne dans un fil séparé (Web Worker) : la page et l'écoute ne se figent jamais pendant
-     le téléchargement ni la transcription. À défaut de worker, il tourne dans la page. */
+  /* ---------- Modèle Whisper (chargé à la demande, une seule fois) ---------- */
+  let config = null;
+  const choisirConfig = () =>
+    config ||
+    (config = (async () => {
+      if (lire(CLE_GPU) === 'non' || !navigator.gpu) return CPU;
+      try {
+        return (await navigator.gpu.requestAdapter()) ? GPU : CPU;
+      } catch (e) {
+        return CPU;
+      }
+    })());
   let modeleEnCache = null;
   let dernierPct = null;
   let pret = false;
@@ -60,19 +74,21 @@
     if (pret) return true;
     if (modeleEnCache != null) return modeleEnCache;
     try {
+      const conf = await choisirConfig();
       const c = await caches.open('transformers-cache');
-      modeleEnCache = (await c.keys()).some((r) => r.url.includes('whisper-base') && r.url.includes('decoder_model_merged'));
+      modeleEnCache = (await c.keys()).some((r) => r.url.includes(conf.fichier) && r.url.includes('decoder_model_merged'));
     } catch (e) {
       modeleEnCache = false;
     }
     return modeleEnCache;
   }
-  const OPTIONS = { language: 'french', task: 'transcribe', chunk_length_s: 30, stride_length_s: 5 };
-  const CHARGEMENT = `async (pipeline, progres) => {
+
+  // Code commun (worker ou page) : charge le modèle et rend transcrire(audio, { vocabulaire, max_new_tokens })
+  const MOTEUR = `async (pipeline, conf, progres) => {
     const fichiers = {};
-    const p = await pipeline('automatic-speech-recognition', '${MODELE}', {
-      dtype: 'q8',
-      device: 'wasm',
+    const asr = await pipeline('automatic-speech-recognition', conf.modele, {
+      dtype: conf.dtype,
+      device: conf.device,
       progress_callback: (x) => {
         if (x.status !== 'progress' || !x.total) return;
         fichiers[x.file] = [x.loaded, x.total];
@@ -81,44 +97,79 @@
         if (total > 2e7) progres(Math.min(99, Math.round((v.reduce((n, y) => n + y[0], 0) / total) * 100)));
       },
     });
-    await p(new Float32Array(8000), { language: 'french', task: 'transcribe' }).catch(() => {}); // échauffement
-    return p;
+    const tok = asr.tokenizer;
+    const id = (t) => tok.model.tokens_to_ids.get(t);
+    const debut = [id('<|startoftranscript|>'), id('<|fr|>'), id('<|transcribe|>'), id('<|notimestamps|>')];
+    const transcrire = async (audio, o) => {
+      o = o || {};
+      // le vocabulaire de Commis, donné à Whisper comme « texte précédent » : il oriente la reconnaissance
+      const avant = o.vocabulaire && id('<|startofprev|>') != null ? [id('<|startofprev|>'), ...tok.encode(' ' + o.vocabulaire, { add_special_tokens: false }).slice(-180)] : [];
+      const prefixe = [...avant, ...debut];
+      if (prefixe.some((x) => x == null)) {
+        const out = await asr(audio, { language: 'french', task: 'transcribe', max_new_tokens: o.max_new_tokens || 128 });
+        return (out && out.text) || '';
+      }
+      const feats = (await asr.processor(audio)).input_features;
+      const data = await asr.model.generate({ inputs: feats, decoder_input_ids: prefixe, max_new_tokens: o.max_new_tokens || 128 });
+      return tok.decode(data[0].tolist().map(Number).slice(prefixe.length), { skip_special_tokens: true });
+    };
+    await transcrire(new Float32Array(16000)).catch(() => {}); // échauffement : le vrai passage sera rapide
+    return transcrire;
   }`;
   const WORKER = `import { pipeline, env } from '${LIB}';
     env.allowLocalModels = false;
-    const charger = ${CHARGEMENT};
-    let modele = null;
+    const charger = ${MOTEUR};
+    let moteur = null;
     self.onmessage = async (e) => {
       const m = e.data;
       try {
-        modele = modele || charger(pipeline, (pct) => self.postMessage({ type: 'progres', pct }));
-        const asr = await modele;
+        moteur = moteur || charger(pipeline, m.conf, (pct) => self.postMessage({ type: 'progres', pct }));
+        const transcrire = await moteur;
         if (m.type === 'init') return self.postMessage({ type: 'pret' });
-        const out = await asr(m.audio, { ...${JSON.stringify(OPTIONS)}, ...(m.opts || {}) });
-        self.postMessage({ type: 'texte', id: m.id, texte: (out && out.text) || '' });
+        self.postMessage({ type: 'texte', id: m.id, texte: await transcrire(m.audio, m.opts) });
       } catch (err) {
-        modele = null;
+        if (m.type === 'init') moteur = null;
         self.postMessage({ type: 'erreur', id: m.id, message: String((err && err.message) || err) });
       }
     };`;
 
-  let moteurPret = null; // promesse d'une fonction transcrire(audio) → texte
+  let moteurPret = null; // promesse d'une fonction transcrire(audio, opts) → texte
   function charger() {
     if (moteurPret) return moteurPret;
-    moteurPret = viaWorker()
-      .catch(() => dansLaPage())
-      .then((f) => {
-        pret = true;
-        modeleEnCache = true;
-        return f;
-      })
-      .catch((e) => {
-        moteurPret = null;
-        throw e;
-      });
+    moteurPret = (async () => {
+      const conf = await choisirConfig();
+      let f;
+      try {
+        f = await viaWorker(conf);
+      } catch (e) {
+        if (conf === GPU) {
+          // la carte graphique ne suit pas : moteur classique, retenu pour cet appareil
+          ecrire('non', CLE_GPU);
+          config = Promise.resolve(CPU);
+          modeleEnCache = null;
+          f = await viaWorker(CPU).catch(() => dansLaPage(CPU));
+        } else f = await dansLaPage(CPU);
+      }
+      pret = true;
+      modeleEnCache = true;
+      if ((await choisirConfig()) === GPU) oublier(CPU.fichier); // l'ancien modèle ne sert plus : on libère la place
+      return f;
+    })().catch((e) => {
+      moteurPret = null;
+      throw e;
+    });
     return moteurPret;
   }
-  function viaWorker() {
+  async function oublier(fichier) {
+    try {
+      const c = await caches.open('transformers-cache');
+      const vieux = (await c.keys()).filter((r) => r.url.includes(fichier));
+      await Promise.all(vieux.map((r) => c.delete(r)));
+    } catch (e) {
+      /* sans importance */
+    }
+  }
+  function viaWorker(conf) {
     return new Promise((ok, ko) => {
       let w;
       try {
@@ -137,8 +188,9 @@
           ok((audio, opts) =>
             new Promise((ok2, ko2) => {
               const id = ++n;
+              const copie = audio.slice();
               attente.set(id, { ok2, ko2 });
-              w.postMessage({ type: 'texte', id, audio, opts }, [audio.buffer]);
+              w.postMessage({ type: 'texte', id, audio: copie, opts, conf }, [copie.buffer]);
             })
           );
         } else if (m.type === 'texte' || m.type === 'erreur') {
@@ -157,17 +209,16 @@
           ko(new Error((e && e.message) || 'worker'));
         }
       };
-      w.postMessage({ type: 'init' });
+      w.postMessage({ type: 'init', conf });
     });
   }
-  async function dansLaPage() {
+  async function dansLaPage(conf) {
     const { pipeline, env } = await import(LIB);
     env.allowLocalModels = false;
-    const p = await new Function(`return ${CHARGEMENT}`)()(pipeline, progres);
+    const transcrire = await new Function(`return ${MOTEUR}`)()(pipeline, conf, progres);
     return async (audio, opts) => {
       await new Promise((r) => setTimeout(r, 30)); // laisse l'écran se mettre à jour avant le calcul
-      const out = await p(audio, { ...OPTIONS, ...(opts || {}) });
-      return (out && out.text) || '';
+      return transcrire(audio, opts);
     };
   }
 
@@ -347,7 +398,8 @@
         const transcrire = await moteur16;
         abonnes.delete(suivi);
         cb.etat({ etape: 'transcription' });
-        const t = sansBoucle(propre(await transcrire(en16k(brut, rate), { max_new_tokens: Math.min(220, Math.round(secondes * 7) + 12), no_repeat_ngram_size: 4 })));
+        const audio16 = en16k(brut, rate).slice(0, 16000 * 30);
+        const t = sansBoucle(propre(await transcrire(audio16, { max_new_tokens: Math.min(200, Math.round(secondes * 7) + 12), vocabulaire: cb.vocabulaire || '' })));
         if (!t || FANTOME.test(t)) return cb.etat({ etape: 'erreur', message: MESSAGES.rien });
         cb.texte(t);
         cb.etat({ etape: 'fini' });
@@ -392,7 +444,7 @@
             if (silence > 1.6) terminer(false); // on s'est tu : fin automatique
           }
           if (!parle && duree > 9) terminer(false);
-          if (duree > 40) terminer(false);
+          if (duree > 30) terminer(false);
         };
         source.connect(noeud);
         noeud.connect(ctx.destination); // nécessaire pour que le traitement tourne (sortie silencieuse)
@@ -414,7 +466,7 @@
   C.dictee = {
     possible: () => !!moteur(),
     moteur,
-    taille: TAILLE,
+    taille: () => choisirConfig().then((c) => c.taille),
     demarrer,
     pret: () => pret,
     dejaTelecharge,
