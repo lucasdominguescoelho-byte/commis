@@ -1069,7 +1069,14 @@ html.nuit .note--test { border-color: #5a3420; }
 .pw-seg { margin-bottom: 12px; }
 .pw-jours .chip { min-width: 52px; justify-content: center; }
 .chip.is-past { opacity: 0.4; cursor: default; }
-.env-mic.is-busy { opacity: 0.6; animation: env-pulse 1.4s ease-in-out infinite; }
+.env-mic.is-busy { opacity: 0.75; }
+.env-mic.is-busy::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--citron); animation: pw-tourne 0.9s linear infinite; }
+@keyframes pw-tourne { to { transform: rotate(360deg); } }
+.env-mic.is-on { animation: none; box-shadow: 0 0 0 calc(4px + var(--lvl, 0) * 14px) rgba(228, 87, 46, 0.26); transition: box-shadow 90ms linear; }
+.pw-voix { display: block; margin-top: 8px; font-size: 13px; line-height: 1.4; color: var(--ink-2); background: var(--wash); border-radius: 10px; padding: 8px 12px; }
+.pw-voix[hidden] { display: none; }
+.pw-voix.is-err { color: var(--danger); background: var(--danger-wash); }
+html.nuit .pw-voix.is-err { background: rgba(180, 35, 24, 0.18); color: #f3a59a; }
 .pw-rec { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--citron); margin-right: 8px; vertical-align: 1px; animation: env-pulse 1.4s ease-in-out infinite; }
 .pw-err { color: var(--danger); }
 #pw-voix .link { font-size: inherit; }

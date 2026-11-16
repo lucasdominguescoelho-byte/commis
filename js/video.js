@@ -557,6 +557,8 @@
           /* image protégée : on s'en passe */
         }
     }
+    const web = C.photoPlat ? await C.photoPlat(r.name) : null;
+    if (web) out.push({ id: 'web', label: 'Photo du plat', src: web.src, page: web.page });
     const illu = illustration(r);
     if (illu) out.push({ id: 'illu', label: 'Illustration', src: illu });
     return out;
@@ -603,9 +605,9 @@
       for (const r of vieilles.slice(0, 12)) {
         essayees.add(r.id);
         const imgs = await imagesPour(r);
-        const best = imgs.find((x) => x.id[0] === 'f') || imgs.find((x) => x.id === 'illu');
+        const best = imgs.find((x) => x.id[0] === 'f') || imgs.find((x) => x.id === 'web') || imgs.find((x) => x.id === 'illu');
         const cur = C.recipe(r.id);
-        if (best && cur && cur.photo === r.photo) await C.save.recipe({ ...cur, photo: best.src });
+        if (best && cur && cur.photo === r.photo) await C.save.recipe({ ...cur, photo: best.src, photoSource: best.page || '' });
       }
     } finally {
       enCours = false;
@@ -685,6 +687,7 @@
       st.refresh();
       st.images = await imagesPour(prop.r);
       prop.r.photo = (st.images[0] && st.images[0].src) || '';
+      prop.r.photoSource = (st.images[0] && st.images[0].page) || '';
       st.prop = prop;
       if (lien.dansPlaylist) st.prop.origine += ' (Seule cette vidéo de la playlist est importée.)';
     } catch (e) {
@@ -718,18 +721,24 @@
         if (!src) return;
         st.images.unshift({ id: 'perso', label: 'Votre photo', src });
         st.prop.r.photo = src;
-      } else st.prop.r.photo = st.images[Number(el.dataset.i)].src;
+        st.prop.r.photoSource = '';
+      } else {
+        const x = st.images[Number(el.dataset.i)];
+        st.prop.r.photo = x.src;
+        st.prop.r.photoSource = x.page || '';
+      }
       st.refresh();
     },
     'vid.image': (el) => changerImage(el.dataset.id),
     'vid.imgFiche': async (el) => {
       const { st, r, sheet } = C.ui.vidImg;
       let src;
+      let page = '';
       if (el.dataset.i === 'photo') src = await votrePhoto();
-      else src = st.images[Number(el.dataset.i)].src;
+      else ({ src, page = '' } = st.images[Number(el.dataset.i)]);
       if (!src) return;
       const cur = C.recipe(r.id);
-      if (cur) await C.save.recipe({ ...cur, photo: src });
+      if (cur) await C.save.recipe({ ...cur, photo: src, photoSource: page });
       sheet.close();
       C.toast('Image mise à jour');
     },

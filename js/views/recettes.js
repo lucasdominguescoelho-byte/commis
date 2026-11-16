@@ -73,6 +73,7 @@
     const nAll = C.S.recipes.length;
     const tab = C.ui.rtab;
     if (C.video) setTimeout(() => C.video.ameliorerAnciennes(), 800); // anciennes recettes vidéo : plus belle image
+    if (C.envies) setTimeout(() => C.envies.illustrerEnvies(), 1200); // recettes d'envies sans photo
     const tabBtn = (v, label) => `<button role="tab" class="${tab === v ? 'is-on' : ''}" aria-selected="${tab === v}" data-act="rec.tab" data-v="${v}">${label}</button>`;
     const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
     const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque', generer: 'Idées avec les promotions du moment' }[tab];
@@ -129,6 +130,7 @@
               <button class="btn btn--ghost" style="margin-top:22px" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner étape par étape</button>` : '<p class="muted">Aucune étape renseignée.</p>'}
             ${nu && nu.rest ? `<p class="small muted" style="margin-top:20px">${esc(nu.rest)}</p>` : ''}
             ${r.videoUrl ? `<p class="head-a" style="margin-top:20px;justify-content:flex-start"><a class="btn btn--ghost" href="${esc(r.videoUrl)}" target="_blank" rel="noopener">${icon('play', 18)} Voir la vidéo${r.videoSite === 'tiktok' ? ' sur TikTok' : ' sur YouTube'}</a><button class="btn btn--ghost" data-act="vid.image" data-id="${r.id}">${icon('upload', 18)} Changer l’image</button></p><p class="small muted" style="margin-top:10px">Recette tirée de la vidéo${r.videoAuthor ? ` de ${esc(r.videoAuthor)}` : ''} ; ingrédients et prix à vérifier.</p>` : ''}
+            ${r.photoSource && /wikipedia\.org/.test(r.photoSource) ? `<p class="small muted" style="margin-top:14px">Photo : <a class="link" href="${esc(r.photoSource)}" target="_blank" rel="noopener">Wikipédia</a> (licence libre).</p>` : ''}
             ${r.sourceUrl ? `<p class="small muted" style="margin-top:20px">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
           </section>
         </div>
@@ -226,6 +228,7 @@
             prepTime: Math.max(1, Math.round(C.toNum(fd.get('prepTime'))) || 30),
             servings: Math.max(1, Math.round(C.toNum(fd.get('servings'))) || 4),
             photo: photo(),
+            photoSource: photo() === r.photo ? r.photoSource || '' : '',
             ingredients,
             steps: String(fd.get('steps')).split('\n').map((s) => s.trim()).filter(Boolean),
             validated: fd.get('validated') === 'on',

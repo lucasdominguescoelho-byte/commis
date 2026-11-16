@@ -359,6 +359,86 @@
     return { lignes: lignes.sort((a, b) => (a.d ?? 9) - (b.d ?? 9) || (a.slot === 'soir') - (b.slot === 'soir')), general: [...new Set(general)], premier };
   }
 
+  /* ---------- Photo d'un plat, trouvée sur Wikipédia (gratuit, sans clé) ----------
+     Pour une recette créée à partir d'une envie (« raclette ») : on cherche l'article du plat et on prend
+     sa photo, seulement si le titre de l'article reprend bien le nom du plat (jamais de logo ni de dessin). */
+  const GENERIQUES = new Set(['maison', 'grand', 'grande', 'petit', 'petite', 'filet', 'facon', 'recette', 'cuisine', 'vapeur', 'pomme', 'legume', 'herbe', 'plat', 'simple', 'rapide', 'lait', 'sauce']);
+  const photos = new Map();
+  // une requête à la fois, espacées : Wikipédia limite les appels anonymes
+  let file = Promise.resolve();
+  const pause = () => new Promise((r) => setTimeout(r, 1200));
+  const enFile = (f) => {
+    const p = file.then(f, f);
+    file = p.then(pause, pause);
+    return p;
+  };
+  function photoPlat(nom) {
+    const cle = C.norm(nom);
+    if (!cle) return Promise.resolve(null);
+    if (photos.has(cle)) return photos.get(cle);
+    const p = (async () => {
+      const toks = C.tokens(nom).filter((t) => t.length > 2 && !GENERIQUES.has(t));
+      if (!toks.length) return null;
+      const url = `https://fr.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=0&gsrlimit=6&gsrsearch=${encodeURIComponent(nom)}&prop=pageimages&piprop=thumbnail&pithumbsize=800`;
+      const appel = () =>
+        fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then((r) => {
+          if (!r.ok) throw new Error(`Wikipédia ${r.status}`);
+          return r.json();
+        });
+      // un refus passager (trop de demandes) : on réessaie une fois un peu plus tard
+      const d = await enFile(() => appel().catch(() => new Promise((r) => setTimeout(r, 4000)).then(appel)));
+      const pages = Object.values((d.query && d.query.pages) || {}).sort((a, b) => a.index - b.index);
+      const proche = (t, x) => t === x || (t.length > 4 && x.length > 4 && (t.includes(x) || x.includes(t)));
+      let best = null;
+      pages.forEach((pg, i) => {
+        if (!pg.thumbnail || /\.svg/i.test(pg.thumbnail.source) || /homonymie|film|liste/i.test(pg.title)) return;
+        const tt = C.tokens(pg.title.replace(/\(.*?\)/g, ' ')).filter((t) => t.length > 2);
+        const communs = toks.filter((t) => tt.some((x) => proche(t, x)));
+        if (!communs.length) return;
+        const sc = communs.length * 2 - i * 0.8; // mots du plat retrouvés, puis rang dans Wikipédia
+        if (!best || sc > best.sc) best = { pg, sc };
+      });
+      if (!best) return null;
+      return { src: best.pg.thumbnail.source.replace(/\?utm_.*$/, ''), page: `https://fr.wikipedia.org/wiki/${encodeURIComponent(best.pg.title.replace(/ /g, '_'))}`, titre: best.pg.title };
+    })().catch(() => {
+      photos.delete(cle); // échec réseau : on pourra réessayer plus tard
+      return null;
+    });
+    photos.set(cle, p);
+    return p;
+  }
+  C.photoPlat = photoPlat;
+
+  // Donne une photo à une recette qui n'en a pas (et met à jour la vignette affichée)
+  async function illustrer(r) {
+    if (!r || r.photo) return r;
+    const ph = await photoPlat(r.name);
+    if (!ph || r.photo) return r;
+    r.photo = ph.src;
+    r.photoSource = ph.page;
+    const saved = C.recipe(r.id);
+    if (saved && !saved.photo) await C.save.recipe({ ...saved, photo: ph.src, photoSource: ph.page });
+    document.querySelectorAll(`[data-rid="${CSS.escape(r.id)}"] .thumb`).forEach((el) => (el.innerHTML = C.recipeVisual(r, 'ph--sm')));
+    return r;
+  }
+  // Recettes d'envies déjà enregistrées sans photo : une tentative par visite
+  const tentees = new Set();
+  let illuEnCours = false;
+  async function illustrerEnvies() {
+    if (illuEnCours) return;
+    const sans = C.S.recipes.filter((r) => r.source === 'envie' && !r.photo && !tentees.has(r.id));
+    if (!sans.length) return;
+    illuEnCours = true;
+    try {
+      for (const r of sans.slice(0, 6)) {
+        tentees.add(r.id);
+        await illustrer({ ...r });
+      }
+    } finally {
+      illuEnCours = false;
+    }
+  }
+
   /* ---------- Assistant « Préparer ma semaine » ----------
      Une seule fenêtre : vos envies (dites ou écrites), un style pour le reste de la semaine et les repas
      à prévoir ; puis une proposition repas par repas, avec d'autres choix pour chaque case.
@@ -372,7 +452,6 @@
     ['eco', 'Pas cher'],
     ['copieux', 'Copieux'],
   ];
-  const EXEMPLES = ['Mardi soir une raclette', 'Jeudi midi des pâtes bolognaise', 'Un repas léger vendredi midi', 'Du poisson mercredi soir'];
   const MEMO = 'commis-semaine'; // derniers réglages choisis (style, repas), sur cet appareil
   const memo = () => {
     try {
@@ -450,6 +529,7 @@
       return false;
     }
     st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip };
+    nouvelles.forEach((r) => !r.photo && !r.idee && illustrer(r)); // une vraie photo du plat, trouvée sur Wikipédia
     st.alts = {};
     st.ouvert = null;
     st.erreur = '';
@@ -535,27 +615,33 @@
     const people = C.S.settings.household || 2;
     const rec = (id) => C.recipe(id) || (st.prop && st.prop.nouvelles.get(id));
 
+    // État de la dictée : une petite pastille dans le champ, seulement quand il se passe quelque chose
     const etatVoix = () => {
       const v = st.voix;
-      const integ = C.dictee && C.dictee.moteur() === 'integree';
-      if (v.etape === 'ecoute') return `<span class="pw-rec"></span>J’écoute… parlez naturellement, puis touchez le micro pour arrêter.`;
-      if (v.etape === 'telechargement') return `${v.enregistre ? 'J’écoute… ' : ''}Préparation de la dictée intégrée${v.pct != null ? ` · ${v.pct} %` : '…'} (une seule fois)`;
-      if (v.etape === 'transcription') return 'Transcription…';
-      if (v.etape === 'erreur')
-        return `<span class="pw-err">${esc(v.message)}</span>${v.proposer ? ` <button class="link" type="button" data-act="pw.integree">l’activer</button> <span class="muted">(gratuite, l’audio reste sur l’appareil ; ${C.dictee.taille} à télécharger une seule fois)</span>` : ''}`;
-      if (!C.dictee || !C.dictee.possible()) return 'Astuce : la touche micro du clavier permet aussi de dicter.';
-      return integ ? 'Touchez le micro pour parler (dictée intégrée, sur l’appareil).' : 'Touchez le micro pour parler.';
+      if (v.etape === 'ecoute') return v.pct != null ? `J’écoute… · préparation de la dictée ${v.pct} %` : 'J’écoute… (arrêt automatique quand vous vous taisez)';
+      if (v.etape === 'telechargement') return v.enregistre ? `J’écoute… · préparation de la dictée${v.pct != null ? ` ${v.pct} %` : '…'}` : `Préparation de la dictée${v.pct != null ? ` · ${v.pct} %` : '…'} (une seule fois)`;
+      if (v.etape === 'transcription') return 'J’écris ce que vous avez dit…';
+      if (v.etape === 'erreur' || v.etape === 'info') return v.message;
+      return '';
     };
     const majVoix = () => {
       const el = document.getElementById('pw-voix');
-      if (el) el.innerHTML = etatVoix();
+      const txt = etatVoix();
+      if (el) {
+        el.textContent = txt;
+        el.hidden = !txt;
+        el.classList.toggle('is-err', st.voix.etape === 'erreur');
+      }
       const b = document.querySelector('.env-mic');
       const on = st.voix.etape === 'ecoute' || (st.voix.etape === 'telechargement' && st.voix.enregistre);
       if (b) {
         b.classList.toggle('is-on', on);
         b.classList.toggle('is-busy', st.voix.etape === 'transcription' || (st.voix.etape === 'telechargement' && !st.voix.enregistre));
         b.setAttribute('aria-label', on ? 'Arrêter la dictée' : 'Dicter');
+        if (!on) b.style.removeProperty('--lvl');
       }
+      const box = document.querySelector('.env-in');
+      if (box) box.classList.toggle('has-voix', !!txt);
     };
 
     const vueEnvies = () => {
@@ -568,8 +654,7 @@
             <textarea class="inp" id="env-text" rows="3" placeholder="Ex. Mardi soir une raclette, jeudi midi des pâtes bolognaise, et un repas léger ce midi-là.">${esc(st.texte)}</textarea>
             ${C.dictee && C.dictee.possible() ? `<button class="env-mic" data-act="pw.mic" type="button" aria-label="Dicter">${icon('mic', 22)}</button>` : ''}
           </div>
-          <p class="small muted env-etat" id="pw-voix" aria-live="polite">${etatVoix()}</p>
-          <div class="chips env-ex">${EXEMPLES.map((x) => `<button class="chip" type="button" data-act="pw.ex" data-v="${esc(x)}">+ ${esc(x)}</button>`).join('')}</div>
+          <span class="pw-voix" id="pw-voix" aria-live="polite" hidden></span>
         </section>
         <section class="pw-sec">
           <h3 class="pw-h">Pour le reste de la semaine</h3>
@@ -597,7 +682,7 @@
         html = `<div class="pw-row is-libre"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="pw-k">${slot}</span><span class="row-t muted">Libre</span></span><button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">Choisir</button></div>`;
       else {
         const c = E.recipeCost(r, s.servings, E.activePromos(st.wid));
-        html = `<div class="pw-row ${ouvert ? 'is-open' : ''}"><span class="thumb">${C.recipeVisual(r, 'ph--sm')}</span>
+        html = `<div class="pw-row ${ouvert ? 'is-open' : ''}" data-rid="${esc(r.id)}"><span class="thumb">${C.recipeVisual(r, 'ph--sm')}</span>
           <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${r.prepTime} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}</span></span>
           <button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">${ouvert ? 'Fermer' : 'Changer'}</button></div>`;
       }
@@ -699,27 +784,29 @@
         st.texte = v;
       },
       etat(e) {
+        if (e.etape === 'telechargement' && e.enregistre) e = { ...e, etape: 'ecoute' }; // on écoute pendant le téléchargement
         st.voix = e;
-        if (e.etape === 'fini' || e.etape === 'erreur') dictee = null;
+        if (e.etape === 'fini' || e.etape === 'erreur' || e.etape === 'info') dictee = null;
         st.majVoix();
+        clearTimeout(st.voixMinuterie);
+        if (e.etape === 'fini') st.voix = { etape: '' };
+        if (e.etape === 'erreur' || e.etape === 'info') st.voixMinuterie = setTimeout(() => {
+          if (!dictee) {
+            st.voix = { etape: '' };
+            st.majVoix();
+          }
+        }, 9000);
+      },
+      niveau(x) {
+        const b = document.querySelector('.env-mic');
+        if (b) b.style.setProperty('--lvl', x.toFixed(2));
       },
     });
   }
 
   Object.assign(C.acts, {
     'env.open': () => assistant(),
-    'pw.ex': (el) => {
-      const ta = document.getElementById('env-text');
-      if (!ta) return;
-      ta.value = (ta.value.trim() ? ta.value.trim().replace(/[.,;]?$/, ', ') : '') + el.dataset.v;
-      C.ui.env.texte = ta.value;
-    },
     'pw.mic': () => micro(),
-    'pw.integree': () => {
-      C.dictee.utiliserIntegree();
-      C.ui.env.voix = { etape: '' };
-      micro();
-    },
     'pw.style': (el) => {
       const st = C.ui.env;
       const v = el.dataset.v;
@@ -835,5 +922,5 @@
     const cl = CLASSIQUES.find((d) => d.cle.test(normaliser(texte)));
     return cl ? { name: cl.name, category: cl.category, prepTime: cl.prepTime, ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice() } : null;
   };
-  C.envies = { comprendre, preparer, classique, proposer }; // aussi pour vérifier depuis la console
+  C.envies = { comprendre, preparer, classique, proposer, illustrerEnvies, photoPlat }; // aussi pour vérifier depuis la console
 })();
