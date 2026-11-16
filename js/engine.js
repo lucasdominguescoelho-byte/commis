@@ -290,6 +290,7 @@
           if (perMeal) score -= pressure * (n.c.cost / perMeal);
           if (flexi && E.hasRealMeat(r)) score -= meatMeals >= MEAT_MAX ? 50 : 1 + meatMeals * 0.6;
           if (flexi && other && E.hasRealMeat(r) && C.recipe(other.recipeId) && E.hasRealMeat(C.recipe(other.recipeId))) score -= 25; // pas de viande midi et soir
+          if (opts.bonus) score += opts.bonus(r, key); // souhaits de la semaine (« plutôt léger »…)
           score += Math.random() * 0.6; // léger aléa : relancer donne une variante
           if (!best || score > best.score) best = { r, n, shared, score };
         });

@@ -857,10 +857,8 @@ html.is-cooking { overflow: hidden; }
 .card .bar { background: rgba(36, 31, 27, 0.1); }
 .strip-d { border-right-color: rgba(36, 31, 27, 0.06); }
 /* Cartes recettes : fonds pastel en alternance, coins généreux */
-.cards > .rc:nth-child(4n + 1) { background: var(--peche); }
-.cards > .rc:nth-child(4n + 2) { background: var(--sauge); }
-.cards > .rc:nth-child(4n + 3) { background: var(--beurre); }
-.cards > .rc:nth-child(4n + 4) { background: var(--ciel); }
+/* Toutes les cartes de recette de la même teinte chaude (plus de rotation de couleurs) */
+.cards > .rc { background: var(--wash); }
 .rc-v { margin: 8px 8px 0; border-radius: 20px; }
 /* Promotions : cartes blanches à ombre douce, photo pleine largeur (comme avant « Cuisine ») */
 .pc { background: #fff; }
@@ -953,6 +951,11 @@ html.k3-full .k3 { --k3-b: env(safe-area-inset-bottom); }
 .k3-snap { position: fixed; z-index: 60; pointer-events: none; transform-origin: 50% 55%; transition: opacity 620ms cubic-bezier(0.22, 1, 0.36, 1), transform 760ms cubic-bezier(0.22, 1, 0.36, 1), filter 620ms ease; }
 .k3-snap.is-gone { opacity: 0; transform: scale(1.06); filter: blur(5px); }
 @media (prefers-reduced-motion: reduce) { .k3-snap { display: none; } }
+/* Au doigt (téléphone) : fondu plus court, sans flou (coûteux sur iPhone) */
+@media (pointer: coarse) {
+  .k3-snap { transition: opacity 360ms ease-out, transform 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .k3-snap.is-gone { filter: none; transform: scale(1.03); }
+}
 .k3.is-opening .k3-hint, .k3.is-opening .k3-mode { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   html.k3-home .side, html.k3-home .topbar, html.k3-home .tabs, .k3-mode, .k3-hint { transition: none; }
@@ -1039,3 +1042,35 @@ html.nuit .note--test { border-color: #5a3420; }
 .sync-steps b { color: var(--ink); }
 .sync-steps .link { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; white-space: nowrap; }
 .set code, .sync-steps code { font: 500 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--wash); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+/* Planning › Mes envies : texte + micro */
+.env-in { position: relative; margin-top: 14px; }
+.env-in textarea { padding-right: 64px; min-height: 112px; }
+.env-mic { position: absolute; right: 10px; bottom: 10px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--citron); color: var(--citron-ink); border: 0; cursor: pointer; transition: transform 160ms var(--ease-out); }
+.env-mic:active { transform: scale(0.94); }
+.env-mic.is-on { animation: env-pulse 1.4s ease-in-out infinite; }
+@keyframes env-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(228, 87, 46, 0.45); } 50% { box-shadow: 0 0 0 10px rgba(228, 87, 46, 0); } }
+@media (prefers-reduced-motion: reduce) { .env-mic.is-on { animation: none; outline: 3px solid var(--citron-wash); } }
+.env-etat { margin-top: 8px; }
+.env-ex { margin-top: 14px; }
+.env-ex .chip { font-size: 13px; }
+.env-chk { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.env-chk input { width: 18px; height: 18px; accent-color: var(--citron); }
+.env-rows { margin-top: 12px; }
+.env-rows .row-t, .env-rows .row-s { display: block; white-space: normal; overflow-wrap: anywhere; }
+.sheet-b { min-width: 0; overflow-x: hidden; }
+.env-rows .row .ic { color: var(--citron); flex: none; }
+.row.is-off { opacity: 0.55; }
+
+/* Recette depuis une vidéo */
+.vid-in { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+.vid-in .inp { flex: 1; min-width: 0; }
+.vid-err { margin-top: 10px; font-size: 14px; color: var(--danger); }
+.vid-desc { margin-top: 18px; }
+.vid-desc em { font-style: normal; font-weight: 400; color: var(--ink-3); }
+.vid-card { display: grid; grid-template-columns: 132px 1fr; gap: 16px; align-items: center; }
+.vid-img { width: 132px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; background: var(--wash); }
+.vid-b .eyebrow { margin-bottom: 6px; }
+.vid-sum { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
+.vid-ing { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); max-height: 220px; overflow: auto; }
+.vid-ing li { padding: 6px 10px; background: var(--wash); border-radius: 8px; }
+@media (max-width: 520px) { .vid-card { grid-template-columns: 1fr; } .vid-img { width: 100%; aspect-ratio: 16 / 9; } }

@@ -12,6 +12,9 @@
   let loading = null;
   let K = null; // état de la scène (créée une seule fois, réattachée à chaque affichage de l'accueil)
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Téléphone : rendu allégé (définition un peu plus basse, ombres calculées une fois, animations plus courtes)
+  const MOBILE = window.matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 760;
+  const ombres = () => K && MOBILE && (K.renderer.shadowMap.needsUpdate = true);
   const finePointer = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   let nightWanted = document.documentElement.classList.contains('nuit');
@@ -134,12 +137,13 @@
 
   function build() {
     const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.5 : 2));
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
+    if (MOBILE) renderer.shadowMap.autoUpdate = false; // les ombres ne sont recalculées qu'au besoin
     renderer.setClearColor(0x000000, 0);
     renderer.domElement.className = 'k3-canvas';
 
@@ -651,7 +655,9 @@
       obj.userData = { key, base: obj.position.clone() };
       obj.traverse((m) => (m.isMesh ? (m.userData.key = key) : null));
       room.add(obj);
-      items.push({ key, name, route, obj, anchor: new T.Vector3(...anchor), h: 0, target: 0, o: 0, act, dive, timing: { dur: 1300, open: 0.5, cam: 0.06, soft: false, ...(timing || {}) } });
+      const tm = { dur: 1300, open: 0.5, cam: 0.06, soft: false, ...(timing || {}) };
+      if (MOBILE) tm.dur = Math.round(tm.dur * 0.75); // plus court et plus léger au doigt
+      items.push({ key, name, route, obj, anchor: new T.Vector3(...anchor), h: 0, target: 0, o: 0, act, dive, timing: tm });
     };
     const smooth = (x) => x * x * (3 - 2 * x); // départ et arrivée en douceur
     const V3 = (x, y, z) => new T.Vector3(x, y, z);
@@ -726,9 +732,12 @@
       [0.2, 0.03],
       [0.22, 0.04],
     ].forEach(([x, z]) => F(ball(0.014, '#D62F3A', { roughness: 0.4 }), x, 0.162, z));
-    const fLight = new T.PointLight('#FFF1D6', 0, 1.1, 2);
-    fLight.position.set(0, 0.2, 0.05);
-    fridge.add(fLight);
+    // Une lumière de plus coûte cher sur téléphone : là, l'intérieur s'éclaire par sa seule lueur
+    const fLight = MOBILE ? null : new T.PointLight('#FFF1D6', 0, 1.1, 2);
+    if (fLight) {
+      fLight.position.set(0, 0.2, 0.05);
+      fridge.add(fLight);
+    }
     // porte : extérieur blanc (poignée, post-it, magnets) ; intérieur avec deux balconnets garnis
     const fDoor = group(
       rbox(FW, 0.84, 0.03, 0.012, white),
@@ -757,7 +766,7 @@
         const peek = h * (1 - o) * (0.3 + 0.05 * Math.sin(t * 5));
         fHinge.rotation.y = -(peek + (F_OPEN - peek) * o);
         fGlow.emissiveIntensity = Math.max(h * 0.45, o) * 0.85;
-        fLight.intensity = Math.max(h * 0.35, o) * 1.4;
+        if (fLight) fLight.intensity = Math.max(h * 0.35, o) * 1.4;
       },
       // la caméra arrive par le côté évier, la porte ouverte reste à sa gauche
       { pos: V3(FX + 0.13, 0.44, -1.1), look: V3(FX - 0.03, 0.36, -1.9), ctrl: V3(FX + 0.8, 0.8, -0.35) });
@@ -1448,6 +1457,7 @@
     K.tween = null;
     K.nightT = K.night = nightWanted ? 1 : 0;
     applyNight(K.night);
+    ombres();
     K.hover = null;
     K.steamBoost = 0;
     K.items.forEach((x) => {
@@ -1491,6 +1501,7 @@
     const h = K.el.clientHeight || 1;
     K.size = { w, h };
     K.renderer.setSize(w, h, false);
+    ombres();
     K.camera.aspect = w / h;
     K.camera.fov = 46; // grand angle, comme une photo prise depuis le séjour : les deux murs latéraux restent visibles
     K.camera.updateProjectionMatrix();
@@ -1623,7 +1634,10 @@
     // Jour ⇄ nuit : les lumières glissent d'un réglage à l'autre
     if (Math.abs(K.nightT - K.night) > 0.001) {
       K.night += (K.nightT - K.night) * Math.min(1, dt * 4);
-      if (Math.abs(K.nightT - K.night) < 0.002) K.night = K.nightT;
+      if (Math.abs(K.nightT - K.night) < 0.002) {
+        K.night = K.nightT;
+        ombres();
+      }
       applyNight(K.night);
     }
     // Plein écran ⇄ menu : glissement du cadrage

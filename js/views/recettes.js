@@ -76,7 +76,7 @@
     const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
     const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque', generer: 'Idées avec les promotions du moment' }[tab];
     const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
-        <div class="head-a"><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
+        <div class="head-a"><button class="btn btn--ghost" data-act="rec.video" title="Créer une recette depuis une vidéo YouTube ou TikTok">${icon('play', 18)} Depuis une vidéo</button><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
     if (tab === 'generer') {
       root.innerHTML = head + tabs + '<div id="gen-root"></div>';
       C.generator.render(document.getElementById('gen-root'));
@@ -112,9 +112,10 @@
     const fromIa = r.source === 'cabas' || r.source === 'ia';
     const fromLib = r.source === 'wikilivres';
     const fromBook = r.source === 'livre-perso';
+    const fromVid = r.source === 'video';
     const nu = C.nutri(r);
     const testBox =
-      r.validated ? '' : !testing(r) ? `<div class="note note--test note--soft">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`;
+      r.validated ? '' : !testing(r) ? `<div class="note note--test note--soft">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromVid ? 'Tirée d’une vidéo : vérifiez les quantités en la regardant. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`;
     const lede = nu ? '' : r.description;
     const back = r.validated ? 'mes' : testing(r) ? 'tester' : 'toutes';
     root.innerHTML = `
@@ -126,12 +127,13 @@
             ${r.steps.length ? `<ol class="steps">${r.steps.map((s) => `<li data-act="step.toggle" tabindex="0" role="button" title="Toucher pour marquer l’étape comme faite"><span>${esc(s)}</span></li>`).join('')}</ol>
               <button class="btn btn--ghost" style="margin-top:22px" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner étape par étape</button>` : '<p class="muted">Aucune étape renseignée.</p>'}
             ${nu && nu.rest ? `<p class="small muted" style="margin-top:20px">${esc(nu.rest)}</p>` : ''}
+            ${r.videoUrl ? `<p style="margin-top:20px"><a class="btn btn--ghost" href="${esc(r.videoUrl)}" target="_blank" rel="noopener">${icon('play', 18)} Voir la vidéo${r.videoSite === 'tiktok' ? ' sur TikTok' : ' sur YouTube'}</a></p><p class="small muted" style="margin-top:10px">Recette tirée de la vidéo${r.videoAuthor ? ` de ${esc(r.videoAuthor)}` : ''} ; ingrédients et prix à vérifier.</p>` : ''}
             ${r.sourceUrl ? `<p class="small muted" style="margin-top:20px">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
           </section>
         </div>
         <div class="rd-side">
           <div>
-            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : fromBook ? ' · votre livre de recettes' : ''}${r.validated ? ' · validée' : ''}</p>
+            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : fromBook ? ' · votre livre de recettes' : fromVid ? ' · importée d’une vidéo' : ''}${r.validated ? ' · validée' : ''}</p>
             <h1 class="title" style="font-size:clamp(32px,3.6vw,46px)">${esc(r.name)}</h1>
             ${lede ? `<p class="lede">${esc(lede)}</p>` : ''}
             ${C.nutriChips(nu, true)}

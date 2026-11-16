@@ -45,7 +45,7 @@
         <header class="head"><div><p class="eyebrow">Planning · semaine ${C.weekNo(wid)}</p><h1 class="title">${C.weekLabel(wid)}</h1></div>
           <div class="head-a">${C.weekNav(wid)}
             ${t.meals ? `<button class="ibtn ibtn--line" data-act="plan.clear" aria-label="Vider la semaine" title="Vider la semaine">${icon('trash')}</button>` : ''}
-            <button class="btn btn--citron" data-act="plan.generate">${icon('wand', 18)} Proposer un planning</button></div></header>
+            <button class="btn btn--ghost" data-act="env.open">${icon('mic', 18)} Mes envies</button><button class="btn btn--citron" data-act="plan.generate">${icon('wand', 18)} Proposer un planning</button></div></header>
         <div class="sum">
           <div class="sum-i"><span>Coût estimé</span><b>${C.chf(t.cost)}${st.weeklyBudget > 0 ? ` <small>/ ${C.num(st.weeklyBudget, 0)}</small>` : ''}</b></div>
           <div class="sum-i"><span>Économies promos</span><b>${C.chf(t.savings)}</b></div>
