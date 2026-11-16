@@ -756,6 +756,7 @@
     st.majVoix = majVoix;
     st.sheet = sheet;
     C.ui.env = st;
+    if (C.dictee) C.dictee.prechauffer(); // la dictée se prépare pendant qu'on lit la fenêtre
   }
 
   const lireTexte = () => {

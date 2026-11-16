@@ -4,9 +4,10 @@
      - « intégrée » : Whisper (modèle libre d'OpenAI) qui tourne sur l'appareil grâce à Transformers.js,
        dans un fil séparé (Web Worker) pour que la page et l'écoute ne se figent jamais. L'audio ne quitte
        jamais l'appareil ; le modèle se télécharge une seule fois puis reste en cache.
-         · avec la carte graphique (WebGPU : Chrome, Safari récent…) : Whisper « small », bien plus juste
-           en français (~300 Mo, ≈ 1 s par phrase) ;
-         · sinon : Whisper « base » (~100 Mo, ≈ 2-3 s par phrase).
+         · avec la carte graphique (WebGPU : Chrome, Safari récent…) : Whisper « large-v3-turbo », le plus
+           juste, y compris avec un accent, du bruit ou un micro moyen (~620 Mo, ≈ 2-3 s par phrase) ;
+         · sinon : Whisper « small » (~250 Mo, plus lent).
+       Il se télécharge en arrière-plan dès l'ouverture de « Préparer ma semaine ».
        On lui donne aussi le vocabulaire de Commis (jours, midi/soir, plats) : il les reconnaît beaucoup mieux.
        C'est le moteur par défaut sur ordinateur, où la dictée des navigateurs est souvent bloquée.
      - « navigateur » : la reconnaissance vocale du téléphone (Siri, Google), instantanée. Si elle
@@ -22,8 +23,10 @@
   const CLE = 'commis-dictee'; // 'integree' ou 'navigateur' quand un moteur a été retenu pour cet appareil
   const CLE_GPU = 'commis-dictee-gpu'; // 'non' si la carte graphique a échoué ici
   const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
-  const GPU = { modele: 'onnx-community/whisper-small', dtype: { encoder_model: 'q4', decoder_model_merged: 'q4' }, device: 'webgpu', fichier: 'whisper-small', taille: '300 Mo' };
-  const CPU = { modele: 'Xenova/whisper-base', dtype: 'q8', device: 'wasm', fichier: 'whisper-base', taille: '100 Mo' };
+  // (l'encodeur en fp16 boucle avec cette version : on reste en q4)
+  const GPU = { modele: 'onnx-community/whisper-large-v3-turbo', dtype: { encoder_model: 'q4', decoder_model_merged: 'q4f16' }, device: 'webgpu', fichier: 'whisper-large-v3-turbo/resolve/main/onnx/decoder_model_merged_q4f16', taille: '620 Mo' };
+  const GPU32 = { ...GPU, dtype: { encoder_model: 'q4', decoder_model_merged: 'q4' }, fichier: 'whisper-large-v3-turbo/resolve/main/onnx/decoder_model_merged_q4.', taille: '760 Mo' }; // cartes sans fp16
+  const CPU = { modele: 'onnx-community/whisper-small', dtype: 'q8', device: 'wasm', fichier: 'whisper-small/resolve/main/onnx/decoder_model_merged_quantized', taille: '250 Mo' };
 
   const lire = (k = CLE) => {
     try {
@@ -57,7 +60,8 @@
     (config = (async () => {
       if (lire(CLE_GPU) === 'non' || !navigator.gpu) return CPU;
       try {
-        return (await navigator.gpu.requestAdapter()) ? GPU : CPU;
+        const a = await navigator.gpu.requestAdapter();
+        return !a ? CPU : a.features.has('shader-f16') ? GPU : GPU32;
       } catch (e) {
         return CPU;
       }
@@ -76,7 +80,7 @@
     try {
       const conf = await choisirConfig();
       const c = await caches.open('transformers-cache');
-      modeleEnCache = (await c.keys()).some((r) => r.url.includes(conf.fichier) && r.url.includes('decoder_model_merged'));
+      modeleEnCache = (await c.keys()).some((r) => r.url.includes(conf.fichier));
     } catch (e) {
       modeleEnCache = false;
     }
@@ -142,7 +146,7 @@
       try {
         f = await viaWorker(conf);
       } catch (e) {
-        if (conf === GPU) {
+        if (conf.device === 'webgpu') {
           // la carte graphique ne suit pas : moteur classique, retenu pour cet appareil
           ecrire('non', CLE_GPU);
           config = Promise.resolve(CPU);
@@ -152,7 +156,7 @@
       }
       pret = true;
       modeleEnCache = true;
-      if ((await choisirConfig()) === GPU) oublier(CPU.fichier); // l'ancien modèle ne sert plus : on libère la place
+      oublier((await choisirConfig()).modele); // les autres modèles ne servent plus : on libère la place
       return f;
     })().catch((e) => {
       moteurPret = null;
@@ -160,10 +164,10 @@
     });
     return moteurPret;
   }
-  async function oublier(fichier) {
+  async function oublier(garde) {
     try {
       const c = await caches.open('transformers-cache');
-      const vieux = (await c.keys()).filter((r) => r.url.includes(fichier));
+      const vieux = (await c.keys()).filter((r) => /whisper/.test(r.url) && !r.url.includes(garde));
       await Promise.all(vieux.map((r) => c.delete(r)));
     } catch (e) {
       /* sans importance */
@@ -391,7 +395,7 @@
         o += m.length;
       });
       // seulement le passage parlé (avec un peu de marge) : le silence fait « halluciner » Whisper
-      const brut = tout.slice(Math.max(0, debutParole - Math.round(rate * 0.3)), Math.min(total, finParole + Math.round(rate * 0.5)));
+      const brut = tout.slice(Math.max(0, debutParole - Math.round(rate * 0.6)), Math.min(total, finParole + Math.round(rate * 0.8)));
       const secondes = brut.length / rate;
       try {
         if (!pret) cb.etat({ etape: 'telechargement', pct: dernierPct, enregistre: false });
@@ -430,7 +434,7 @@
           // seuil de parole : d'après le bruit de fond des 0,3 premières secondes
           if (seuil == null) {
             calib.push(rms);
-            if (duree >= 0.3) seuil = Math.min(0.05, Math.max(0.012, (calib.reduce((a, b) => a + b, 0) / calib.length) * 2.5));
+            if (duree >= 0.3) seuil = Math.min(0.03, Math.max(0.01, (calib.reduce((a, b) => a + b, 0) / calib.length) * 2.5));
           }
           const s0 = seuil == null ? 0.02 : seuil;
           if (cb.niveau) cb.niveau(Math.min(1, rms / (s0 * 4)));
@@ -441,7 +445,7 @@
             finParole = total;
           } else if (parle) {
             silence += dt;
-            if (silence > 1.6) terminer(false); // on s'est tu : fin automatique
+            if (silence > 2.2) terminer(false); // on s'est tu : fin automatique (une pause pour réfléchir passe)
           }
           if (!parle && duree > 9) terminer(false);
           if (duree > 30) terminer(false);
@@ -463,7 +467,14 @@
     };
   }
 
+  // Prépare la dictée en arrière-plan (ordinateur, dictée intégrée) : elle sera prête quand on parlera
+  function prechauffer() {
+    if (moteur() !== 'integree' || telephone) return;
+    charger().catch(() => {});
+  }
+
   C.dictee = {
+    prechauffer,
     possible: () => !!moteur(),
     moteur,
     taille: () => choisirConfig().then((c) => c.taille),
