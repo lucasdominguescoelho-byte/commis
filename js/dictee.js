@@ -94,7 +94,7 @@
         modele = modele || charger(pipeline, (pct) => self.postMessage({ type: 'progres', pct }));
         const asr = await modele;
         if (m.type === 'init') return self.postMessage({ type: 'pret' });
-        const out = await asr(m.audio, ${JSON.stringify(OPTIONS)});
+        const out = await asr(m.audio, { ...${JSON.stringify(OPTIONS)}, ...(m.opts || {}) });
         self.postMessage({ type: 'texte', id: m.id, texte: (out && out.text) || '' });
       } catch (err) {
         modele = null;
@@ -134,11 +134,11 @@
         if (m.type === 'progres') progres(m.pct);
         else if (m.type === 'pret') {
           demarre = true;
-          ok((audio) =>
+          ok((audio, opts) =>
             new Promise((ok2, ko2) => {
               const id = ++n;
               attente.set(id, { ok2, ko2 });
-              w.postMessage({ type: 'texte', id, audio }, [audio.buffer]);
+              w.postMessage({ type: 'texte', id, audio, opts }, [audio.buffer]);
             })
           );
         } else if (m.type === 'texte' || m.type === 'erreur') {
@@ -164,9 +164,9 @@
     const { pipeline, env } = await import(LIB);
     env.allowLocalModels = false;
     const p = await new Function(`return ${CHARGEMENT}`)()(pipeline, progres);
-    return async (audio) => {
+    return async (audio, opts) => {
       await new Promise((r) => setTimeout(r, 30)); // laisse l'écran se mettre à jour avant le calcul
-      const out = await p(audio, OPTIONS);
+      const out = await p(audio, { ...OPTIONS, ...(opts || {}) });
       return (out && out.text) || '';
     };
   }
@@ -185,6 +185,18 @@
   // Phrases que Whisper « entend » parfois dans le silence
   const FANTOME = /amara|sous-?titr|merci d.avoir regard|abonnez-vous|^\W*$|^\[.*\]$|♪/i;
   const propre = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+  // Coupe les boucles (« … que vous avez une question qui vous… » répété) : dès qu'un bout de 3 mots revient une 3e fois
+  const sansBoucle = (t) => {
+    const mots = t.split(' ');
+    const vus = new Map();
+    for (let i = 0; i + 3 <= mots.length; i++) {
+      const k = mots.slice(i, i + 3).join(' ').toLowerCase();
+      const n = (vus.get(k) || 0) + 1;
+      vus.set(k, n);
+      if (n >= 3) return mots.slice(0, i).join(' ').replace(/[,;]?\s*$/, '');
+    }
+    return t;
+  };
 
   /* ---------- Dictée ----------
      demarrer({ texte(t), etat(e), niveau(x) }) — e = { etape: 'ecoute' | 'telechargement' | 'transcription' |
@@ -291,6 +303,8 @@
     let silence = 0;
     let duree = 0;
     let seuil = null;
+    let debutParole = null;
+    let finParole = 0;
     const calib = [];
     const morceaux = [];
     let total = 0;
@@ -315,22 +329,25 @@
       const rate = ctx.sampleRate;
       if (ctx.close) ctx.close().catch(() => {});
       if (cb.niveau) cb.niveau(0);
-      if (!(parle || (manuel && total > rate * 0.6))) {
+      if (!parle) {
         abonnes.delete(suivi);
         return cb.etat({ etape: 'erreur', message: MESSAGES.rien });
       }
-      const brut = new Float32Array(total);
+      const tout = new Float32Array(total);
       let o = 0;
       morceaux.forEach((m) => {
-        brut.set(m, o);
+        tout.set(m, o);
         o += m.length;
       });
+      // seulement le passage parlé (avec un peu de marge) : le silence fait « halluciner » Whisper
+      const brut = tout.slice(Math.max(0, debutParole - Math.round(rate * 0.3)), Math.min(total, finParole + Math.round(rate * 0.5)));
+      const secondes = brut.length / rate;
       try {
         if (!pret) cb.etat({ etape: 'telechargement', pct: dernierPct, enregistre: false });
         const transcrire = await moteur16;
         abonnes.delete(suivi);
         cb.etat({ etape: 'transcription' });
-        const t = propre(await transcrire(en16k(brut, rate)));
+        const t = sansBoucle(propre(await transcrire(en16k(brut, rate), { max_new_tokens: Math.min(220, Math.round(secondes * 7) + 12), no_repeat_ngram_size: 4 })));
         if (!t || FANTOME.test(t)) return cb.etat({ etape: 'erreur', message: MESSAGES.rien });
         cb.texte(t);
         cb.etat({ etape: 'fini' });
@@ -368,6 +385,8 @@
           if (rms > s0) {
             parle = true;
             silence = 0;
+            if (debutParole == null) debutParole = total - d.length;
+            finParole = total;
           } else if (parle) {
             silence += dt;
             if (silence > 1.6) terminer(false); // on s'est tu : fin automatique
