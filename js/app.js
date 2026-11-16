@@ -193,6 +193,7 @@
       C.eng.refreshEstimates();
       C.render();
       syncPromos();
+      setTimeout(() => C.video && C.video.ameliorerAnciennes(), 5000); // anciennes recettes vidéo : plus belle image
       // Premier lancement sur cet appareil : questionnaire de réglages
       if (!C.S.settings.onboarded && !C.noStorage) C.onboard();
     })

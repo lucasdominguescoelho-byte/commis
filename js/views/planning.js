@@ -45,7 +45,7 @@
         <header class="head"><div><p class="eyebrow">Planning · semaine ${C.weekNo(wid)}</p><h1 class="title">${C.weekLabel(wid)}</h1></div>
           <div class="head-a">${C.weekNav(wid)}
             ${t.meals ? `<button class="ibtn ibtn--line" data-act="plan.clear" aria-label="Vider la semaine" title="Vider la semaine">${icon('trash')}</button>` : ''}
-            <button class="btn btn--ghost" data-act="env.open">${icon('mic', 18)} Mes envies</button><button class="btn btn--citron" data-act="plan.generate">${icon('wand', 18)} Proposer un planning</button></div></header>
+            <button class="btn btn--citron" data-act="env.open">${icon('wand', 18)} Préparer ma semaine</button></div></header>
         <div class="sum">
           <div class="sum-i"><span>Coût estimé</span><b>${C.chf(t.cost)}${st.weeklyBudget > 0 ? ` <small>/ ${C.num(st.weeklyBudget, 0)}</small>` : ''}</b></div>
           <div class="sum-i"><span>Économies promos</span><b>${C.chf(t.savings)}</b></div>
@@ -61,7 +61,7 @@
           return `<button class="past-t" data-act="plan.past" aria-expanded="${!!C.ui.showPast}">${icon(C.ui.showPast ? 'minus' : 'plus', 16)} ${C.ui.showPast ? 'Masquer' : 'Afficher'} les jours passés <span class="muted">(${label})</span></button>`;
         })()}
         <div class="plan ${C.ui.showPast ? 'show-past' : ''}">${grid}</div>
-        <p class="small muted" style="margin-top:16px">Cliquez sur une case pour ajouter un repas, sur un repas pour voir ses ingrédients. Sur ordinateur, glissez un repas pour le déplacer ; ailleurs, utilisez « Déplacer ».</p>`;
+        <p class="small muted" style="margin-top:16px">« Préparer ma semaine » remplit tout en une fois ; vous pouvez aussi cliquer sur une case pour ajouter un repas, sur un repas pour voir ses ingrédients. Sur ordinateur, glissez un repas pour le déplacer ; ailleurs, utilisez « Déplacer ».</p>`;
     },
   };
 
@@ -204,32 +204,6 @@
       const backup = { ...C.plan(wid).slots };
       C.save.plan(wid, (slots) => Object.keys(slots).forEach((k) => delete slots[k]));
       C.toast('Semaine vidée', { label: 'Annuler', run: () => C.save.plan(wid, (slots) => Object.assign(slots, backup)) });
-    },
-    'plan.generate': () => {
-      const wid = C.ui.week;
-      const st = C.S.settings;
-      const t = E.planTotals(wid);
-      const pool = E.compatible().length;
-      const row = (a, b) => `<div class="row"><span class="row-b">${a}</span><span class="row-p">${b}</span></div>`;
-      C.sheet({
-        title: 'Proposer un planning',
-        sub: `Semaine ${C.weekNo(wid)} · ${C.weekLabel(wid)}`,
-        body: `<p style="color:var(--ink-2)">Commis choisit, parmi vos recettes, celles qui profitent le mieux des promotions de la semaine, réutilisent les mêmes produits frais d’un repas à l’autre et tiennent dans votre budget.</p>
-          <div class="card rows" style="margin:16px 0;padding:16px 18px">
-            ${row('Recettes compatibles avec vos préférences', `${pool} sur ${C.S.recipes.length}`)}
-            ${row('Promotions valables dans vos magasins', E.activePromos(wid).length)}
-            ${row('Personnes à table', st.household)}
-            ${row('Budget hebdomadaire', st.weeklyBudget > 0 ? C.chf(st.weeklyBudget) : 'non défini')}
-          </div>
-          <div class="note">${icon('info', 18)}<span>Calcul local par règles et score, à partir de vos données uniquement — sans intelligence artificielle ni service externe. Les jours déjà passés ne sont pas modifiés.</span></div>`,
-        foot: `${t.meals ? `<button class="btn btn--ghost" data-act="plan.gen" data-mode="replace">Tout remplacer</button>` : ''}<button class="btn btn--citron" data-act="plan.gen" data-mode="fill" ${pool ? '' : 'disabled'}>${t.meals ? 'Compléter les cases vides' : 'Générer la proposition'}</button>`,
-      });
-    },
-    'plan.gen': (el) => {
-      C.closeSheet();
-      const res = E.generate(C.ui.week, { replace: el.dataset.mode === 'replace' });
-      if (res.error) C.toast(res.error);
-      else C.toast(res.filled ? `${res.filled} repas proposés — ajustez librement` : 'Aucune case libre à compléter');
     },
   });
 

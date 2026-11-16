@@ -224,9 +224,12 @@
        − répétitions, même catégorie deux fois de suite
        − coût, pondéré plus fortement quand le budget hebdomadaire est sous pression */
   const FRESH = ['fl', 'vp', 'lait'];
+  // Un vrai repas de midi ou du soir : ni petit-déjeuner ni dessert (on peut toujours les choisir à la main)
+  const SUCRE = /\b(gateaux?|brioches?|pancakes?|muffins?|cookies?|biscuits?|granola|porridge|smoothies?|compote|tiramisu|clafoutis|crumble|mousse au chocolat|dessert|overnight oats?)\b/;
+  E.pourRepas = (r) => r.category !== 'Petit-déjeuner' && !SUCRE.test(C.norm(r.name));
   E.generate = (wid, opts = {}) => {
     const st = C.S.settings;
-    const pool = E.compatible();
+    const pool = E.compatible().filter(E.pourRepas);
     if (!pool.length) return { error: 'Aucune recette ne correspond à vos préférences. Ajoutez des recettes ou assouplissez les réglages.' };
     const promos = E.activePromos(wid);
     const people = st.household || 2;
@@ -242,10 +245,13 @@
     );
 
     const plan = C.plan(wid);
+    // dry : on propose sans rien enregistrer, à partir de opts.base (copie des cases) ; skip : cases à laisser vides
+    const slots = opts.base || plan.slots;
+    const skip = opts.skip || null;
     const firstDay = wid === C.weekId() ? (new Date().getDay() + 6) % 7 : 0; // on ne touche pas aux jours passés
     if (opts.replace) {
-      Object.keys(plan.slots).forEach((k) => {
-        if (Number(k[0]) >= firstDay) delete plan.slots[k];
+      Object.keys(slots).forEach((k) => {
+        if (Number(k[0]) >= firstDay) delete slots[k];
       });
     }
 
@@ -253,8 +259,8 @@
     const freshUsed = new Set();
     let running = 0;
     let count = 0;
-    Object.values(plan.slots).forEach((s) => {
-      const r = C.recipe(s.recipeId);
+    Object.values(slots).forEach((s) => {
+      const r = C.recipe(s.recipeId) || (opts.extra && opts.extra.get(s.recipeId));
       if (!r) return;
       used[r.id] = (used[r.id] || 0) + 1;
       r.ingredients.filter((x) => FRESH.includes(x.cat)).forEach((x) => freshUsed.add(tk(x.name).join(' ')));
@@ -266,17 +272,18 @@
     // « Moins de viande » : quelques repas avec viande par semaine, le reste en poisson, œufs, légumineuses…
     const flexi = E.flexi();
     const MEAT_MAX = 5;
-    let meatMeals = Object.values(plan.slots).filter((s) => C.recipe(s.recipeId) && E.hasRealMeat(C.recipe(s.recipeId))).length;
+    let meatMeals = Object.values(slots).filter((s) => C.recipe(s.recipeId) && E.hasRealMeat(C.recipe(s.recipeId))).length;
     let filled = 0;
     let prev = null;
     for (let d = firstDay; d < 7; d++) {
       for (const slot of C.SLOTS) {
         const key = `${d}-${slot}`;
-        if (plan.slots[key]) {
-          prev = C.recipe(plan.slots[key].recipeId) || prev;
+        if (slots[key]) {
+          prev = C.recipe(slots[key].recipeId) || prev;
           continue;
         }
-        const other = plan.slots[`${d}-${slot === 'midi' ? 'soir' : 'midi'}`];
+        if (skip && skip.has(key)) continue;
+        const other = slots[`${d}-${slot === 'midi' ? 'soir' : 'midi'}`];
         const pressure = perMeal && running > perMeal * count ? 2.2 : 0.8;
         let best = null;
         pool.forEach((r) => {
@@ -302,7 +309,7 @@
         if (n.liked) why.push('contient un aliment apprécié');
         if (slot === 'midi' && r.prepTime <= 30) why.push(`rapide (${r.prepTime} min)`);
         if (flexi && !E.hasRealMeat(r) && !why.length) why.push('sans viande (moins de viande)');
-        plan.slots[key] = { recipeId: r.id, servings: people, why, auto: true };
+        slots[key] = { recipeId: r.id, servings: people, why, auto: true };
         if (E.hasRealMeat(r)) meatMeals++;
         used[r.id] = (used[r.id] || 0) + 1;
         n.fresh.forEach((x) => freshUsed.add(x.key));
@@ -312,6 +319,7 @@
         prev = r;
       }
     }
+    if (opts.dry) return { filled, pool: pool.length, promos: promos.length, slots };
     C.db.put('plans', plan);
     C.changed();
     return { filled, pool: pool.length, promos: promos.length };

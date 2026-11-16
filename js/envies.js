@@ -113,16 +113,30 @@
   ];
   const NOM_SOUHAIT = { leger: 'léger', rapide: 'rapide', vege: 'sans viande', poisson: 'poisson', eco: 'pas cher', copieux: 'copieux' };
 
+  // Confusions fréquentes de la dictée (« je dis midi » pour « jeudi midi », « pattes » pour « pâtes »)
+  const DICTEE = [
+    [/\bje dis (?=midi|soir|matin|a midi)/g, 'jeudi '],
+    [/\bpattes?\b/g, 'pates'],
+    [/\b(mardis|mars di)\b/g, 'mardi'],
+    [/\bmer credi\b/g, 'mercredi'],
+    [/\bven dredi\b/g, 'vendredi'],
+    [/\bsa medi\b/g, 'samedi'],
+    [/\bdi manche\b/g, 'dimanche'],
+    [/\blundis\b/g, 'lundi'],
+  ];
   const normaliser = (t) =>
-    String(t || '')
-      .toLowerCase()
-      .replace(/œ/g, 'oe')
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[,;.!?\n:]+/g, ' , ')
-      .replace(/[^a-z0-9, ]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    DICTEE.reduce(
+      (s, [re, v]) => s.replace(re, v),
+      String(t || '')
+        .toLowerCase()
+        .replace(/œ/g, 'oe')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[,;.!?\n:]+/g, ' , ')
+        .replace(/[^a-z0-9, ]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
 
   // Découpe la phrase en envies : { jour (0–6 ou null), repas ('midi', 'soir' ou null), texte, souhaits }
   function comprendre(texte, aujourdhui) {
@@ -282,7 +296,7 @@
   function choisir(souhaits, deja, wid) {
     const promos = E.activePromos(wid);
     const people = C.S.settings.household || 2;
-    const pool = E.compatible().filter((r) => r.ingredients.length && convient(r, souhaits) && !deja.has(r.id));
+    const pool = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r) && convient(r, souhaits) && !deja.has(r.id));
     if (!pool.length) return null;
     const score = (r) => {
       const c = E.recipeCost(r, people, promos);
@@ -345,140 +359,481 @@
     return { lignes: lignes.sort((a, b) => (a.d ?? 9) - (b.d ?? 9) || (a.slot === 'soir') - (b.slot === 'soir')), general: [...new Set(general)], premier };
   }
 
-  function appliquer(wid, prep, completer) {
-    const people = C.S.settings.household || 2;
-    const nouvelles = [];
-    let places = 0;
-    C.save.plan(wid, (slots) => {
-      prep.lignes.forEach((l) => {
-        if (!l.res) return;
-        if (l.res.nouvelle && !C.recipe(l.res.r.id)) nouvelles.push(l.res.r);
-        slots[l.key] = { recipeId: l.res.r.id, servings: people, why: ['votre envie'], auto: false, wish: true };
-        places++;
-      });
-    });
-    nouvelles.forEach((r) => C.save.recipe(r));
-    let complete = 0;
-    if (completer) {
-      const bonus = prep.general.length ? (r) => (convient(r, prep.general) ? 6 : -8) : null; // net, sans être absolu
-      const res = E.generate(wid, { bonus });
-      complete = res.filled || 0;
+  /* ---------- Assistant « Préparer ma semaine » ----------
+     Une seule fenêtre : vos envies (dites ou écrites), un style pour le reste de la semaine et les repas
+     à prévoir ; puis une proposition repas par repas, avec d'autres choix pour chaque case.
+     Rien n'est enregistré avant « Valider la semaine ». */
+  const CONTRAIRE = { leger: 'plus copieux', rapide: 'plus long', vege: 'avec viande', poisson: 'sans poisson', eco: 'plus cher', copieux: 'plus léger' };
+  const STYLES = [
+    ['leger', 'Léger'],
+    ['rapide', 'Rapide'],
+    ['vege', 'Sans viande'],
+    ['poisson', 'Poisson'],
+    ['eco', 'Pas cher'],
+    ['copieux', 'Copieux'],
+  ];
+  const EXEMPLES = ['Mardi soir une raclette', 'Jeudi midi des pâtes bolognaise', 'Un repas léger vendredi midi', 'Du poisson mercredi soir'];
+  const MEMO = 'commis-semaine'; // derniers réglages choisis (style, repas), sur cet appareil
+  const memo = () => {
+    try {
+      return JSON.parse(localStorage.getItem(MEMO)) || {};
+    } catch (e) {
+      return {};
     }
-    return { places, complete, nouvelles: nouvelles.length };
+  };
+  const retenir = (st) => {
+    try {
+      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], repas: st.repas }));
+    } catch (e) {
+      /* stockage indisponible */
+    }
+  };
+
+  let dictee = null; // dictée en cours
+
+  function proposer(st) {
+    const wid = st.wid;
+    const people = C.S.settings.household || 2;
+    const prep = preparer(st.texte, wid);
+    const premier = prep.premier;
+    const plan = C.plan(wid);
+    const base = {};
+    const statut = {}; // 'garde' (déjà prévu), 'envie', 'choix' (choisi ici), 'vide'
+    Object.entries(plan.slots).forEach(([k, v]) => {
+      if (!C.recipe(v.recipeId)) return;
+      if (Number(k[0]) < premier) base[k] = { ...v };
+      else if (st.garder && !v.auto) {
+        // les repas choisis à la main restent ; ceux proposés automatiquement sont refaits
+        base[k] = { ...v };
+        statut[k] = 'garde';
+      }
+    });
+    const nouvelles = new Map();
+    prep.lignes.forEach((l) => {
+      if (!l.res) return;
+      base[l.key] = { recipeId: l.res.r.id, servings: people, why: ['votre envie'], auto: false, wish: true };
+      statut[l.key] = 'envie';
+      if (l.res.nouvelle && !C.recipe(l.res.r.id)) nouvelles.set(l.res.r.id, l.res.r);
+    });
+    const skip = new Set();
+    // « Relancer » garde ce que vous avez choisi ou vidé à la main
+    if (st.prop)
+      Object.entries(st.prop.statut).forEach(([k, s]) => {
+        if (s === 'choix' && st.prop.slots[k]) {
+          base[k] = { ...st.prop.slots[k] };
+          statut[k] = 'choix';
+          const r = st.prop.nouvelles.get(st.prop.slots[k].recipeId);
+          if (r) nouvelles.set(r.id, r);
+        } else if (s === 'vide') {
+          delete base[k];
+          statut[k] = 'vide';
+          skip.add(k);
+        }
+      });
+    for (let d = premier; d < 7; d++)
+      C.SLOTS.forEach((sl) => {
+        const k = `${d}-${sl}`;
+        const voulu = st.jours.has(d) && (st.repas === 'tous' || st.repas === sl);
+        if (!voulu && !statut[k]) skip.add(k);
+      });
+    const general = [...new Set([...prep.general, ...st.styles])];
+    const promos = E.activePromos(wid);
+    const cout = new Map();
+    const prix = (r) => {
+      if (!cout.has(r.id)) cout.set(r.id, E.recipeCost(r, people, promos).cost);
+      return cout.get(r.id);
+    };
+    const bonus = general.length ? (r) => (convient(r, general) ? 6 : -8) - (general.includes('eco') ? prix(r) / 3 : 0) : null;
+    const res = E.generate(wid, { dry: true, base, skip, bonus, extra: nouvelles });
+    if (res.error) {
+      st.erreur = res.error;
+      return false;
+    }
+    st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip };
+    st.alts = {};
+    st.ouvert = null;
+    st.erreur = '';
+    return true;
   }
 
-  /* ---------- Fenêtre « Mes envies » ---------- */
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const EXEMPLES = ['Mardi soir une raclette', 'Jeudi midi des pâtes bolognaise', 'Un repas léger vendredi midi', 'Du poisson mercredi', 'Cette semaine plutôt sans viande'];
-  let ecoute = null;
+  // D'autres idées pour une case : vos recettes compatibles, variées, selon le style choisi
+  function suggestions(st, key) {
+    const promos = E.activePromos(st.wid);
+    const people = C.S.settings.household || 2;
+    const slot = key.slice(2);
+    const autre = st.prop.slots[`${key[0]}-${slot === 'midi' ? 'soir' : 'midi'}`];
+    const autreR = autre && C.recipe(autre.recipeId);
+    const cur = st.prop.slots[key];
+    const prises = new Set(Object.entries(st.prop.slots).filter(([k]) => k !== key).map(([, v]) => v.recipeId));
+    const gen = st.prop.general;
+    const liste = E.compatible()
+      .filter((r) => r.ingredients.length && E.pourRepas(r) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
+      .map((r) => {
+        const c = E.recipeCost(r, people, promos);
+        let sc = 2 * c.savings + c.promoIngs.length + (r.favorite ? 1 : 0) + (r.validated ? 1 : 0) + (slot === 'midi' && r.prepTime <= 30 ? 0.6 : 0) + Math.random() * 0.8;
+        if (gen.length) sc += convient(r, gen) ? 6 : -8;
+        if (gen.includes('eco')) sc -= c.cost / 3;
+        if (autreR && autreR.category === r.category) sc -= 1;
+        return { r, sc };
+      })
+      .sort((a, b) => b.sc - a.sc);
+    const out = [];
+    const cats = {};
+    for (const x of liste) {
+      if (out.length >= 8) break;
+      if ((cats[x.r.category] || 0) >= 2) continue; // de la variété
+      cats[x.r.category] = (cats[x.r.category] || 0) + 1;
+      out.push(x.r);
+    }
+    // Plus de choix : quelques nouvelles idées composées par Commis avec les promotions, dans le style voulu
+    const idees = [];
+    if (C.cuisine && C.cuisine.generate) {
+      const VOEU = { vege: 'sans viande', rapide: 'rapide', leger: 'salade soupe omelette papillote wok', poisson: 'poisson saumon cabillaud thon', copieux: 'gratin four mijote' };
+      const crit = gen.filter((g) => g !== 'eco');
+      try {
+        const res = C.cuisine.generate({ count: 5, people, wish: gen.map((g) => VOEU[g] || '').join(' '), maxTime: gen.includes('rapide') ? 30 : 0 });
+        (res.recipes || [])
+          .filter((r) => E.pourRepas(r) && (!crit.length || convient(r, crit)))
+          .slice(0, 3)
+          .forEach((r) => {
+            r.toTest = true;
+            r.idee = true;
+            st.prop.nouvelles.set(r.id, r);
+            idees.push(r);
+          });
+      } catch (e) {
+        /* pas d'idée cette fois */
+      }
+    }
+    const ok = gen.length ? out.filter((r) => convient(r, gen)) : out;
+    const ko = gen.length ? out.filter((r) => !convient(r, gen)) : [];
+    return [...ok.slice(0, 4), ...idees.slice(0, ok.length >= 4 ? 2 : 3), ...ok.slice(4), ...ko].slice(0, 6).map((r) => r.id);
+  }
 
-  function fenetre() {
+  function assistant() {
     const wid = C.ui.week;
-    const st = { texte: '', prep: null, completer: true };
-    const nomCase = (l) => `${LABEL_J[l.d] || ''}${l.slot ? ` ${l.slot}` : ''}`;
-    const body = () => {
-      if (!st.prep)
-        return `<p style="color:var(--ink-2)">Dites ou écrivez ce dont vous avez envie cette semaine : des plats à certains jours, ou juste « un repas léger », « du poisson », « rapide »… Commis les place, puis complète le reste avec vos recettes et les promotions.</p>
-          <div class="env-in">
-            <textarea class="inp" id="env-text" rows="4" placeholder="Ex. Mardi soir je fais une raclette, jeudi midi des pâtes bolognaise, et mets-moi un repas léger ce midi-là.">${esc(st.texte)}</textarea>
-            ${SR ? `<button class="env-mic ${ecoute ? 'is-on' : ''}" data-act="env.mic" type="button" aria-label="${ecoute ? 'Arrêter la dictée' : 'Dicter'}">${icon('mic', 22)}</button>` : ''}
-          </div>
-          <p class="small muted env-etat">${SR ? (ecoute ? 'J’écoute… parlez naturellement, touchez le micro pour arrêter.' : 'Touchez le micro pour parler.') : 'Astuce : utilisez la dictée du clavier (le micro) pour parler.'}</p>
-          <div class="chips env-ex">${EXEMPLES.map((x) => `<button class="chip" type="button" data-act="env.ex" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-          <label class="env-chk"><input type="checkbox" data-change="env.fill" ${st.completer ? 'checked' : ''}> Compléter les autres repas de la semaine</label>`;
-      const p = st.prep;
-      const ok = p.lignes.filter((l) => l.res);
-      return `<p style="color:var(--ink-2)">Voici ce que Commis a compris. Rien n’est encore enregistré.</p>
-        <div class="rows env-rows">${
-          p.lignes.length
-            ? p.lignes
-                .map((l) =>
-                  l.res
-                    ? `<div class="row"><span class="row-b"><span class="row-t">${esc(nomCase(l))} · ${esc(l.res.r.name)}</span><span class="row-s">${esc(l.res.origine)}${l.avant ? ` · remplace « ${esc(l.avant.name)} »` : ''}</span></span>${icon('check', 18)}</div>`
-                    : `<div class="row is-off"><span class="row-b"><span class="row-t">${esc(nomCase(l))}</span><span class="row-s">${esc(l.ko)}</span></span></div>`
-                )
-                .join('')
-            : '<p class="muted small">Aucun jour ni plat reconnu. Essayez par exemple « mardi soir raclette ».</p>'
-        }${p.general.length ? `<div class="row"><span class="row-b"><span class="row-t">Reste de la semaine · plutôt ${esc(p.general.map((s) => NOM_SOUHAIT[s]).join(', '))}</span><span class="row-s">appliqué aux repas complétés</span></span>${icon('check', 18)}</div>` : ''}</div>
-        <p class="small muted" style="margin-top:12px">${ok.length} envie${ok.length > 1 ? 's' : ''} placée${ok.length > 1 ? 's' : ''}${st.completer ? ', puis les autres cases libres sont complétées.' : '. Les autres cases restent libres.'}</p>`;
+    const premier = wid === C.weekId() ? (new Date().getDay() + 6) % 7 : 0;
+    const plan = C.plan(wid);
+    const prevus = Object.keys(plan.slots).filter((k) => Number(k[0]) >= premier && C.recipe(plan.slots[k].recipeId) && !plan.slots[k].auto).length;
+    const m = memo();
+    const st = {
+      wid,
+      premier,
+      prevus,
+      texte: '',
+      styles: new Set((m.styles || []).filter((x) => STYLES.some(([id]) => id === x))),
+      repas: ['tous', 'midi', 'soir'].includes(m.repas) ? m.repas : 'tous',
+      jours: new Set([0, 1, 2, 3, 4, 5, 6].filter((d) => d >= premier)),
+      garder: prevus > 0,
+      etape: 'envies',
+      prop: null,
+      alts: {},
+      ouvert: null,
+      erreur: '',
+      voix: { etape: '', message: '', proposer: false, pct: null },
     };
+    const people = C.S.settings.household || 2;
+    const rec = (id) => C.recipe(id) || (st.prop && st.prop.nouvelles.get(id));
+
+    const etatVoix = () => {
+      const v = st.voix;
+      const integ = C.dictee && C.dictee.moteur() === 'integree';
+      if (v.etape === 'ecoute') return `<span class="pw-rec"></span>J’écoute… parlez naturellement, puis touchez le micro pour arrêter.`;
+      if (v.etape === 'telechargement') return `${v.enregistre ? 'J’écoute… ' : ''}Préparation de la dictée intégrée${v.pct != null ? ` · ${v.pct} %` : '…'} (une seule fois)`;
+      if (v.etape === 'transcription') return 'Transcription…';
+      if (v.etape === 'erreur')
+        return `<span class="pw-err">${esc(v.message)}</span>${v.proposer ? ` <button class="link" type="button" data-act="pw.integree">l’activer</button> <span class="muted">(gratuite, l’audio reste sur l’appareil ; ${C.dictee.taille} à télécharger une seule fois)</span>` : ''}`;
+      if (!C.dictee || !C.dictee.possible()) return 'Astuce : la touche micro du clavier permet aussi de dicter.';
+      return integ ? 'Touchez le micro pour parler (dictée intégrée, sur l’appareil).' : 'Touchez le micro pour parler.';
+    };
+    const majVoix = () => {
+      const el = document.getElementById('pw-voix');
+      if (el) el.innerHTML = etatVoix();
+      const b = document.querySelector('.env-mic');
+      const on = st.voix.etape === 'ecoute' || (st.voix.etape === 'telechargement' && st.voix.enregistre);
+      if (b) {
+        b.classList.toggle('is-on', on);
+        b.classList.toggle('is-busy', st.voix.etape === 'transcription' || (st.voix.etape === 'telechargement' && !st.voix.enregistre));
+        b.setAttribute('aria-label', on ? 'Arrêter la dictée' : 'Dicter');
+      }
+    };
+
+    const vueEnvies = () => {
+      const chip = (on, label, attrs) => `<button class="chip ${on ? 'is-on' : ''}" type="button" aria-pressed="${on}" ${attrs}>${label}</button>`;
+      const seg = (v, label) => `<button type="button" class="${st.repas === v ? 'is-on' : ''}" data-act="pw.repas" data-v="${v}">${label}</button>`;
+      return `<p class="pw-intro">Dites ce dont vous avez envie, ou laissez Commis choisir. Vous pourrez changer chaque repas avant de valider.</p>
+        <section class="pw-sec">
+          <h3 class="pw-h">Des envies précises ? <span>facultatif</span></h3>
+          <div class="env-in">
+            <textarea class="inp" id="env-text" rows="3" placeholder="Ex. Mardi soir une raclette, jeudi midi des pâtes bolognaise, et un repas léger ce midi-là.">${esc(st.texte)}</textarea>
+            ${C.dictee && C.dictee.possible() ? `<button class="env-mic" data-act="pw.mic" type="button" aria-label="Dicter">${icon('mic', 22)}</button>` : ''}
+          </div>
+          <p class="small muted env-etat" id="pw-voix" aria-live="polite">${etatVoix()}</p>
+          <div class="chips env-ex">${EXEMPLES.map((x) => `<button class="chip" type="button" data-act="pw.ex" data-v="${esc(x)}">+ ${esc(x)}</button>`).join('')}</div>
+        </section>
+        <section class="pw-sec">
+          <h3 class="pw-h">Pour le reste de la semaine</h3>
+          <div class="chips">${STYLES.map(([id, label]) => chip(st.styles.has(id), label, `data-act="pw.style" data-v="${id}"`)).join('')}</div>
+          <p class="small muted" style="margin-top:8px">Rien de coché : Commis mélange, en privilégiant les promotions et vos favoris.</p>
+        </section>
+        <section class="pw-sec">
+          <h3 class="pw-h">Repas à prévoir</h3>
+          <div class="seg pw-seg">${seg('tous', 'Midi et soir')}${seg('soir', 'Soirs')}${seg('midi', 'Midis')}</div>
+          <div class="chips pw-jours">${C.DAYS_S.map((j, d) => (d < st.premier ? `<span class="chip is-past" aria-disabled="true">${j}</span>` : chip(st.jours.has(d), j, `data-act="pw.jour" data-d="${d}"`))).join('')}</div>
+          ${st.prevus ? `<label class="env-chk"><input type="checkbox" data-change="pw.garder" ${st.garder ? 'checked' : ''}> Garder ${st.prevus > 1 ? `les ${st.prevus} repas choisis` : 'le repas choisi'} à la main</label>` : ''}
+        </section>
+        ${st.erreur ? `<p class="vid-err" role="alert">${esc(st.erreur)}</p>` : ''}`;
+    };
+
+    const ligne = (key) => {
+      const p = st.prop;
+      const s = p.slots[key];
+      const r = s && rec(s.recipeId);
+      const slot = C.SLOT_LABEL[key.slice(2)];
+      const ouvert = st.ouvert === key;
+      const tag = { envie: 'votre envie', garde: 'déjà prévu', choix: 'votre choix' }[p.statut[key]] || (r && p.general.length && convient(r, p.general) ? p.general.map((g) => NOM_SOUHAIT[g]).join(', ') : '');
+      let html;
+      if (!r)
+        html = `<div class="pw-row is-libre"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="pw-k">${slot}</span><span class="row-t muted">Libre</span></span><button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">Choisir</button></div>`;
+      else {
+        const c = E.recipeCost(r, s.servings, E.activePromos(st.wid));
+        html = `<div class="pw-row ${ouvert ? 'is-open' : ''}"><span class="thumb">${C.recipeVisual(r, 'ph--sm')}</span>
+          <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${r.prepTime} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}</span></span>
+          <button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">${ouvert ? 'Fermer' : 'Changer'}</button></div>`;
+      }
+      if (ouvert) {
+        if (!st.alts[key]) st.alts[key] = suggestions(st, key);
+        const promos = E.activePromos(st.wid);
+        html += `<div class="pw-alts" role="group" aria-label="Autres choix"><div class="pw-alt-l">${st.alts[key]
+          .map((id) => {
+            const a = rec(id);
+            if (!a) return '';
+            const c = E.recipeCost(a, people, promos);
+            const gen = st.prop.general;
+            const hors = gen.length && !convient(a, gen);
+            const marque = [a.idee ? 'nouvelle idée' : '', hors ? gen.filter((g) => !VERIFS[g](a)).map((g) => CONTRAIRE[g]).join(', ') : gen.length ? gen.map((g) => NOM_SOUHAIT[g]).join(', ') : c.promoIngs.length ? `${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+            return `<button class="pw-alt" type="button" data-act="pw.prendre" data-key="${key}" data-id="${a.id}"><span class="pw-alt-v">${C.recipeVisual(a, 'ph--sm')}</span><span class="pw-alt-t">${esc(a.name)}</span><span class="pw-alt-s">${C.chf(c.cost)} · ${a.prepTime} min${marque ? ` · ${esc(marque)}` : ''}</span></button>`;
+          })
+          .join('') || '<p class="small muted">Pas d’autre recette compatible : cherchez dans toutes vos recettes.</p>'}</div>
+          <span class="pw-alt-a"><button class="btn btn--ghost btn--sm" type="button" data-act="pw.autre" data-key="${key}">${icon('search', 16)} Toutes mes recettes</button>${r ? `<button class="btn btn--ghost btn--sm" type="button" data-act="pw.vider" data-key="${key}">Laisser vide</button>` : ''}</span></div>`;
+      }
+      return html;
+    };
+
+    const vueChoix = () => {
+      const p = st.prop;
+      const promos = E.activePromos(st.wid);
+      let cout = 0;
+      let eco = 0;
+      let n = 0;
+      Object.entries(p.slots).forEach(([k, s]) => {
+        if (Number(k[0]) < p.premier) return;
+        const r = rec(s.recipeId);
+        if (!r) return;
+        const c = E.recipeCost(r, s.servings, promos);
+        cout += c.cost;
+        eco += c.savings;
+        n++;
+      });
+      const jours = [];
+      for (let d = p.premier; d < 7; d++) {
+        // repas proposés, cases vidées à la main (pour pouvoir y remettre quelque chose), cases voulues restées libres
+        const visibles = C.SLOTS.map((sl) => `${d}-${sl}`).filter((k) => p.slots[k] || p.statut[k] === 'vide' || !p.skip.has(k));
+        if (!visibles.length) continue;
+        jours.push(`<div class="pw-day"><h4 class="pw-dh">${C.DAYS[d]} <span>${C.parse(C.dayIso(st.wid, d)).getDate()}</span></h4>${visibles.map(ligne).join('')}</div>`);
+      }
+      return `<div class="pw-sum"><span><b>${n}</b> repas</span><span><b>${C.chf(cout)}</b> estimés</span>${eco >= 0.05 ? `<span>${C.chf(eco)} économisés</span>` : ''}${p.general.length ? `<span>plutôt ${esc(p.general.map((g) => NOM_SOUHAIT[g]).join(', '))}</span>` : ''}</div>
+        ${p.ko.length ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas pu placer : ${esc(p.ko.map((l) => `${LABEL_J[l.d] || ''}${l.slot ? ` ${l.slot}` : ''} (${l.ko})`).join(', '))}.</span></div>` : ''}
+        ${jours.join('') || '<p class="muted">Aucun repas à prévoir avec ces réglages.</p>'}
+        <p class="small muted" style="margin-top:14px">Touchez « Changer » pour voir d’autres idées. Rien n’est enregistré avant de valider.</p>`;
+    };
+
+    const body = () => (st.etape === 'choix' ? vueChoix() : vueEnvies());
     const foot = () =>
-      st.prep
-        ? `<button class="btn btn--ghost sp" data-act="env.back">Modifier</button><button class="btn btn--citron" data-act="env.apply" ${st.prep.lignes.some((l) => l.res) || (st.completer && st.prep.general.length) ? '' : 'disabled'}>Remplir le planning</button>`
-        : `<button class="btn btn--ghost" data-close>Annuler</button><button class="btn btn--citron" data-act="env.read">Voir ce que ça donne</button>`;
+      st.etape === 'choix'
+        ? `<div class="pw-f"><button class="btn btn--ghost" data-act="pw.retour" aria-label="Revenir aux envies">${icon('left', 16)}<span class="pw-lbl"> Envies</span></button><button class="btn btn--ghost" data-act="pw.relancer" aria-label="Relancer la proposition">${icon('wand', 16)}<span class="pw-lbl"> Relancer</span></button><button class="btn btn--citron pw-ok" data-act="pw.valider">Valider la semaine</button></div>`
+        : `<button class="btn btn--ghost" data-close>Annuler</button><button class="btn btn--citron" data-act="pw.proposer">${icon('wand', 18)} Proposer ma semaine</button>`;
+    const sheet = C.sheet({
+      title: 'Préparer ma semaine',
+      sub: `Semaine ${C.weekNo(wid)} · ${C.weekLabel(wid)}`,
+      body,
+      foot,
+      size: 'wide',
+      onClose: () => {
+        if (dictee) dictee.arreter();
+        dictee = null;
+      },
+    });
+    st.refresh = () => {
+      lireTexte();
+      sheet.refresh();
+    };
+    st.majVoix = majVoix;
+    st.sheet = sheet;
     C.ui.env = st;
-    const sheet = C.sheet({ title: 'Mes envies de la semaine', sub: `Semaine ${C.weekNo(wid)} · ${C.weekLabel(wid)}`, body, foot, onClose: () => ecoute && ecoute.stop() });
-    st.refresh = () => sheet.refresh();
-    st.wid = wid;
   }
 
   const lireTexte = () => {
     const ta = document.getElementById('env-text');
-    if (ta) C.ui.env.texte = ta.value;
+    if (ta && C.ui.env) C.ui.env.texte = ta.value;
+  };
+  const toggleDom = (el, on) => {
+    el.classList.toggle('is-on', on);
+    el.setAttribute('aria-pressed', on);
   };
 
+  function micro() {
+    const st = C.ui.env;
+    if (dictee) {
+      dictee.arreter();
+      return;
+    }
+    const ta = document.getElementById('env-text');
+    const base = ta ? ta.value.trim() : '';
+    dictee = C.dictee.demarrer({
+      texte(t) {
+        t = t.replace(/\bje dis (?=midi|soir)/gi, 'jeudi ').replace(/\bpattes\b/gi, 'pâtes'); // confusions de la dictée
+        const el = document.getElementById('env-text');
+        const v = (base ? `${base.replace(/[.,;]?$/, ',')} ` : '') + t;
+        if (el) el.value = v;
+        st.texte = v;
+      },
+      etat(e) {
+        st.voix = e;
+        if (e.etape === 'fini' || e.etape === 'erreur') dictee = null;
+        st.majVoix();
+      },
+    });
+  }
+
   Object.assign(C.acts, {
-    'env.open': () => fenetre(),
-    'env.ex': (el) => {
+    'env.open': () => assistant(),
+    'pw.ex': (el) => {
       const ta = document.getElementById('env-text');
       if (!ta) return;
       ta.value = (ta.value.trim() ? ta.value.trim().replace(/[.,;]?$/, ', ') : '') + el.dataset.v;
       C.ui.env.texte = ta.value;
     },
-    'env.fill': (el) => (C.ui.env.completer = el.checked),
-    'env.mic': () => {
-      if (ecoute) return ecoute.stop();
-      const ta = document.getElementById('env-text');
-      const base = ta ? ta.value.trim() : '';
-      try {
-        ecoute = new SR();
-      } catch (e) {
-        return C.toast('Dictée indisponible sur ce navigateur.');
-      }
-      ecoute.lang = 'fr-CH';
-      ecoute.interimResults = true;
-      ecoute.continuous = true;
-      ecoute.onresult = (e) => {
-        let dit = '';
-        for (let k = 0; k < e.results.length; k++) dit += e.results[k][0].transcript;
-        const t = document.getElementById('env-text');
-        if (t) t.value = (base ? `${base} ` : '') + dit.trim();
-        C.ui.env.texte = t ? t.value : C.ui.env.texte;
-      };
-      ecoute.onerror = (e) => C.toast(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Micro refusé : autorisez-le dans les réglages du navigateur, ou utilisez la dictée du clavier.' : 'La dictée s’est arrêtée.');
-      ecoute.onend = () => {
-        ecoute = null;
-        lireTexte();
-        C.ui.env.refresh();
-      };
-      ecoute.start();
-      lireTexte();
-      C.ui.env.refresh();
+    'pw.mic': () => micro(),
+    'pw.integree': () => {
+      C.dictee.utiliserIntegree();
+      C.ui.env.voix = { etape: '' };
+      micro();
     },
-    'env.read': () => {
-      if (ecoute) ecoute.stop();
-      lireTexte();
+    'pw.style': (el) => {
       const st = C.ui.env;
-      if (!st.texte.trim()) return C.toast('Dites ou écrivez au moins une envie.');
-      st.prep = preparer(st.texte, st.wid);
+      const v = el.dataset.v;
+      if (st.styles.has(v)) st.styles.delete(v);
+      else st.styles.add(v);
+      toggleDom(el, st.styles.has(v));
+    },
+    'pw.repas': (el) => {
+      C.ui.env.repas = el.dataset.v;
+      el.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b === el));
+    },
+    'pw.jour': (el) => {
+      const st = C.ui.env;
+      const d = Number(el.dataset.d);
+      if (st.jours.has(d)) st.jours.delete(d);
+      else st.jours.add(d);
+      toggleDom(el, st.jours.has(d));
+    },
+    'pw.garder': (el) => (C.ui.env.garder = el.checked),
+    'pw.proposer': () => {
+      const st = C.ui.env;
+      if (dictee) dictee.arreter();
+      lireTexte();
+      if (!st.jours.size && !st.texte.trim()) {
+        st.erreur = 'Choisissez au moins un jour, ou dites une envie.';
+        return st.refresh();
+      }
+      retenir(st);
+      st.prop = null;
+      if (proposer(st)) st.etape = 'choix';
+      st.refresh();
+      st.sheet.body.scrollTop = 0;
+    },
+    'pw.retour': () => {
+      const st = C.ui.env;
+      st.etape = 'envies';
+      st.prop = null;
       st.refresh();
     },
-    'env.back': () => {
-      C.ui.env.prep = null;
-      C.ui.env.refresh();
-    },
-    'env.apply': () => {
+    'pw.relancer': () => {
       const st = C.ui.env;
-      const res = appliquer(st.wid, st.prep, st.completer);
+      proposer(st);
+      st.refresh();
+      C.toast('Nouvelle proposition — vos envies et vos choix sont gardés');
+    },
+    'pw.ouvrir': (el) => {
+      const st = C.ui.env;
+      const key = el.dataset.key;
+      st.ouvert = st.ouvert === key ? null : key;
+      st.refresh();
+      const alts = st.sheet.body.querySelector('.pw-alts');
+      if (alts) alts.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    },
+    'pw.prendre': (el) => {
+      const st = C.ui.env;
+      const key = el.dataset.key;
+      st.prop.slots[key] = { recipeId: el.dataset.id, servings: C.S.settings.household || 2, why: ['votre choix'], auto: false };
+      st.prop.statut[key] = 'choix';
+      st.ouvert = null;
+      st.alts = {};
+      st.refresh();
+    },
+    'pw.autre': (el) => {
+      const st = C.ui.env;
+      const key = el.dataset.key;
+      C.pickRecipe('Choisir un repas', `${C.DAYS[Number(key[0])]} ${key.slice(2)}`, (id) => {
+        st.prop.slots[key] = { recipeId: id, servings: C.S.settings.household || 2, why: ['votre choix'], auto: false };
+        st.prop.statut[key] = 'choix';
+        st.ouvert = null;
+        st.alts = {};
+        st.refresh();
+      });
+    },
+    'pw.vider': (el) => {
+      const st = C.ui.env;
+      const key = el.dataset.key;
+      delete st.prop.slots[key];
+      st.prop.statut[key] = 'vide';
+      st.ouvert = null;
+      st.alts = {};
+      st.refresh();
+    },
+    'pw.valider': () => {
+      const st = C.ui.env;
+      const p = st.prop;
+      const utilisees = new Set(Object.values(p.slots).map((s) => s.recipeId));
+      let nouv = 0;
+      p.nouvelles.forEach((r, id) => {
+        if (utilisees.has(id) && !C.recipe(id)) {
+          C.save.recipe(r);
+          nouv++;
+        }
+      });
+      let n = 0;
+      C.save.plan(st.wid, (slots) => {
+        Object.keys(slots).forEach((k) => {
+          if (Number(k[0]) >= p.premier) delete slots[k];
+        });
+        Object.entries(p.slots).forEach(([k, v]) => {
+          if (Number(k[0]) < p.premier) return;
+          slots[k] = v;
+          n++;
+        });
+      });
       C.closeSheet();
-      C.toast(`${res.places} envie${res.places > 1 ? 's' : ''} au planning${res.complete ? `, ${res.complete} repas complété${res.complete > 1 ? 's' : ''}` : ''}${res.nouvelles ? ` · ${res.nouvelles} recette${res.nouvelles > 1 ? 's' : ''} ajoutée${res.nouvelles > 1 ? 's' : ''}` : ''}`);
+      C.toast(`Semaine prête : ${n} repas${nouv ? ` · ${nouv} nouvelle${nouv > 1 ? 's' : ''} recette${nouv > 1 ? 's' : ''} ajoutée${nouv > 1 ? 's' : ''}` : ''}`);
     },
   });
+  C.acts['plan.generate'] = () => assistant(); // ancien bouton (accueil, bienvenue)
 
   // Un classique reconnu dans un texte (titre de vidéo…) : sa recette de base, ou null
   const classique = (texte) => {
     const cl = CLASSIQUES.find((d) => d.cle.test(normaliser(texte)));
     return cl ? { name: cl.name, category: cl.category, prepTime: cl.prepTime, ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice() } : null;
   };
-  C.envies = { comprendre, preparer, classique }; // aussi pour vérifier depuis la console
+  C.envies = { comprendre, preparer, classique, proposer }; // aussi pour vérifier depuis la console
 })();

@@ -62,17 +62,6 @@
     return { site: lien.site, id, url: lien.site === 'tiktok' && lien.court && d.author_unique_id && id ? `https://www.tiktok.com/@${d.author_unique_id}/video/${id}` : lien.url, titre: String(d.title || '').trim(), auteur: String(d.author_name || '').trim() || (pseudo ? `@${pseudo}` : ''), photo };
   }
 
-  // L'image TikTok expire au bout de quelques jours : on la garde en petit sur l'appareil si possible.
-  async function garderImage(url) {
-    try {
-      const r = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer' });
-      if (!r.ok) return '';
-      return await C.readImage(await r.blob(), 640);
-    } catch (e) {
-      return '';
-    }
-  }
-
   /* ---------- Lecture du titre ou de la légende ---------- */
   const EMOJI = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}\u{20E3}]+/gu;
   const nettoyer = (t) =>
@@ -397,6 +386,232 @@
     };
   }
 
+  /* ---------- Image du plat ----------
+     En plus de la miniature (souvent un visage et du texte), YouTube publie trois captures de la vidéo,
+     à 25, 50 et 75 % : la préparation puis, souvent, le plat fini. Commis retire les bandes noires et
+     garde la plus appétissante (la plus colorée, ni trop sombre ni délavée). Les autres restent proposées,
+     avec une illustration du même type de plat et votre propre photo. TikTok ne donne aucune image. */
+  const ytid = (r) => (r.videoSite === 'youtube' ? lireLien(r.videoUrl || '').id || '' : '');
+  const chargerImg = (url) =>
+    new Promise((ok) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.referrerPolicy = 'no-referrer';
+      im.onload = () => ok(im.naturalWidth > 200 ? im : null); // image absente : YouTube renvoie une vignette grise de 120 px
+      im.onerror = () => ok(null);
+      im.src = url;
+    });
+  const premiere = async (urls) => {
+    for (const u of urls) {
+      const im = await chargerImg(u);
+      if (im) return im;
+    }
+    return null;
+  };
+  function analyser(im) {
+    const W = 120;
+    const H = Math.max(1, Math.round((W * im.naturalHeight) / im.naturalWidth));
+    const cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    g.drawImage(im, 0, 0, W, H);
+    const d = g.getImageData(0, 0, W, H).data;
+    const lum = (x, y) => {
+      const i = (y * W + x) * 4;
+      return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    };
+    const sombre = (n, f) => {
+      let s = 0;
+      let mx = 0;
+      for (let k = 0; k < n; k++) {
+        const l = f(k);
+        s += l;
+        if (l > mx) mx = l;
+      }
+      return s / n < 22 && mx < 70;
+    };
+    let t = 0;
+    let b = H - 1;
+    let l = 0;
+    let r = W - 1;
+    while (t < H / 3 && sombre(W, (x) => lum(x, t))) t++;
+    while (b > (2 * H) / 3 && sombre(W, (x) => lum(x, b))) b--;
+    while (l < W / 3 && sombre(H, (y) => lum(l, y))) l++;
+    while (r > (2 * W) / 3 && sombre(H, (y) => lum(r, y))) r--;
+    // Vidéo verticale (Short) dans une image 16:9 : les côtés sont une copie floue. On repère la netteté
+    // par colonne ; si les côtés sont flous et que la coupure tombe au bord d'une bande 9:16, on garde le centre.
+    if (r - l > (b - t) * 1.4) {
+      const net = [];
+      for (let x = 1; x < W; x++) {
+        let e = 0;
+        for (let y = t + 1; y <= b; y++) e += Math.abs(lum(x, y) - lum(x - 1, y)) + Math.abs(lum(x, y) - lum(x, y - 1));
+        net[x] = e / (b - t);
+      }
+      const moy = (a, z) => {
+        let s = 0;
+        let n = 0;
+        for (let x = Math.max(1, Math.round(a)); x <= Math.min(W - 1, Math.round(z)); x++) {
+          s += net[x];
+          n++;
+        }
+        return n ? s / n : 0;
+      };
+      const larg = ((b - t + 1) * 9) / 16;
+      const g0 = l + (r - l + 1 - larg) / 2;
+      const g1 = g0 + larg;
+      const centre = moy(g0 + 3, g1 - 3);
+      const cotes = (moy(l, g0 - 3) + moy(g1 + 3, r)) / 2;
+      if (centre > 0 && cotes < centre * 0.45) {
+        l = Math.round(g0);
+        r = Math.round(g1) - 1;
+      }
+    }
+    let n = 0;
+    let a1 = 0;
+    let a2 = 0;
+    let q1 = 0;
+    let q2 = 0;
+    let sl = 0;
+    for (let y = t; y <= b; y++)
+      for (let x = l; x <= r; x++) {
+        const i = (y * W + x) * 4;
+        const rg = d[i] - d[i + 1];
+        const yb = 0.5 * (d[i] + d[i + 1]) - d[i + 2];
+        a1 += rg;
+        a2 += yb;
+        q1 += rg * rg;
+        q2 += yb * yb;
+        sl += lum(x, y);
+        n++;
+      }
+    const m1 = a1 / n;
+    const m2 = a2 / n;
+    const couleur = Math.sqrt(Math.max(0, q1 / n - m1 * m1) + Math.max(0, q2 / n - m2 * m2)) + 0.3 * Math.sqrt(m1 * m1 + m2 * m2);
+    const L = sl / n;
+    const score = couleur + (m2 > 0 ? 6 : 0) - Math.max(0, 60 - L) - Math.max(0, L - 210); // tons chauds bienvenus
+    const kx = im.naturalWidth / W;
+    const ky = im.naturalHeight / H;
+    return { score, crop: { x: l * kx, y: t * ky, w: (r - l + 1) * kx, h: (b - t + 1) * ky } };
+  }
+  function recadrer(im, c, max = 900) {
+    const k = Math.min(1, max / c.w);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(c.w * k);
+    cv.height = Math.round(c.h * k);
+    cv.getContext('2d').drawImage(im, c.x, c.y, c.w, c.h, 0, 0, cv.width, cv.height);
+    return cv.toDataURL('image/jpeg', 0.82);
+  }
+  const ILLU = [
+    [/bolo/, 'spaghetti-bolognaise'],
+    [/\b(carbonara|alfredo)\b|pates? (a la )?creme|cremeu/, 'plat-pates-creme'],
+    [/\b(pates|pasta|spaghettis?|pennes?|tagliatelles?|lasagnes?|orzo|macaronis?|gnocchis?|paccheri)\b/, 'penne-thon-tomates-olives'],
+    [/risotto/, 'risotto-champignons'],
+    [/curry|dhal|pois chiches?/, 'curry-pois-chiches-epinards'],
+    [/soupe|veloute|potage|minestrone/, 'soupe-courge-croutons'],
+    [/lentille/, 'salade-lentilles-feta-courge'],
+    [/salade|bowl|poke|taboule/, 'plat-salade-composee'],
+    [/quiche|tarte salee|tarte aux poireaux/, 'quiche-poireaux-lardons'],
+    [/gratin/, 'gratin-cornettes-jambon'],
+    [/rosti/, 'rosti-oeufs-salade'],
+    [/omelette|\boeufs?\b|frittata|shakshuka/, 'plat-omelette'],
+    [/wok|nouilles|tofu|ramen|pad thai/, 'wok-tofu-nouilles'],
+    [/saumon|poisson|cabillaud|truite|colin/, 'saumon-pommes-de-terre-brocoli'],
+    [/saucisses?/, 'saucisses-puree-carottes'],
+    [/poulet.*(creme|riz)|emince/, 'emince-poulet-creme-riz'],
+    [/poulet|cuisses?/, 'cuisses-poulet-legumes-hiver'],
+    [/mijot|ragout|bourguignon|pot au feu|daube/, 'plat-mijote'],
+    [/papillote/, 'plat-papillote'],
+    [/poelee/, 'plat-poelee'],
+  ];
+  const illustration = (r) => {
+    const n = C.norm(`${r.name} ${r.category}`);
+    const hit = ILLU.find(([re]) => re.test(n));
+    return hit ? `assets/img/recettes/${hit[1]}.webp` : '';
+  };
+  // Images possibles pour une recette, la plus appétissante d'abord
+  async function imagesPour(r) {
+    const out = [];
+    const id = ytid(r);
+    if (id) {
+      const base = `https://i.ytimg.com/vi/${id}/`;
+      const noms = { 3: 'Fin de la vidéo', 2: 'Milieu', 1: 'Début' };
+      const prises = await Promise.all(
+        [3, 2, 1].map(async (n) => {
+          const im = await premiere([`${base}maxres${n}.jpg`, `${base}sd${n}.jpg`, `${base}hq${n}.jpg`]);
+          if (!im) return null;
+          try {
+            const a = analyser(im);
+            return { id: `f${n}`, label: noms[n], src: recadrer(im, a.crop), score: a.score };
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+      prises.filter(Boolean).sort((a, b) => b.score - a.score).forEach((x) => out.push(x));
+      const mini = await premiere([`${base}maxresdefault.jpg`, `${base}hqdefault.jpg`]);
+      if (mini)
+        try {
+          out.push({ id: 'mini', label: 'Miniature', src: recadrer(mini, analyser(mini).crop) });
+        } catch (e) {
+          /* image protégée : on s'en passe */
+        }
+    }
+    const illu = illustration(r);
+    if (illu) out.push({ id: 'illu', label: 'Illustration', src: illu });
+    return out;
+  }
+  const grille = (images, photo, act) =>
+    `<div class="vid-imgs" role="radiogroup" aria-label="Image de la recette">${images
+      .map((x, i) => `<button type="button" class="vid-im ${photo === x.src ? 'is-on' : ''}" role="radio" aria-checked="${photo === x.src}" data-act="${act}" data-i="${i}"><img src="${esc(x.src)}" alt="" referrerpolicy="no-referrer"><span>${esc(x.label)}</span></button>`)
+      .join('')}<button type="button" class="vid-im vid-im--plus" data-act="${act}" data-i="photo"><span class="vid-im-ic">${icon('upload', 20)}</span><span>Votre photo</span></button></div>`;
+  const votrePhoto = async () => {
+    const file = await C.pickFile('image/*');
+    if (!file) return null;
+    try {
+      return await C.readImage(file, 1100);
+    } catch (e) {
+      C.toast('Image illisible.');
+      return null;
+    }
+  };
+
+  // Changer l'image d'une recette déjà importée (depuis sa fiche)
+  async function changerImage(id) {
+    const r = C.recipe(id);
+    if (!r) return;
+    const st = { images: null, photo: r.photo };
+    const sheet = C.sheet({
+      title: 'Image de la recette',
+      sub: esc(r.name),
+      body: () => (st.images ? `<p class="small muted" style="margin-bottom:12px">${ytid(r) ? 'Captures de la vidéo (bandes noires retirées), illustration ou votre photo.' : 'TikTok ne fournit pas d’image : choisissez une illustration ou votre photo.'}</p>${grille(st.images, st.photo, 'vid.imgFiche')}` : '<p class="muted">Recherche des plus belles images…</p>'),
+    });
+    C.ui.vidImg = { st, r, sheet };
+    st.images = await imagesPour(r);
+    sheet.refresh && sheet.refresh();
+  }
+
+  // Recettes importées avant : remplace la miniature YouTube par la capture la plus appétissante (une fois)
+  let enCours = false;
+  const essayees = new Set(); // une seule tentative par recette et par visite
+  async function ameliorerAnciennes() {
+    if (enCours) return;
+    const vieilles = C.S.recipes.filter((r) => r.source === 'video' && !essayees.has(r.id) && ((r.videoSite === 'youtube' && /^https:\/\/i\.ytimg\.com\//.test(r.photo || '')) || (r.videoSite === 'tiktok' && !/^(data:|assets\/)/.test(r.photo || ''))));
+    if (!vieilles.length) return;
+    enCours = true;
+    try {
+      for (const r of vieilles.slice(0, 12)) {
+        essayees.add(r.id);
+        const imgs = await imagesPour(r);
+        const best = imgs.find((x) => x.id[0] === 'f') || imgs.find((x) => x.id === 'illu');
+        const cur = C.recipe(r.id);
+        if (best && cur && cur.photo === r.photo) await C.save.recipe({ ...cur, photo: best.src });
+      }
+    } finally {
+      enCours = false;
+    }
+  }
+
   /* ---------- Fenêtre ---------- */
   function fenetre() {
     const st = { lien: '', desc: '', etat: '', erreur: '', prop: null };
@@ -404,10 +619,12 @@
       if (st.prop) {
         const r = st.prop.r;
         return `<div class="vid-card">
-            ${r.photo ? `<img class="vid-img" src="${esc(r.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            ${r.photo ? `<img class="vid-img" src="${esc(r.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : `<span class="vid-img vid-img--vide">${icon('play', 28)}</span>`}
             <div class="vid-b"><p class="eyebrow">${r.videoSite === 'youtube' ? 'YouTube' : 'TikTok'}${r.videoAuthor ? ` · ${esc(r.videoAuthor)}` : ''}</p>
               ${C.field('Nom de la recette', `<input class="inp" id="vid-nom" value="${esc(r.name)}" maxlength="90">`)}</div>
           </div>
+          <p class="vid-lab">Image de la recette</p>
+          ${grille(st.images || [], r.photo, 'vid.img')}
           <div class="note note--soft" style="margin-top:14px">${icon('info', 18)}<span>${esc(st.prop.origine)}</span></div>
           <div class="vid-sum"><span><b>${r.ingredients.length}</b> ingrédient${r.ingredients.length > 1 ? 's' : ''}</span><span><b>${r.steps.length}</b> étape${r.steps.length > 1 ? 's' : ''}</span><span><b>${r.prepTime}</b> min</span><span>${esc(r.category)}</span></div>
           ${r.ingredients.length ? `<ul class="vid-ing">${r.ingredients.map((x) => `<li>${x.qty && x.unit !== 'pièce' ? `${esc(C.fmtQty ? C.fmtQty(x.qty, x.unit) : `${x.qty} ${x.unit}`)} · ` : x.qty > 1 ? `${x.qty} · ` : ''}${esc(x.name)}</li>`).join('')}</ul>` : ''}
@@ -463,8 +680,12 @@
         C.go(`#/recettes/${deja.id}`);
         return C.toast('Cette vidéo est déjà dans vos recettes.');
       }
-      if (f.site === 'tiktok' && f.photo) f.photo = await garderImage(f.photo);
-      st.prop = composer(f, st.desc);
+      const prop = composer(f, st.desc);
+      st.etat = 'Recherche de la plus belle image…';
+      st.refresh();
+      st.images = await imagesPour(prop.r);
+      prop.r.photo = (st.images[0] && st.images[0].src) || '';
+      st.prop = prop;
       if (lien.dansPlaylist) st.prop.origine += ' (Seule cette vidéo de la playlist est importée.)';
     } catch (e) {
       st.erreur = e.message;
@@ -487,6 +708,30 @@
       } catch (e) {
         C.toast('Collez le lien dans le champ (appui long › Coller).');
       }
+    },
+    'vid.img': async (el) => {
+      const st = C.ui.vid;
+      const nom = document.getElementById('vid-nom');
+      if (nom) st.prop.r.name = nom.value;
+      if (el.dataset.i === 'photo') {
+        const src = await votrePhoto();
+        if (!src) return;
+        st.images.unshift({ id: 'perso', label: 'Votre photo', src });
+        st.prop.r.photo = src;
+      } else st.prop.r.photo = st.images[Number(el.dataset.i)].src;
+      st.refresh();
+    },
+    'vid.image': (el) => changerImage(el.dataset.id),
+    'vid.imgFiche': async (el) => {
+      const { st, r, sheet } = C.ui.vidImg;
+      let src;
+      if (el.dataset.i === 'photo') src = await votrePhoto();
+      else src = st.images[Number(el.dataset.i)].src;
+      if (!src) return;
+      const cur = C.recipe(r.id);
+      if (cur) await C.save.recipe({ ...cur, photo: src });
+      sheet.close();
+      C.toast('Image mise à jour');
     },
     'vid.retour': () => {
       C.ui.vid.prop = null;
@@ -512,5 +757,5 @@
     }
   });
 
-  C.video = { lireLien, lireTexte, nommer, composer }; // aussi pour vérifier depuis la console
+  C.video = { lireLien, lireTexte, nommer, composer, imagesPour, ameliorerAnciennes, illustration }; // aussi pour vérifier depuis la console
 })();
