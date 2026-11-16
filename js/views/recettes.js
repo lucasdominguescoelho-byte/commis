@@ -6,7 +6,7 @@
   const E = C.eng;
 
   C.ui.rf = { q: '', cat: '', time: 0, fav: false, promo: false };
-  C.ui.rtab = 'mes'; // mes (validées) | tester (mises de côté par l'utilisateur) | toutes | generer
+  C.ui.rtab = 'mes'; // mes (validées) | tester (mises de côté par l'utilisateur) | toutes
   const testing = (r) => !!r.toTest && !r.validated;
   const inTab = (r) => (C.ui.rtab === 'toutes' ? true : C.ui.rtab === 'tester' ? testing(r) : !!r.validated);
   C.ui.serv = {};
@@ -47,8 +47,8 @@
     if (!rows.length) {
       if (C.S.recipes.some(inTab)) return `<div class="empty"><h2 class="h2">Aucune recette ne correspond</h2><p>Modifiez la recherche ou les filtres.</p></div>`;
       if (C.ui.rtab === 'tester')
-        return `<div class="empty"><h2 class="h2">Rien à tester pour le moment</h2><p>Ouvrez une recette dans « Toutes » et touchez « Ajouter à À tester », ou gardez une idée générée : elle attendra ici que vous la cuisiniez.</p><div class="head-a" style="justify-content:center"><button class="btn" data-act="rec.tab" data-v="toutes">Voir toutes les recettes</button><button class="btn btn--citron" data-act="rec.tab" data-v="generer">${icon('wand', 18)} Générer des recettes</button></div></div>`;
-      if (C.ui.rtab === 'toutes') return `<div class="empty"><h2 class="h2">Aucune recette</h2><p>Ajoutez-en une, importez un fichier ou générez des idées.</p></div>`;
+        return `<div class="empty"><h2 class="h2">Rien à tester pour le moment</h2><p>Ouvrez une recette dans « Toutes » et touchez « Ajouter à À tester » : elle attendra ici que vous la cuisiniez. Les recettes importées d’une vidéo arrivent aussi ici.</p><div class="head-a" style="justify-content:center"><button class="btn" data-act="rec.tab" data-v="toutes">Voir toutes les recettes</button><button class="btn btn--citron" data-act="rec.video">${icon('play', 18)} Depuis une vidéo</button></div></div>`;
+      if (C.ui.rtab === 'toutes') return `<div class="empty"><h2 class="h2">Aucune recette</h2><p>Ajoutez-en une à la main, depuis une vidéo ou en important un fichier.</p></div>`;
       return `<div class="empty"><h2 class="h2">Aucune recette validée</h2><p>Ici n’apparaissent que les recettes que vous avez cuisinées et approuvées. Une fois une recette testée, validez-la depuis sa fiche.</p><button class="btn" data-act="rec.tab" data-v="toutes">Voir toutes les recettes</button></div>`;
     }
     return `<div class="cards">${rows
@@ -75,15 +75,11 @@
     if (C.video) setTimeout(() => C.video.ameliorerAnciennes(), 800); // anciennes recettes vidéo : plus belle image
     if (C.envies) setTimeout(() => C.envies.illustrerEnvies(), 1200); // recettes d'envies sans photo
     const tabBtn = (v, label) => `<button role="tab" class="${tab === v ? 'is-on' : ''}" aria-selected="${tab === v}" data-act="rec.tab" data-v="${v}">${label}</button>`;
-    const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}${tabBtn('generer', `${icon('wand', 15)} Générer`)}</div>`;
-    const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque', generer: 'Idées avec les promotions du moment' }[tab];
+    const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}</div>`;
+    if (!['mes', 'tester', 'toutes'].includes(tab)) C.ui.rtab = 'mes';
+    const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque' }[C.ui.rtab];
     const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
-        <div class="head-a"><button class="btn btn--ghost" data-act="rec.video" title="Créer une recette depuis une vidéo YouTube ou TikTok">${icon('play', 18)} Depuis une vidéo</button><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn ${tab === 'generer' ? 'btn--ghost' : ''}" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
-    if (tab === 'generer') {
-      root.innerHTML = head + tabs + '<div id="gen-root"></div>';
-      C.generator.render(document.getElementById('gen-root'));
-      return;
-    }
+        <div class="head-a"><button class="btn btn--ghost" data-act="rec.video" title="Créer une recette depuis une vidéo YouTube ou TikTok">${icon('play', 18)} Depuis une vidéo</button><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
     const cats = C.RCATS.map((c) => c.name).filter((n) => C.S.recipes.some((r) => inTab(r) && r.category === n));
     const chip = (label, on, attrs) => `<button class="chip ${on ? 'is-on' : ''}" ${attrs} aria-pressed="${!!on}">${label}</button>`;
     if (!C.S.recipes.some(inTab)) {

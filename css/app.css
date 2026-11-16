@@ -1067,7 +1067,7 @@ html.nuit .note--test { border-color: #5a3420; }
 .pw-h { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
 .pw-h span { font-weight: 400; color: var(--ink-3); font-size: 13px; margin-left: 4px; }
 .pw-seg { margin-bottom: 12px; }
-.pw-jours .chip { min-width: 52px; justify-content: center; }
+.pw-nb { margin-left: 4px; font-size: 12px; opacity: 0.6; font-variant-numeric: tabular-nums; }
 .chip.is-past { opacity: 0.4; cursor: default; }
 .env-mic.is-busy { opacity: 0.75; }
 .env-mic.is-busy::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--citron); animation: pw-tourne 0.9s linear infinite; }

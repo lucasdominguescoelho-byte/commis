@@ -1,5 +1,5 @@
 /* Commis — questionnaire de bienvenue : au premier lancement sur un appareil, quelques écrans
-   pour régler le foyer, le budget, les magasins, le régime, les allergies et les ustensiles.
+   pour régler le foyer, le budget, les magasins, le régime et les allergies.
    Rien n'est enregistré avant « Terminer » ; tout reste modifiable dans Réglages. */
 (function () {
   'use strict';
@@ -10,7 +10,7 @@
   let D = null; // brouillon des réglages
   let step = 0;
   let dir = '';
-  const LAST = 5; // 0 bienvenue · 1 foyer · 2 magasins · 3 régime · 4 ustensiles · 5 terminé
+  const LAST = 4; // 0 bienvenue · 1 foyer · 2 magasins · 3 régime · 4 terminé
 
   const chip = (on, label, act, v) => `<button class="chip ${on ? 'is-on' : ''}" data-act="${act}" data-v="${esc(v)}" aria-pressed="${!!on}">${label}</button>`;
 
@@ -43,11 +43,6 @@
           <h3 class="ob-q">Ce que vous préférez éviter</h3>
           <div class="chips">${E.AVOID_SUGGESTIONS.map((a) => chip(D.avoided.some((x) => C.norm(x) === C.norm(a)), esc(a), 'ob.avoid', a)).join('')}</div>
           <p class="small muted ob-hint">Une catégorie compte pour tout ce qu’elle contient : « Poisson » écarte tous les poissons.</p>`;
-      case 4:
-        return `<p class="eyebrow">Votre cuisine</p><h2 class="ob-t">Qu’avez-vous comme ustensiles ?</h2>
-          <p class="ob-s">Les recettes proposées n’utiliseront que ce que vous avez.</p>
-          <div class="chips">${C.TOOLS.map((t) => chip(D.tools.includes(t.id), esc(t.name), 'ob.tool', t.id)).join('')}</div>
-          <p class="small muted" style="margin-top:14px">${C.cuisine.possible(D.tools).length} types de plats possibles avec cet équipement.</p>`;
       default: {
         const pool = C.S.recipes.filter((r) => !C.eng.conflicts(r, { ...C.S.settings, ...D }).length).length;
         return `<div class="ob-hello"><span class="ob-check">${icon('check', 30)}</span>

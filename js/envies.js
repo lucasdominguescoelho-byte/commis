@@ -293,10 +293,10 @@
     copieux: (r) => (kcal(r) != null ? kcal(r) >= 650 : E.hasRealMeat(r) || /gratin|four/i.test(r.category || '')),
   };
   const convient = (r, souhaits) => souhaits.every((s) => VERIFS[s](r));
-  function choisir(souhaits, deja, wid) {
+  function choisir(souhaits, deja, wid, filtre) {
     const promos = E.activePromos(wid);
     const people = C.S.settings.household || 2;
-    const pool = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r) && convient(r, souhaits) && !deja.has(r.id));
+    const pool = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r) && (!filtre || filtre(r)) && convient(r, souhaits) && !deja.has(r.id));
     if (!pool.length) return null;
     const score = (r) => {
       const c = E.recipeCost(r, people, promos);
@@ -306,7 +306,7 @@
   }
 
   /* ---------- De la phrase au planning ---------- */
-  function preparer(texte, wid) {
+  function preparer(texte, wid, filtre) {
     const today = wid === C.weekId() ? (new Date().getDay() + 6) % 7 : null;
     const premier = today == null ? 0 : today;
     const plan = C.plan(wid);
@@ -329,7 +329,7 @@
       if (e.plat) res = recettePour(e.plat);
       else {
         const tous = [...new Set([...e.souhaits, ...general])];
-        const r = choisir(tous, utilisees, wid) || choisir(e.souhaits, utilisees, wid);
+        const r = choisir(tous, utilisees, wid, filtre) || choisir(e.souhaits, utilisees, wid, filtre);
         res = r ? { r, origine: `repas ${e.souhaits.map((s) => NOM_SOUHAIT[s]).join(', ')}` } : null;
       }
       const avant = plan.slots[key] && C.recipe(plan.slots[key].recipeId);
@@ -452,7 +452,14 @@
     ['eco', 'Pas cher'],
     ['copieux', 'Copieux'],
   ];
-  const MEMO = 'commis-semaine'; // derniers réglages choisis (style, repas), sur cet appareil
+  // Quelles recettes utiliser : validées, mises « à tester », ou pas encore testées
+  const SOURCES = [
+    ['validees', 'Validées'],
+    ['tester', 'À tester'],
+    ['nouvelles', 'Pas encore testées'],
+  ];
+  const sourceDe = (r) => (r.validated ? 'validees' : r.toTest ? 'tester' : 'nouvelles');
+  const MEMO = 'commis-semaine'; // derniers réglages choisis (style, recettes), sur cet appareil
   const memo = () => {
     try {
       return JSON.parse(localStorage.getItem(MEMO)) || {};
@@ -462,7 +469,7 @@
   };
   const retenir = (st) => {
     try {
-      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], repas: st.repas }));
+      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], sources: [...st.sources] }));
     } catch (e) {
       /* stockage indisponible */
     }
@@ -473,7 +480,8 @@
   function proposer(st) {
     const wid = st.wid;
     const people = C.S.settings.household || 2;
-    const prep = preparer(st.texte, wid);
+    const filtre = (r) => st.sources.has(sourceDe(r));
+    const prep = preparer(st.texte, wid, filtre);
     const premier = prep.premier;
     const plan = C.plan(wid);
     const base = {};
@@ -509,12 +517,6 @@
           skip.add(k);
         }
       });
-    for (let d = premier; d < 7; d++)
-      C.SLOTS.forEach((sl) => {
-        const k = `${d}-${sl}`;
-        const voulu = st.jours.has(d) && (st.repas === 'tous' || st.repas === sl);
-        if (!voulu && !statut[k]) skip.add(k);
-      });
     const general = [...new Set([...prep.general, ...st.styles])];
     const promos = E.activePromos(wid);
     const cout = new Map();
@@ -523,12 +525,13 @@
       return cout.get(r.id);
     };
     const bonus = general.length ? (r) => (convient(r, general) ? 6 : -8) - (general.includes('eco') ? prix(r) / 3 : 0) : null;
-    const res = E.generate(wid, { dry: true, base, skip, bonus, extra: nouvelles });
+    const res = E.generate(wid, { dry: true, base, skip, bonus, extra: nouvelles, filtre, maxUses: 2 });
     if (res.error) {
-      st.erreur = res.error;
+      const UNE = { validees: 'validée', tester: '« à tester »', nouvelles: 'pas encore testée' };
+      st.erreur = res.vide ? `Aucune recette ${[...st.sources].map((x) => UNE[x]).join(' ou ')} utilisable pour l’instant. Cochez aussi un autre type de recettes.` : res.error;
       return false;
     }
-    st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip };
+    st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip, manque: res.manque || 0 };
     nouvelles.forEach((r) => !r.photo && !r.idee && illustrer(r)); // une vraie photo du plat, trouvée sur Wikipédia
     st.alts = {};
     st.ouvert = null;
@@ -547,7 +550,7 @@
     const prises = new Set(Object.entries(st.prop.slots).filter(([k]) => k !== key).map(([, v]) => v.recipeId));
     const gen = st.prop.general;
     const liste = E.compatible()
-      .filter((r) => r.ingredients.length && E.pourRepas(r) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
+      .filter((r) => r.ingredients.length && E.pourRepas(r) && st.sources.has(sourceDe(r)) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
       .map((r) => {
         const c = E.recipeCost(r, people, promos);
         let sc = 2 * c.savings + c.promoIngs.length + (r.favorite ? 1 : 0) + (r.validated ? 1 : 0) + (slot === 'midi' && r.prepTime <= 30 ? 0.6 : 0) + Math.random() * 0.8;
@@ -565,29 +568,9 @@
       cats[x.r.category] = (cats[x.r.category] || 0) + 1;
       out.push(x.r);
     }
-    // Plus de choix : quelques nouvelles idées composées par Commis avec les promotions, dans le style voulu
-    const idees = [];
-    if (C.cuisine && C.cuisine.generate) {
-      const VOEU = { vege: 'sans viande', rapide: 'rapide', leger: 'salade soupe omelette papillote wok', poisson: 'poisson saumon cabillaud thon', copieux: 'gratin four mijote' };
-      const crit = gen.filter((g) => g !== 'eco');
-      try {
-        const res = C.cuisine.generate({ count: 5, people, wish: gen.map((g) => VOEU[g] || '').join(' '), maxTime: gen.includes('rapide') ? 30 : 0 });
-        (res.recipes || [])
-          .filter((r) => E.pourRepas(r) && (!crit.length || convient(r, crit)))
-          .slice(0, 3)
-          .forEach((r) => {
-            r.toTest = true;
-            r.idee = true;
-            st.prop.nouvelles.set(r.id, r);
-            idees.push(r);
-          });
-      } catch (e) {
-        /* pas d'idée cette fois */
-      }
-    }
     const ok = gen.length ? out.filter((r) => convient(r, gen)) : out;
     const ko = gen.length ? out.filter((r) => !convient(r, gen)) : [];
-    return [...ok.slice(0, 4), ...idees.slice(0, ok.length >= 4 ? 2 : 3), ...ok.slice(4), ...ko].slice(0, 6).map((r) => r.id);
+    return [...ok, ...ko].slice(0, 6).map((r) => r.id);
   }
 
   function assistant() {
@@ -602,9 +585,8 @@
       prevus,
       texte: '',
       styles: new Set((m.styles || []).filter((x) => STYLES.some(([id]) => id === x))),
-      repas: ['tous', 'midi', 'soir'].includes(m.repas) ? m.repas : 'tous',
-      jours: new Set([0, 1, 2, 3, 4, 5, 6].filter((d) => d >= premier)),
-      garder: prevus > 0,
+      sources: new Set((m.sources || SOURCES.map(([id]) => id)).filter((x) => SOURCES.some(([id]) => id === x))),
+      garder: true, // les repas choisis à la main restent ; ceux proposés automatiquement sont refaits
       etape: 'envies',
       prop: null,
       alts: {},
@@ -646,7 +628,8 @@
 
     const vueEnvies = () => {
       const chip = (on, label, attrs) => `<button class="chip ${on ? 'is-on' : ''}" type="button" aria-pressed="${on}" ${attrs}>${label}</button>`;
-      const seg = (v, label) => `<button type="button" class="${st.repas === v ? 'is-on' : ''}" data-act="pw.repas" data-v="${v}">${label}</button>`;
+      const utilisables = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r));
+      const nb = (id) => utilisables.filter((r) => sourceDe(r) === id).length;
       return `<p class="pw-intro">Dites ce dont vous avez envie, ou laissez Commis choisir. Vous pourrez changer chaque repas avant de valider.</p>
         <section class="pw-sec">
           <h3 class="pw-h">Des envies précises ? <span>facultatif</span></h3>
@@ -662,10 +645,9 @@
           <p class="small muted" style="margin-top:8px">Rien de coché : Commis mélange, en privilégiant les promotions et vos favoris.</p>
         </section>
         <section class="pw-sec">
-          <h3 class="pw-h">Repas à prévoir</h3>
-          <div class="seg pw-seg">${seg('tous', 'Midi et soir')}${seg('soir', 'Soirs')}${seg('midi', 'Midis')}</div>
-          <div class="chips pw-jours">${C.DAYS_S.map((j, d) => (d < st.premier ? `<span class="chip is-past" aria-disabled="true">${j}</span>` : chip(st.jours.has(d), j, `data-act="pw.jour" data-d="${d}"`))).join('')}</div>
-          ${st.prevus ? `<label class="env-chk"><input type="checkbox" data-change="pw.garder" ${st.garder ? 'checked' : ''}> Garder ${st.prevus > 1 ? `les ${st.prevus} repas choisis` : 'le repas choisi'} à la main</label>` : ''}
+          <h3 class="pw-h">Avec quelles recettes ?</h3>
+          <div class="chips">${SOURCES.map(([id, label]) => chip(st.sources.has(id), `${label} <span class="pw-nb">${nb(id)}</span>`, `data-act="pw.source" data-v="${id}"`)).join('')}</div>
+          <p class="small muted" style="margin-top:8px">Les plats que vous nommez sont toujours pris dans toutes vos recettes.</p>
         </section>
         ${st.erreur ? `<p class="vid-err" role="alert">${esc(st.erreur)}</p>` : ''}`;
     };
@@ -696,7 +678,7 @@
             const c = E.recipeCost(a, people, promos);
             const gen = st.prop.general;
             const hors = gen.length && !convient(a, gen);
-            const marque = [a.idee ? 'nouvelle idée' : '', hors ? gen.filter((g) => !VERIFS[g](a)).map((g) => CONTRAIRE[g]).join(', ') : gen.length ? gen.map((g) => NOM_SOUHAIT[g]).join(', ') : c.promoIngs.length ? `${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+            const marque = [hors ? gen.filter((g) => !VERIFS[g](a)).map((g) => CONTRAIRE[g]).join(', ') : gen.length ? gen.map((g) => NOM_SOUHAIT[g]).join(', ') : c.promoIngs.length ? `${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
             return `<button class="pw-alt" type="button" data-act="pw.prendre" data-key="${key}" data-id="${a.id}"><span class="pw-alt-v">${C.recipeVisual(a, 'ph--sm')}</span><span class="pw-alt-t">${esc(a.name)}</span><span class="pw-alt-s">${C.chf(c.cost)} · ${a.prepTime} min${marque ? ` · ${esc(marque)}` : ''}</span></button>`;
           })
           .join('') || '<p class="small muted">Pas d’autre recette compatible : cherchez dans toutes vos recettes.</p>'}</div>
@@ -728,6 +710,7 @@
         jours.push(`<div class="pw-day"><h4 class="pw-dh">${C.DAYS[d]} <span>${C.parse(C.dayIso(st.wid, d)).getDate()}</span></h4>${visibles.map(ligne).join('')}</div>`);
       }
       return `<div class="pw-sum"><span><b>${n}</b> repas</span><span><b>${C.chf(cout)}</b> estimés</span>${eco >= 0.05 ? `<span>${C.chf(eco)} économisés</span>` : ''}${p.general.length ? `<span>plutôt ${esc(p.general.map((g) => NOM_SOUHAIT[g]).join(', '))}</span>` : ''}</div>
+        ${p.manque ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas assez de recettes ${[...st.sources].map((x) => SOURCES.find(([id]) => id === x)[1].toLowerCase()).join(' ou ')} pour toute la semaine : ${p.manque} repas reste${p.manque > 1 ? 'nt' : ''} libre${p.manque > 1 ? 's' : ''}. Choisissez-les à la main, ou revenez aux envies pour cocher un autre type de recettes.</span></div>` : ''}
         ${p.ko.length ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas pu placer : ${esc(p.ko.map((l) => `${LABEL_J[l.d] || ''}${l.slot ? ` ${l.slot}` : ''} (${l.ko})`).join(', '))}.</span></div>` : ''}
         ${jours.join('') || '<p class="muted">Aucun repas à prévoir avec ces réglages.</p>'}
         <p class="small muted" style="margin-top:14px">Touchez « Changer » pour voir d’autres idées. Rien n’est enregistré avant de valider.</p>`;
@@ -824,24 +807,19 @@
       else st.styles.add(v);
       toggleDom(el, st.styles.has(v));
     },
-    'pw.repas': (el) => {
-      C.ui.env.repas = el.dataset.v;
-      el.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b === el));
-    },
-    'pw.jour': (el) => {
+    'pw.source': (el) => {
       const st = C.ui.env;
-      const d = Number(el.dataset.d);
-      if (st.jours.has(d)) st.jours.delete(d);
-      else st.jours.add(d);
-      toggleDom(el, st.jours.has(d));
+      const v = el.dataset.v;
+      if (st.sources.has(v)) st.sources.delete(v);
+      else st.sources.add(v);
+      toggleDom(el, st.sources.has(v));
     },
-    'pw.garder': (el) => (C.ui.env.garder = el.checked),
     'pw.proposer': () => {
       const st = C.ui.env;
       if (dictee) dictee.arreter();
       lireTexte();
-      if (!st.jours.size && !st.texte.trim()) {
-        st.erreur = 'Choisissez au moins un jour, ou dites une envie.';
+      if (!st.sources.size) {
+        st.erreur = 'Choisissez au moins un type de recettes.';
         return st.refresh();
       }
       retenir(st);

@@ -42,9 +42,8 @@
           items.length
             ? `${soon.length ? `<section class="card" style="margin-bottom:16px"><div class="sec-h"><h2 class="h3">À consommer bientôt</h2></div><div class="rows">${soon.map(row).join('')}</div></section>` : ''}
                ${groups.map((g) => `<section class="card" style="margin-bottom:16px"><div class="sec-h"><h2 class="h3">${esc(g.c.name)}</h2><span class="small muted">${g.list.length}</span></div><div class="rows">${g.list.map(row).join('')}</div></section>`).join('')}
-               <div class="card card--citron frigo-cta"><div><p class="stat-l">${icon('wand', 17)} Cuisiner avec ce qu’il reste</p><p class="small" style="margin-top:6px">Des recettes inventées autour de vos aliments${soon.length ? ', en commençant par ceux à consommer vite' : ''}, complétées par les promotions de la semaine.</p></div><button class="btn" data-act="frigo.cook">Proposer des recettes</button></div>
                <p class="small muted" style="margin-top:14px">Les aliments du frigo sont aussi signalés « au frigo » dans la liste de courses et ne sont pas comptés dans son total.</p>`
-            : `<div class="empty"><h2 class="h2">Le frigo est vide</h2><p>Notez ce qu’il vous reste : Commis le proposera dans des recettes et ne vous le fera pas racheter.</p>
+            : `<div class="empty"><h2 class="h2">Le frigo est vide</h2><p>Notez ce qu’il vous reste : Commis le signalera dans la liste de courses et ne vous le fera pas racheter.</p>
                 <div class="head-a" style="justify-content:center;margin-top:18px"><button class="btn" data-act="frigo.scan">${icon('barcode', 18)} Scanner un code-barres</button><button class="btn btn--ghost" data-act="frigo.photo">${icon('receipt', 18)} Lire un ticket de caisse</button><button class="btn btn--ghost" data-act="frigo.add">${icon('plus', 18)} Saisir</button></div></div>`
         }`;
     },
@@ -325,7 +324,6 @@
       C.save.delFridge(f.id);
       C.toast(`${f.name} retiré du frigo`, { label: 'Annuler', run: () => C.save.fridge(f) });
     },
-    'frigo.cook': () => C.generator.withFridge(),
     'frigo.scan': () => scanner(),
     'frigo.scanPhoto': async () => {
       const file = await C.pickFile('image/*');

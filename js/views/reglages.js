@@ -75,10 +75,6 @@
         ${block('Magasins fréquentés', 'Seules les promotions de ces enseignes comptent dans les coûts, la liste de courses et le planning proposé.',
           `<div class="chips">${C.STORES.map((s) => `<button class="chip ${st.stores.includes(s.id) ? 'is-on' : ''}" data-act="set.store" data-v="${s.id}" aria-pressed="${st.stores.includes(s.id)}"><i style="background:${s.color}"></i>${s.name}</button>`).join('')}</div>`)}
 
-        ${block('Ustensiles', 'Les recettes générées n’utilisent que ce que vous avez : avec un air fryer, une mijoteuse ou une cocotte-minute, Commis propose des plats et des étapes adaptés.',
-          `<div class="chips">${C.TOOLS.map((t) => `<button class="chip ${st.tools.includes(t.id) ? 'is-on' : ''}" data-act="set.tool" data-v="${t.id}" aria-pressed="${st.tools.includes(t.id)}">${t.name}</button>`).join('')}</div>
-           <p class="small muted">${C.cuisine.possible(st.tools).length} types de plats possibles avec cet équipement.</p>`)}
-
         ${block('Budget hebdomadaire', 'Sert de repère sur l’accueil, le planning et la page Budget. La proposition de planning évite les repas chers lorsque le budget est sous pression.',
           `<div class="form-2" style="max-width:420px">${C.field('Montant par semaine (CHF)', `<input class="inp" inputmode="decimal" value="${st.weeklyBudget || ''}" placeholder="Ex. 160" data-change="set.budget">`)}<div class="field"><span>Équivalent mensuel</span><div class="inp" style="display:flex;align-items:center;background:transparent;color:var(--ink-2)">${st.weeklyBudget > 0 ? C.chf((st.weeklyBudget * 52) / 12) : '—'}</div></div></div>`)}
 

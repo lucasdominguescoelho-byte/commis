@@ -229,8 +229,9 @@
   E.pourRepas = (r) => r.category !== 'Petit-déjeuner' && !SUCRE.test(C.norm(r.name));
   E.generate = (wid, opts = {}) => {
     const st = C.S.settings;
-    const pool = E.compatible().filter(E.pourRepas);
-    if (!pool.length) return { error: 'Aucune recette ne correspond à vos préférences. Ajoutez des recettes ou assouplissez les réglages.' };
+    // filtre : seulement certaines recettes (validées, à tester, pas encore testées…)
+    const pool = E.compatible().filter(E.pourRepas).filter((r) => r.ingredients.length && (!opts.filtre || opts.filtre(r)));
+    if (!pool.length) return { error: 'Aucune recette ne correspond à vos préférences. Ajoutez des recettes ou assouplissez les réglages.', vide: true };
     const promos = E.activePromos(wid);
     const people = st.household || 2;
     const info = new Map(
@@ -274,6 +275,7 @@
     const MEAT_MAX = 5;
     let meatMeals = Object.values(slots).filter((s) => C.recipe(s.recipeId) && E.hasRealMeat(C.recipe(s.recipeId))).length;
     let filled = 0;
+    let manque = 0;
     let prev = null;
     for (let d = firstDay; d < 7; d++) {
       for (const slot of C.SLOTS) {
@@ -287,6 +289,7 @@
         const pressure = perMeal && running > perMeal * count ? 2.2 : 0.8;
         let best = null;
         pool.forEach((r) => {
+          if (opts.maxUses && (used[r.id] || 0) >= opts.maxUses) return; // pas plus de N fois la même recette
           const n = info.get(r.id);
           const shared = n.fresh.filter((x) => freshUsed.has(x.key));
           let score = 2.2 * n.c.savings + 1.2 * n.c.promoIngs.length + Math.min(shared.length, 3) + (r.favorite ? 0.8 : 0) + 1.2 * n.liked + (r.validated ? 1.2 : 0);
@@ -301,6 +304,10 @@
           score += Math.random() * 0.6; // léger aléa : relancer donne une variante
           if (!best || score > best.score) best = { r, n, shared, score };
         });
+        if (!best) {
+          manque++; // plus assez de recettes différentes : la case reste libre
+          continue;
+        }
         const { r, n, shared } = best;
         const why = [];
         if (n.c.promoIngs.length) why.push(`${n.c.promoIngs.length} ingrédient${n.c.promoIngs.length > 1 ? 's' : ''} en promotion${n.c.savings >= 0.05 ? ` (−${C.chf(n.c.savings)})` : ''}`);
@@ -319,7 +326,7 @@
         prev = r;
       }
     }
-    if (opts.dry) return { filled, pool: pool.length, promos: promos.length, slots };
+    if (opts.dry) return { filled, manque, pool: pool.length, promos: promos.length, slots };
     C.db.put('plans', plan);
     C.changed();
     return { filled, pool: pool.length, promos: promos.length };
