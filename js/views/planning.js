@@ -95,7 +95,7 @@
         .map(
           (x) => `<button class="pick ${x.bad.length ? 'is-off' : ''}" data-act="pick.choose" data-id="${x.r.id}">
             <span class="thumb">${C.recipeVisual(x.r, 'ph--sm')}</span>
-            <span class="row-b"><span class="row-t">${esc(x.r.name)}</span><span class="row-s">${x.r.prepTime} min · ${C.chf(x.c.cost)}${x.bad.length ? ` · contient : ${esc(x.bad.map((b) => b.label).join(', '))}` : ''}</span></span>
+            <span class="row-b"><span class="row-t">${esc(x.r.name)}</span><span class="row-s">${C.dureeTotale(x.r)} min · ${C.chf(x.c.cost)}${x.bad.length ? ` · contient : ${esc(x.bad.map((b) => b.label).join(', '))}` : ''}</span></span>
             ${x.c.promoIngs.length ? `<span class="badge badge--promo">${x.c.promoIngs.length} promo${x.c.promoIngs.length > 1 ? 's' : ''}</span>` : ''}</button>`
         )
         .join('');
@@ -126,7 +126,7 @@
         const c = E.recipeCost(rec, cur.servings, E.activePromos(wid));
         return `${cur.auto && cur.why && cur.why.length ? `<ul class="why">${cur.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 4px">
-            <div class="meta"><span>${icon('clock', 16)}${rec.prepTime} min</span><span>${esc(rec.category)}</span></div>
+            <div class="meta"><span>${icon('clock', 16)}${C.dureeTotale(rec)} min</span><span>${esc(rec.category)}</span></div>
             <div class="step"><button data-act="plan.serv" data-d="-1" aria-label="Moins">${icon('minus', 16)}</button><b>${cur.servings}</b><button data-act="plan.serv" data-d="1" aria-label="Plus">${icon('plus', 16)}</button><span>pers.</span></div>
           </div>
           ${C.ingLines(c)}

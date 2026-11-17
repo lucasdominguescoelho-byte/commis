@@ -17,25 +17,25 @@
      Prix estimés en CHF au prix habituel, pour 4 personnes ; les promotions s'y appliquent ensuite. */
   const i = (name, qty, unit, cat, price) => ({ name, qty, unit, cat, price });
   const CLASSIQUES = [
-    { cle: /\braclette\b/, name: 'Raclette', category: 'Gratin & four', prepTime: 30, lourd: true,
+    { cle: /\braclette\b/, name: 'Raclette', category: 'Gratins & four', prepTime: 30, lourd: true,
       ingredients: [i('Fromage à raclette', 800, 'g', 'lait', 16), i('Pommes de terre', 1200, 'g', 'fl', 3), i('Cornichons', 1, 'bocal', 'epi', 2.5), i('Petits oignons au vinaigre', 1, 'bocal', 'epi', 2.5), i('Viande séchée', 150, 'g', 'vp', 8)],
       steps: ['Cuire les pommes de terre en robe des champs 20 à 25 minutes.', 'Allumer l’appareil à raclette et trancher le fromage.', 'Servir avec les cornichons, les petits oignons et la viande séchée.'] },
     { cle: /\bfondue chinoise\b/, name: 'Fondue chinoise', category: 'Viande', prepTime: 30, lourd: true,
       ingredients: [i('Viande pour fondue chinoise', 600, 'g', 'vp', 24), i('Bouillon de bœuf', 1, 'l', 'epi', 1.5), i('Sauces pour fondue', 1, 'assortiment', 'epi', 5), i('Riz long grain', 300, 'g', 'epi', 1.1)],
       steps: ['Porter le bouillon à frémissement dans le caquelon.', 'Cuire le riz.', 'Chacun cuit sa viande dans le bouillon ; servir avec les sauces.'] },
-    { cle: /\bfondue\b/, name: 'Fondue moitié-moitié', category: 'Gratin & four', prepTime: 25, lourd: true,
+    { cle: /\bfondue\b/, name: 'Fondue moitié-moitié', category: 'Gratins & four', prepTime: 25, lourd: true,
       ingredients: [i('Fondue moitié-moitié', 800, 'g', 'lait', 18), i('Pain mi-blanc', 600, 'g', 'boul', 3.5), i('Vin blanc', 2, 'dl', 'bois', 2.5), i('Ail', 1, 'gousse', 'fl', 0.2), i('Maïzena', 1, 'c. à soupe', 'epi', 0.1)],
       steps: ['Frotter le caquelon avec l’ail, verser le vin et chauffer.', 'Ajouter le fromage et remuer en huit jusqu’à ce qu’il soit fondu et lisse.', 'Lier avec la maïzena délayée, servir avec le pain coupé en dés.'] },
-    { cle: /\bbolo(gnaise)?s?\b/, name: 'Spaghetti bolognaise', category: 'Pâtes & riz', prepTime: 40,
+    { cle: /\bbolo(gnaise)?s?\b/, name: 'Spaghetti bolognaise', category: 'Pâtes', prepTime: 40,
       ingredients: [i('Viande hachée de bœuf', 400, 'g', 'vp', 7.5), i('Spaghetti', 500, 'g', 'epi', 1.6), i('Tomates pelées', 800, 'g', 'epi', 2.2), i('Oignon', 1, 'pièce', 'fl', 0.4), i('Carottes', 2, 'pièce', 'fl', 0.6), i('Parmesan râpé', 60, 'g', 'lait', 2.2)],
       steps: ['Hacher l’oignon, couper les carottes en dés et les faire revenir 5 minutes.', 'Ajouter la viande et la dorer, puis les tomates ; mijoter 25 minutes.', 'Cuire les spaghetti al dente et servir avec la sauce et le parmesan.'] },
-    { cle: /\bcarbonara\b/, name: 'Pâtes à la carbonara', category: 'Pâtes & riz', prepTime: 20,
+    { cle: /\bcarbonara\b/, name: 'Pâtes à la carbonara', category: 'Pâtes', prepTime: 20,
       ingredients: [i('Spaghetti', 500, 'g', 'epi', 1.6), i('Lardons', 200, 'g', 'vp', 3.9), i('Œufs', 4, 'pièce', 'lait', 2.4), i('Parmesan râpé', 80, 'g', 'lait', 2.9)],
       steps: ['Cuire les spaghetti.', 'Dorer les lardons à sec.', 'Hors du feu, mêler pâtes, lardons, œufs battus et parmesan ; poivrer.'] },
-    { cle: /\blasagnes?\b/, name: 'Lasagnes à la bolognaise', category: 'Gratin & four', prepTime: 60, lourd: true,
+    { cle: /\blasagnes?\b/, name: 'Lasagnes à la bolognaise', category: 'Gratins & four', prepTime: 60, lourd: true,
       ingredients: [i('Feuilles de lasagne', 250, 'g', 'epi', 2), i('Viande hachée de bœuf', 500, 'g', 'vp', 9.5), i('Tomates pelées', 800, 'g', 'epi', 2.2), i('Lait', 5, 'dl', 'lait', 0.9), i('Beurre', 40, 'g', 'lait', 0.6), i('Farine', 40, 'g', 'epi', 0.1), i('Gruyère râpé', 120, 'g', 'lait', 3)],
       steps: ['Préparer une sauce bolognaise (viande, tomates) et une béchamel (beurre, farine, lait).', 'Alterner pâtes, bolognaise et béchamel dans un plat ; finir par le fromage.', 'Cuire 35 minutes à 200 °C.'] },
-    { cle: /\bpizzas?\b/, name: 'Pizza maison', category: 'Gratin & four', prepTime: 35,
+    { cle: /\bpizzas?\b/, name: 'Pizza maison', category: 'Gratins & four', prepTime: 35,
       ingredients: [i('Pâte à pizza', 2, 'pièce', 'epi', 4), i('Sauce tomate', 200, 'g', 'epi', 1.2), i('Mozzarella', 2, 'pièce', 'lait', 3), i('Jambon', 150, 'g', 'vp', 3.5), i('Champignons de Paris', 200, 'g', 'fl', 2.2)],
       steps: ['Étaler la pâte et la napper de sauce tomate.', 'Garnir de mozzarella, jambon et champignons.', 'Cuire 12 à 15 minutes à 230 °C.'] },
     { cle: /\b(ham)?burgers?\b/, name: 'Burgers maison', category: 'Viande', prepTime: 30, lourd: true,
@@ -50,7 +50,7 @@
     { cle: /\bpapet\b/, name: 'Papet vaudois', category: 'Viande', prepTime: 50, lourd: true,
       ingredients: [i('Saucisson vaudois', 1, 'pièce', 'vp', 9), i('Poireaux', 1000, 'g', 'fl', 4), i('Pommes de terre', 800, 'g', 'fl', 2), i('Crème entière', 1, 'dl', 'lait', 1)],
       steps: ['Émincer les poireaux et les faire revenir ; ajouter les pommes de terre en dés et un peu d’eau.', 'Poser le saucisson dessus et cuire à couvert 40 minutes.', 'Lier à la crème et servir avec le saucisson tranché.'] },
-    { cle: /\bcroute\b/, name: 'Croûte au fromage', category: 'Gratin & four', prepTime: 25, lourd: true,
+    { cle: /\bcroute\b/, name: 'Croûte au fromage', category: 'Gratins & four', prepTime: 25, lourd: true,
       ingredients: [i('Pain rassis', 8, 'tranche', 'boul', 2), i('Gruyère', 300, 'g', 'lait', 7.5), i('Vin blanc', 1, 'dl', 'bois', 1.2), i('Œufs', 4, 'pièce', 'lait', 2.4)],
       steps: ['Arroser les tranches de pain de vin blanc.', 'Couvrir de fromage et gratiner 10 minutes à 220 °C.', 'Servir avec un œuf au plat sur chaque croûte.'] },
     { cle: /\brosti\b/, name: 'Rösti et œufs au plat', category: 'Végétarien', prepTime: 35,
@@ -77,16 +77,16 @@
     { cle: /\bomelettes?\b/, name: 'Omelette aux herbes et salade', category: 'Végétarien', prepTime: 15, leger: true,
       ingredients: [i('Œufs', 8, 'pièce', 'lait', 4.8), i('Fines herbes', 1, 'bouquet', 'fl', 1.5), i('Salade', 1, 'pièce', 'fl', 1.5)],
       steps: ['Battre les œufs avec les herbes ciselées.', 'Cuire à feu moyen en ramenant les bords.', 'Servir avec la salade.'] },
-    { cle: /\bcrepes?\b/, name: 'Crêpes jambon-fromage', category: 'Gratin & four', prepTime: 35,
+    { cle: /\bcrepes?\b/, name: 'Crêpes jambon-fromage', category: 'Gratins & four', prepTime: 35,
       ingredients: [i('Farine', 250, 'g', 'epi', 0.4), i('Lait', 5, 'dl', 'lait', 0.9), i('Œufs', 3, 'pièce', 'lait', 1.8), i('Jambon', 200, 'g', 'vp', 4.5), i('Gruyère râpé', 150, 'g', 'lait', 3.5)],
       steps: ['Préparer la pâte et la laisser reposer 15 minutes.', 'Cuire les crêpes.', 'Garnir de jambon et de fromage, plier et réchauffer.'] },
-    { cle: /\b(hachis|parmentier)\b/, name: 'Hachis parmentier', category: 'Gratin & four', prepTime: 50, lourd: true,
+    { cle: /\b(hachis|parmentier)\b/, name: 'Hachis parmentier', category: 'Gratins & four', prepTime: 50, lourd: true,
       ingredients: [i('Viande hachée de bœuf', 500, 'g', 'vp', 9.5), i('Pommes de terre', 1000, 'g', 'fl', 2.5), i('Lait', 2, 'dl', 'lait', 0.4), i('Beurre', 40, 'g', 'lait', 0.6), i('Gruyère râpé', 80, 'g', 'lait', 2)],
       steps: ['Préparer une purée avec les pommes de terre, le lait et le beurre.', 'Faire revenir la viande hachée assaisonnée.', 'Monter viande puis purée dans un plat, parsemer de fromage et gratiner 20 minutes.'] },
     { cle: /\bsteak\b/, name: 'Steak frites et salade', category: 'Viande', prepTime: 30,
       ingredients: [i('Steaks de bœuf', 4, 'pièce', 'vp', 18), i('Frites au four', 750, 'g', 'surg', 3.5), i('Salade', 1, 'pièce', 'fl', 1.5)],
       steps: ['Cuire les frites au four.', 'Saisir les steaks selon la cuisson souhaitée.', 'Servir avec la salade.'] },
-    { cle: /\bgratin\b/, name: 'Gratin dauphinois', category: 'Gratin & four', prepTime: 70, lourd: true,
+    { cle: /\bgratin\b/, name: 'Gratin dauphinois', category: 'Gratins & four', prepTime: 70, lourd: true,
       ingredients: [i('Pommes de terre', 1200, 'g', 'fl', 3), i('Crème entière', 3, 'dl', 'lait', 2.8), i('Lait', 3, 'dl', 'lait', 0.6), i('Ail', 1, 'gousse', 'fl', 0.2), i('Gruyère râpé', 100, 'g', 'lait', 2.5)],
       steps: ['Trancher finement les pommes de terre.', 'Les disposer dans un plat frotté d’ail, couvrir de lait et de crème.', 'Parsemer de fromage et cuire 1 heure à 180 °C.'] },
   ];
@@ -262,7 +262,7 @@
       const deja = C.recipe(id);
       if (deja) return { r: deja, origine: 'vos recettes' };
       return {
-        r: { id, name: cl.name, category: cl.category, prepTime: cl.prepTime, servings: 4, description: 'Recette de base proposée par Commis à partir de votre envie. Ajustez-la à votre goût.', ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice(), favorite: false, validated: false, toTest: false, demo: false, source: 'envie', photo: '', createdAt: Date.now() },
+        r: { id, name: cl.name, ...C.classer({ name: cl.name, ingredients: cl.ingredients }, cl.category), catV: 3, prepTime: cl.prepTime, servings: 4, description: 'Recette de base proposée par Commis à partir de votre envie. Ajustez-la à votre goût.', ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice(), favorite: false, validated: false, toTest: false, demo: false, source: 'envie', photo: '', createdAt: Date.now() },
         nouvelle: true,
         origine: 'nouvelle recette de base',
       };
@@ -272,7 +272,7 @@
     const deja = C.recipe(id);
     if (deja) return { r: deja, origine: 'vos recettes' };
     return {
-      r: { id, name: nom, category: 'Autre', prepTime: 30, servings: 4, description: 'Envie notée depuis le planning : ajoutez les ingrédients pour le coût et la liste de courses.', ingredients: [], steps: [], favorite: false, validated: false, toTest: false, demo: false, source: 'envie', photo: '', createdAt: Date.now() },
+      r: { id, name: nom, ...C.classer({ name: nom, ingredients: [] }, 'Autre'), catV: 3, prepTime: 30, servings: 4, description: 'Envie notée depuis le planning : ajoutez les ingrédients pour le coût et la liste de courses.', ingredients: [], steps: [], favorite: false, validated: false, toTest: false, demo: false, source: 'envie', photo: '', createdAt: Date.now() },
       nouvelle: true,
       origine: 'à compléter (ingrédients à ajouter)',
     };
@@ -285,7 +285,7 @@
   const kcal = (r) => (C.nutri && C.nutri(r) ? C.nutri(r).kcal : null);
   const VERIFS = {
     leger: (r) => (kcal(r) != null ? kcal(r) <= 550 : /salade|soupe|veloute|legume|bowl|poke|vapeur|omelette/i.test(C.norm(r.name)) || r.ingredients.filter((x) => LOURD.test(C.norm(x.name))).length <= 1),
-    rapide: (r) => (r.prepTime || 99) <= 25,
+    rapide: (r) => (C.dureeTotale(r) || 99) <= 30,
     vege: (r) => !E.hasRealMeat(r) && !aPoisson(r),
     poisson: (r) => aPoisson(r),
     eco: () => true,
@@ -400,7 +400,11 @@
     [/pates|spaghetti|penne|tagliatelle|macaroni|gnocchi|orzo|cornettes|coquillettes|fusilli|ravioli|linguine/, P.pates],
     [/poulet|volaille|dinde/, P.poulet], [/salade|bowl/, P.salade],
   ];
-  const PAR_CATEGORIE = { 'Pâtes & riz': P.pates, Viande: P.ragout, Poisson: P.poissonGrille, 'Végétarien': P.vege, Soupe: P.soupe, Salade: P.salade, 'Gratin & four': P.four, 'Burgers & wraps': P.burger, 'Petit-déjeuner': P.oeufs };
+  const PAR_CATEGORIE = {
+    'Pâtes': P.pates, Riz: P.risotto, Viande: P.ragout, Poulet: P.poulet, Poisson: P.poissonGrille, 'Végétarien': P.vege, Soupes: P.soupe, Salades: P.salade,
+    'Gratins & four': P.four, 'Burgers & sandwichs': P.burger, 'Cuisine asiatique': P.wok, 'Petit-déjeuner': P.oeufs,
+    'Pâtes & riz': P.pates, Soupe: P.soupe, Salade: P.salade, 'Gratin & four': P.four, 'Burgers & wraps': P.burger, // anciens noms
+  };
   function photoPlat(nom, categorie) {
     const n = C.norm(nom);
     const hit = PLATS.find(([re]) => re.test(n));
@@ -452,7 +456,7 @@
   // Restes : ce qui se réchauffe bien le lendemain… et ce qui ne se ressert pas
   const BON_RESTE = /gratin|soupe|veloute|potage|curry|chili|lasagne|hachis|parmentier|mijot|ragout|risotto|dahl|dhal|tajine|bolognaise|papet|quiche|tarte|goulash|blanquette|boeuf|couscous|ratatouille/;
   const MAUVAIS_RESTE = /raclette|fondue|salade|burger|steak|frites|crepe|omelette|sushi|tartare|carpaccio|pizza|croute au fromage|tacos/;
-  const seRechauffe = (r) => BON_RESTE.test(C.norm(`${r.name} ${r.category}`)) || ['Gratin & four', 'Soupe'].includes(r.category);
+  const seRechauffe = (r) => BON_RESTE.test(C.norm(`${r.name} ${r.category}`)) || ['Gratins & four', 'Soupes'].includes(r.category);
   const seRessertMal = (r) => MAUVAIS_RESTE.test(C.norm(r.name));
   // Frigo : aliments du frigo utilisés par une recette (ceux à consommer bientôt comptent double)
   const frigoDe = (r) => (C.S.fridge && C.S.fridge.length ? [...new Set(r.ingredients.map((i) => E.fridgeFor(i.name)).filter(Boolean))] : []);
@@ -587,7 +591,7 @@
       .filter((r) => r.ingredients.length && E.pourRepas(r) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
       .map((r) => {
         const c = E.recipeCost(r, people, promos);
-        let sc = 2 * c.savings + c.promoIngs.length + (r.favorite ? 1 : 0) + (r.validated ? 1 : 0) + (slot === 'midi' && r.prepTime <= 30 ? 0.6 : 0) + Math.random() * 0.8;
+        let sc = 2 * c.savings + c.promoIngs.length + (r.favorite ? 1 : 0) + (r.validated ? 1 : 0) + (slot === 'midi' && C.dureeTotale(r) <= 30 ? 0.6 : 0) + Math.random() * 0.8;
         if (gen.length) sc += convient(r, gen) ? 6 : -8;
         if (gen.includes('eco')) sc -= c.cost / 3;
         if (autreR && autreR.category === r.category) sc -= 1;
@@ -676,7 +680,7 @@
       else {
         const c = E.recipeCost(r, s.servings, E.activePromos(st.wid));
         html = `<div class="pw-row ${ouvert ? 'is-open' : ''}" data-rid="${esc(r.id)}"><span class="thumb">${C.recipeVisual(r, 'ph--sm')}</span>
-          <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${r.prepTime} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}${p.frigo && p.statut[key] !== 'reste' && frigoDe(r).length ? ` · frigo : ${esc(frigoDe(r).slice(0, 2).map((f) => f.name.split(/\s+/)[0].toLowerCase()).join(', '))}` : ''}</span></span>
+          <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${C.dureeTotale(r)} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}${p.frigo && p.statut[key] !== 'reste' && frigoDe(r).length ? ` · frigo : ${esc(frigoDe(r).slice(0, 2).map((f) => f.name.split(/\s+/)[0].toLowerCase()).join(', '))}` : ''}</span></span>
           <button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">${ouvert ? 'Fermer' : 'Changer'}</button></div>`;
       }
       if (ouvert) {
@@ -690,7 +694,7 @@
             const gen = st.prop.general;
             const hors = gen.length && !convient(a, gen);
             const marque = [hors ? gen.filter((g) => !VERIFS[g](a)).map((g) => CONTRAIRE[g]).join(', ') : gen.length ? gen.map((g) => NOM_SOUHAIT[g]).join(', ') : c.promoIngs.length ? `${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
-            return `<button class="pw-alt" type="button" data-act="pw.prendre" data-key="${key}" data-id="${a.id}"><span class="pw-alt-v">${C.recipeVisual(a, 'ph--sm')}</span><span class="pw-alt-t">${esc(a.name)}</span><span class="pw-alt-s">${C.chf(c.cost)} · ${a.prepTime} min${marque ? ` · ${esc(marque)}` : ''}</span></button>`;
+            return `<button class="pw-alt" type="button" data-act="pw.prendre" data-key="${key}" data-id="${a.id}"><span class="pw-alt-v">${C.recipeVisual(a, 'ph--sm')}</span><span class="pw-alt-t">${esc(a.name)}</span><span class="pw-alt-s">${C.chf(c.cost)} · ${C.dureeTotale(a)} min${marque ? ` · ${esc(marque)}` : ''}</span></button>`;
           })
           .join('') || '<p class="small muted">Pas d’autre recette compatible : cherchez dans toutes vos recettes.</p>'}</div>
           <span class="pw-alt-a"><button class="btn btn--ghost btn--sm" type="button" data-act="pw.autre" data-key="${key}">${icon('search', 16)} Toutes mes recettes</button>${r ? `<button class="btn btn--ghost btn--sm" type="button" data-act="pw.vider" data-key="${key}">Laisser vide</button>` : ''}</span></div>`;

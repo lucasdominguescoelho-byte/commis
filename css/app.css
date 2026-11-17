@@ -1122,3 +1122,61 @@ html.nuit .note--test { border-color: #5a3420; }
 .vid-ing { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); max-height: 220px; overflow: auto; }
 .vid-ing li { padding: 6px 10px; background: var(--wash); border-radius: 8px; }
 @media (max-width: 520px) { .vid-card { grid-template-columns: 1fr; } .vid-img { width: 100%; aspect-ratio: 16 / 9; } }
+
+/* Fiche recette (inspirée de l'ancien site « Mes Recettes ») */
+.rf { display: grid; gap: 18px; }
+.rf-hero { aspect-ratio: 16 / 7; max-height: 460px; border-radius: var(--r); overflow: hidden; background: var(--wash); }
+.rf-hero .ph { width: 100%; height: 100%; border-radius: 0; }
+.rf-hero .ph span { font-size: 96px; }
+.rf-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 14px 24px; margin-top: 4px; }
+.rf-ti { min-width: 0; flex: 1 1 360px; }
+.rf-ti .title { font-size: clamp(32px, 3.8vw, 48px); }
+.rf-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+.rf-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: hsl(var(--h, 300) 62% 93%); color: hsl(var(--h, 300) 48% 32%); }
+.rf-tag--ok { background: var(--wash); color: var(--ink-2); }
+.rf-src { font-size: 12.5px; color: var(--ink-3); margin-left: 4px; }
+.rf-lede { margin-top: -4px; }
+.rf-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; padding: 14px 20px; font-size: 14.5px; color: var(--ink-2); }
+.rf-meta > span { display: inline-flex; align-items: center; gap: 7px; }
+.rf-meta b { color: var(--ink); }
+.rf-port .step { margin-left: 4px; }
+.rf-cout { margin-left: auto; }
+.rf-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; }
+.rf-h { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.rf-h .ic { color: var(--citron); }
+.rf-promo { display: flex; gap: 6px; align-items: flex-start; margin-top: 12px; }
+.ing--coche { grid-template-columns: 20px 76px minmax(0, 1fr) auto; cursor: pointer; }
+.ing-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--ink-3); display: block; transition: background-color 150ms ease, border-color 150ms ease; }
+.ing--coche.is-done .ing-box { background: var(--citron); border-color: var(--citron); box-shadow: inset 0 0 0 3px var(--card, #fff); }
+.ing--coche.is-done .ing-n, .ing--coche.is-done .ing-q { text-decoration: line-through; color: var(--ink-3); }
+.stars { display: inline-flex; gap: 1px; vertical-align: -3px; }
+.star { color: var(--line); display: inline-flex; }
+.star.is-on, .star.is-half { color: #e8a317; }
+.star.is-on .ic, .star-b.is-on .ic { fill: currentColor; }
+.star.is-half .ic { fill: currentColor; opacity: 0.55; }
+.stars--sm .ic { width: 14px; height: 14px; }
+.rf-avis-l { display: grid; gap: 10px; margin-bottom: 16px; }
+.rf-av { padding: 12px 14px; border-radius: 12px; background: var(--wash); }
+.rf-av-h { display: flex; align-items: center; gap: 10px; }
+.rf-av-x { margin-left: auto; width: 30px; height: 30px; opacity: 0.6; }
+.rf-av p { margin-top: 6px; line-height: 1.5; }
+.rf-avis-f { display: grid; gap: 10px; }
+.rf-avis-f .btn { justify-self: start; }
+.rf-avis-n { display: flex; gap: 2px; }
+.star-b { color: var(--ink-3); padding: 2px; border-radius: 6px; cursor: pointer; transition: transform 140ms var(--ease-out), color 140ms ease; }
+.star-b:active { transform: scale(0.9); }
+.star-b.is-on { color: #e8a317; }
+.rf-credits { display: grid; gap: 10px; }
+.form-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ed-tags .chip { font-size: 13px; }
+html.nuit .rf-tag { background: hsl(var(--h, 300) 28% 22%); color: hsl(var(--h, 300) 65% 80%); }
+@media (max-width: 900px) {
+  .rf-grid { grid-template-columns: minmax(0, 1fr); }
+  .rf-hero { aspect-ratio: 4 / 3; }
+  .rf-cout { margin-left: 0; }
+}
+@media (max-width: 560px) {
+  .form-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rf-meta { gap: 10px 18px; padding: 14px 16px; }
+}
+

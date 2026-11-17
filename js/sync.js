@@ -328,6 +328,7 @@
         }
         if (res && res.recus) {
           await C.reloadState();
+          if (C.migrerCategories) C.migrerCategories(); // recettes reçues d'un appareil pas encore à jour
           C.changed();
           if (!opts.quiet) C.toast(`Synchronisé : ${res.recus} changement${res.recus > 1 ? 's' : ''} reçu${res.recus > 1 ? 's' : ''} d’un autre appareil`);
         } else if (C.route && C.route().view === 'reglages') C.render();

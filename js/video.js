@@ -685,6 +685,7 @@
         return C.toast('Cette vidéo est déjà dans vos recettes.');
       }
       const prop = composer(f, st.desc);
+      Object.assign(prop.r, C.classer(prop.r), { catV: 3 });
       st.etat = 'Recherche de la plus belle image…';
       st.refresh();
       st.images = await imagesPour(prop.r);

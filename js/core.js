@@ -28,18 +28,105 @@
   ];
   C.catById = (id) => C.CATS.find((c) => c.id === id) || C.CATS[C.CATS.length - 1];
 
+  // Catégories de recettes (novembre 2026, d'après l'ancien site de recettes de Lucas) :
+  // une catégorie principale par recette, plus des catégories secondaires (r.tags).
   C.RCATS = [
-    { name: 'Pâtes & riz', hue: 75 },
-    { name: 'Viande', hue: 25 },
-    { name: 'Poisson', hue: 215 },
-    { name: 'Végétarien', hue: 140 },
-    { name: 'Soupe', hue: 55 },
-    { name: 'Salade', hue: 120 },
-    { name: 'Gratin & four', hue: 40 },
-    { name: 'Burgers & wraps', hue: 10 },
-    { name: 'Petit-déjeuner', hue: 48 },
+    { name: 'Pâtes', hue: 40 },
+    { name: 'Riz', hue: 62 },
+    { name: 'Viande', hue: 14 },
+    { name: 'Poulet', hue: 30 },
+    { name: 'Poisson', hue: 205 },
+    { name: 'Végétarien', hue: 130 },
+    { name: 'Soupes', hue: 52 },
+    { name: 'Salades', hue: 105 },
+    { name: 'Gratins & four', hue: 24 },
+    { name: 'Burgers & sandwichs', hue: 8 },
+    { name: 'Cuisine suisse', hue: 355 },
+    { name: 'Cuisine asiatique', hue: 335 },
+    { name: 'Petit-déjeuner', hue: 46 },
+    { name: 'Apéritifs', hue: 275 },
+    { name: 'Desserts', hue: 315 },
     { name: 'Autre', hue: 300 },
   ];
+  // Toutes les catégories d'une recette (principale d'abord)
+  C.categoriesDe = (r) => [r.category, ...(r.tags || [])].filter(Boolean);
+  C.dureeTotale = (r) => (Number(r.prepTime) || 0) + (Number(r.cookTime) || 0);
+
+  // Classe une recette d'après son nom et ses ingrédients ; « ancienne » = catégorie d'avant, comme indice
+  const K = {
+    dessert: /\b(gateau|brownie|cookie|tiramisu|mousse au chocolat|crumble|panna cotta|cheesecake|muffin|creme brulee|fondant|clafoutis|tarte (aux|au) (pommes|fraises|citron|chocolat|poires|abricots))\b/,
+    apero: /\b(aperitif|apero|tapas|bruschetta|toast apero|houmous|guacamole|dips?)\b/,
+    suisse: /\b(raclette|fondue|papet|rosti|croute au fromage|alplermagronen|malakoff|zurichois|geschnetzeltes|cholera|capuns|saucisson vaudois|filets? de perche)\b/,
+    soupe: /\b(soupe|veloute|potage|minestrone|gaspacho|bouillon)\b/,
+    salade: /\b(salade|taboule)\b/,
+    pates: /\b(pates|pasta|spaghettis?|pennes?|tagliatelles?|lasagnes?|gnocchis?|orzo|macaronis?|cornettes|coquillettes|fusilli|ravioli|linguine|farfalle|rigatoni|pappardelle|bucatini|conchiglie|paccheri|tortellini|cannelloni|casarecce|carbonara|bolognaise|ragu)\b/,
+    riz: /\b(riz|risotto|paella|biryani|rice)\b/,
+    asie: /\b(wok|soja|teriyaki|gochujang|kimchi|ramen|pad thai|sushis?|poke|thai|thailandais|bibimbap|bao|nems|bobun|dahl?|dhal|tikka|masala|korma|naan|udon|soba|yakitori|katsu|sesame|coco|nouilles|asiatique|japonais|chinois|indien|coreen)\b/,
+    burger: /\b(burgers?|wraps?|tacos?|burritos?|kebab|pita|sandwichs?|quesadillas?|hot dog|croque|bagel|fajitas?)\b/,
+    four: /\b(gratin|quiche|tarte|pizza|hachis|parmentier|au four|tartiflette|feuillete|cake sale|lasagnes?)\b/,
+    poisson: /\b(poissons?|saumon|thon|cabillaud|eglefin|haddock|merlan|fletan|sole|bar|crevettes?|gambas|moules|truite|colin|merlu|dorade|calamars?|poulpe|fruits de mer|lieu|maquereau|sardines?|crabe|saint jacques)\b/,
+    poulet: /\b(poulet|volaille|dinde|coquelet|pintade|chicken)\b/,
+    viande: /\b(boeuf|porc|veau|agneau|viande|hachee?|steak|saucisses?|lardons|jambon|chorizo|bacon|merguez|boulettes|cordon bleu|escalope|entrecote|filet mignon)\b/,
+  };
+  C.classer = (r, ancienne = r.category) => {
+    const nom = C.norm(r.name);
+    const tout = C.norm(`${r.name} ${(r.ingredients || []).map((i) => i.name).join(' ')}`);
+    let cat = null;
+    if (ancienne === 'Desserts' || K.dessert.test(nom)) cat = 'Desserts';
+    else if (ancienne === 'Petit-déjeuner') cat = 'Petit-déjeuner';
+    else if (ancienne === 'Apéritifs' || K.apero.test(nom)) cat = 'Apéritifs';
+    else if (K.suisse.test(nom)) cat = 'Cuisine suisse';
+    else if (K.soupe.test(nom)) cat = 'Soupes';
+    else if (K.salade.test(nom)) cat = 'Salades';
+    else if (K.pates.test(nom)) cat = 'Pâtes';
+    else if (K.riz.test(nom)) cat = 'Riz';
+    else if (K.asie.test(nom)) cat = 'Cuisine asiatique';
+    else if (/\bpizzas?\b/.test(nom)) cat = 'Gratins & four';
+    else if (K.burger.test(nom)) cat = 'Burgers & sandwichs';
+    else if (K.four.test(nom)) cat = 'Gratins & four';
+    else if (K.poisson.test(nom)) cat = 'Poisson';
+    else if (K.poulet.test(nom)) cat = 'Poulet';
+    else if (K.viande.test(nom)) cat = 'Viande';
+    else
+      cat =
+        {
+          'Pâtes & riz': /\briz\b/.test(tout) ? 'Riz' : 'Pâtes',
+          Viande: K.poulet.test(tout) ? 'Poulet' : 'Viande',
+          Poisson: 'Poisson',
+          'Végétarien': 'Végétarien',
+          Soupe: 'Soupes',
+          Salade: 'Salades',
+          'Gratin & four': 'Gratins & four',
+          'Burgers & wraps': 'Burgers & sandwichs',
+        }[ancienne] || (C.RCATS.some((c) => c.name === ancienne) ? ancienne : null);
+    if (!cat) cat = K.poisson.test(tout) ? 'Poisson' : K.poulet.test(tout) ? 'Poulet' : K.viande.test(tout) ? 'Viande' : (r.ingredients || []).length ? 'Végétarien' : 'Autre';
+    // catégories secondaires : ce que contient le plat (comme « Riz · Viande » sur l'ancien site)
+    const tags = [];
+    const ajoute = (c, ok) => ok && c !== cat && !tags.includes(c) && tags.push(c);
+    ajoute('Pâtes', K.pates.test(nom));
+    ajoute('Riz', K.riz.test(tout) && !K.pates.test(nom));
+    ajoute('Poisson', K.poisson.test(tout));
+    ajoute('Poulet', K.poulet.test(tout));
+    ajoute('Viande', !K.poulet.test(tout) && K.viande.test(tout));
+    ajoute('Végétarien', !K.poisson.test(tout) && !K.poulet.test(tout) && !K.viande.test(tout) && !['Desserts', 'Apéritifs', 'Petit-déjeuner'].includes(cat) && (r.ingredients || []).length > 0);
+    ajoute('Cuisine asiatique', K.asie.test(nom));
+    return { category: cat, tags: tags.slice(0, 2) };
+  };
+  // Reclasse les recettes qui ont encore les anciennes catégories (une fois ; daté, donc synchronisé)
+  C.migrerCategories = () => {
+    let n = 0;
+    S.recipes.forEach((r) => {
+      if (r.catV === 3) return; // déjà classée (ou choisie à la main dans l'éditeur)
+      const { category, tags } = C.classer(r);
+      r.category = category;
+      r.tags = tags;
+      r.catV = 3;
+      C.db.put('recipes', r);
+      n++;
+    });
+    return n;
+  };
+
   // Ustensiles de cuisine : les recettes générées n'utilisent que ceux cochés dans Réglages.
   C.TOOLS = [
     { id: 'plaques', name: 'Plaques de cuisson' },

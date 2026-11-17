@@ -68,7 +68,7 @@
       recipes: C.S.recipes.length,
       toTest: C.S.recipes.filter((r) => r.toTest && !r.validated).length,
       book: bookR
-        ? { next: !!(next && next.r === bookR), name: bookR.name, description: bookR.description || '', servings: bookR.servings, time: bookR.prepTime, ingredients: (bookR.ingredients || []).filter((i) => i && i.name).map(ingLine), steps: (bookR.steps || []).filter(Boolean) }
+        ? { next: !!(next && next.r === bookR), name: bookR.name, description: bookR.description || '', servings: bookR.servings, time: C.dureeTotale(bookR) || bookR.prepTime, ingredients: (bookR.ingredients || []).filter((i) => i && i.name).map(ingLine), steps: (bookR.steps || []).filter(Boolean) }
         : null,
       bookOthers: C.S.recipes.filter((r) => r !== bookR && r.name).slice(0, 2).map((r) => r.name),
     };

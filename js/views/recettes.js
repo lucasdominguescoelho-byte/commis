@@ -12,11 +12,11 @@
   C.ui.serv = {};
 
   // Lignes d'ingrédients (quantité, nom, promotion éventuelle, coût) — partagé avec le planning.
-  C.ingLines = (c) =>
+  C.ingLines = (c, cochable) =>
     c.lines
       .map((l) => {
         const pct = l.match ? E.pct(l.match.promo) : 0;
-        return `<div class="ing"><span class="ing-q">${C.fmtQty(l.qty, l.ing.unit) || '—'}</span>
+        return `<div class="ing${cochable ? ' ing--coche' : ''}"${cochable ? ' data-act="ing.toggle" role="checkbox" aria-checked="false" tabindex="0"' : ''}>${cochable ? '<span class="ing-box" aria-hidden="true"></span>' : ''}<span class="ing-q">${C.fmtQty(l.qty, l.ing.unit) || '—'}</span>
           <span class="ing-n">${esc(l.ing.name)}${E.fridgeFor(l.ing.name) ? '<span class="badge badge--frigo">au frigo</span>' : ''}${l.match ? `<span class="badge badge--promo" title="${esc(l.match.promo.name)}">${C.storeById(l.match.promo.store).name}${pct ? ` −${pct}%` : ''}</span>` : ''}</span>
           <span class="ing-c">${l.match && l.reg - l.cost >= 0.05 ? `<s>${C.money(l.reg)}</s>` : ''}${C.money(l.cost)}</span></div>`;
       })
@@ -33,8 +33,8 @@
       .filter(inTab)
       .map((r) => ({ r, c: E.recipeCost(r, r.servings, promos), bad: E.conflicts(r) }))
       .filter((x) => {
-        if (f.cat && x.r.category !== f.cat) return false;
-        if (f.time && x.r.prepTime > f.time) return false;
+        if (f.cat && !C.categoriesDe(x.r).includes(f.cat)) return false;
+        if (f.time && C.dureeTotale(x.r) > f.time) return false;
         if (f.fav && !x.r.favorite) return false;
         if (f.promo && !x.c.promoIngs.length) return false;
         if (q && !C.norm([x.r.name, x.r.description, x.r.category, ...x.r.ingredients.map((i) => i.name)].join(' ')).includes(q)) return false;
@@ -60,7 +60,7 @@
             <div class="rc-tags">${testing(r) ? `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>` : r.validated && C.ui.rtab === 'toutes' ? `<span class="badge badge--soft">${icon('check', 13)} validée</span>` : ''}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
           </div>
           <div class="rc-b"><span class="eyebrow">${esc(r.category)}</span><h3 class="rc-n">${esc(r.name)}</h3>
-            <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${r.prepTime} min</span>${(C.nutri(r) || {}).kcal ? `<span>${C.nutri(r).kcal} kcal</span>` : ''}<span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
+            <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${C.dureeTotale(r)} min</span>${(C.nutri(r) || {}).kcal ? `<span>${C.nutri(r).kcal} kcal</span>` : ''}<span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
         </article>`;
       })
       .join('')}</div>`;
@@ -80,7 +80,7 @@
     const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque' }[C.ui.rtab];
     const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
         <div class="head-a"><button class="btn btn--ghost" data-act="rec.video" title="Créer une recette depuis une vidéo YouTube ou TikTok">${icon('play', 18)} Depuis une vidéo</button><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
-    const cats = C.RCATS.map((c) => c.name).filter((n) => C.S.recipes.some((r) => inTab(r) && r.category === n));
+    const cats = C.RCATS.map((c) => c.name).filter((n) => C.S.recipes.some((r) => inTab(r) && C.categoriesDe(r).includes(n)));
     const chip = (label, on, attrs) => `<button class="chip ${on ? 'is-on' : ''}" ${attrs} aria-pressed="${!!on}">${label}</button>`;
     if (!C.S.recipes.some(inTab)) {
       root.innerHTML = `${head}${tabs}<div id="rec-grid">${cards()}</div>`;
@@ -116,52 +116,96 @@
     const nu = C.nutri(r);
     const testBox =
       r.validated ? '' : !testing(r) ? `<div class="note note--test note--soft">${icon('info', 18)}<span><b>Pas encore testée.</b> ${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}Envie de la cuisiner bientôt ? Mettez-la dans « À tester ».</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.validate" data-id="${r.id}">Déjà testée, je valide</button><button class="btn btn--citron btn--sm" data-act="rec.totest" data-id="${r.id}">${icon('plus', 16)} Ajouter à « À tester »</button></span></div>` : `<div class="note note--test">${icon('info', 18)}<span><b>Recette à tester.</b> ${fromLib ? 'Tirée du Livre de cuisine de Wikilivres. ' : ''}${fromBook ? 'Importée de votre livre de recettes : prix estimés, cuissons à vérifier. ' : ''}${fromVid ? 'Tirée d’une vidéo : vérifiez les quantités en la regardant. ' : ''}${fromIa ? `Composée par Commis avec les promotions${r.ingredients.some((i) => i.frigo) ? ' et votre frigo' : ''}. ` : ''}Une fois cuisinée, validez-la pour la ranger dans « Mes recettes », ou retirez-la si elle ne vous tente plus.</span><span class="note-a head-a"><button class="btn btn--ghost btn--sm" data-act="rec.untest" data-id="${r.id}">Retirer d’« À tester »</button><button class="btn btn--citron btn--sm" data-act="rec.validate" data-id="${r.id}">${icon('check', 16)} Testée, je valide</button></span></div>`;
-    const lede = nu ? '' : r.description;
+    const lede = r.description;
     const back = r.validated ? 'mes' : testing(r) ? 'tester' : 'toutes';
+    const avis = (r.avis || []).slice().sort((x, y) => String(y.date).localeCompare(String(x.date)));
+    const notes = avis.filter((x) => x.note > 0);
+    const moyenne = notes.length ? notes.reduce((n, x) => n + x.note, 0) / notes.length : 0;
+    const etoiles = (n, cls = '') => `<span class="stars ${cls}" aria-label="${n.toFixed(1).replace('.', ',')} sur 5">${[1, 2, 3, 4, 5].map((k) => `<span class="star ${n >= k - 0.25 ? 'is-on' : n >= k - 0.75 ? 'is-half' : ''}">${icon('star', 16)}</span>`).join('')}</span>`;
+    const origine = r.demo ? 'recette d’exemple' : fromIa ? 'idée générée' : fromLib ? 'Livre de cuisine Wikilivres' : fromBook ? 'votre livre de recettes' : fromVid ? 'importée d’une vidéo' : r.source === 'ancien-site' ? 'de votre ancien site' : '';
+    const hue = (n) => (C.RCATS.find((x) => x.name === n) || C.RCATS[C.RCATS.length - 1]).hue;
+    const date = (d) => {
+      try {
+        return C.fmtDate(String(d).slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch (e) {
+        return String(d);
+      }
+    };
     root.innerHTML = `
       <a class="back" href="#/recettes" data-act="rec.back" data-v="${back}">${icon('left', 16)} ${{ mes: 'Mes recettes', tester: 'À tester', toutes: 'Toutes les recettes' }[back]}</a>
-      <div class="rd">
-        <div>
-          <div class="rd-v">${C.recipeVisual(r)}</div>
-          <section class="sec"><h2 class="h2" style="margin-bottom:18px">Préparation</h2>
-            ${r.steps.length ? `<ol class="steps">${r.steps.map((s) => `<li data-act="step.toggle" tabindex="0" role="button" title="Toucher pour marquer l’étape comme faite"><span>${esc(s)}</span></li>`).join('')}</ol>
+      <article class="rf">
+        <div class="rf-hero">${C.recipeVisual(r)}</div>
+        <header class="rf-head">
+          <div class="rf-ti">
+            <h1 class="title">${esc(r.name)}</h1>
+            <div class="rf-tags">${C.categoriesDe(r).map((n) => `<span class="rf-tag" style="--h:${hue(n)}">${esc(n)}</span>`).join('')}${r.validated ? `<span class="rf-tag rf-tag--ok">${icon('check', 13)} validée</span>` : ''}${origine ? `<span class="rf-src">${esc(origine)}</span>` : ''}</div>
+          </div>
+          <div class="head-a rf-act">
+            ${r.steps.length ? `<button class="btn" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner</button>` : ''}
+            <button class="btn btn--citron" data-act="rec.plan" data-id="${r.id}">${icon('calendar', 18)} Planifier</button>
+            <button class="ibtn ibtn--line ${r.favorite ? 'is-on' : ''}" data-act="rec.fav" data-id="${r.id}" aria-label="Favori" aria-pressed="${!!r.favorite}">${icon('heart')}</button>
+            <button class="ibtn ibtn--line" data-act="rec.edit" data-id="${r.id}" aria-label="Modifier">${icon('edit')}</button>
+            <button class="ibtn ibtn--line" data-act="rec.del" data-id="${r.id}" aria-label="Supprimer">${icon('trash')}</button>
+          </div>
+        </header>
+        ${lede ? `<p class="lede rf-lede">${esc(lede)}</p>` : ''}
+        ${C.nutriChips(nu, true)}
+        ${bad.length ? `<p style="margin-top:12px"><span class="badge badge--warn">Ne respecte pas vos préférences : ${esc(bad.map((b) => `${b.label} (${b.ing.toLowerCase()})`).join(', '))}</span></p>` : ''}
+        <div class="rf-meta card">
+          <span>${icon('clock', 17)} Préparation : <b>${r.prepTime || 0} min</b></span>
+          ${r.cookTime ? `<span>${icon('flame', 17)} Cuisson : <b>${r.cookTime} min</b></span>` : ''}
+          <span class="rf-port">${icon('users', 17)} Portions :
+            <span class="step"><button data-act="rec.serv" data-id="${r.id}" data-d="-1" aria-label="Moins">${icon('minus', 15)}</button><b>${people}</b><button data-act="rec.serv" data-id="${r.id}" data-d="1" aria-label="Plus">${icon('plus', 15)}</button></span></span>
+          ${notes.length ? `<span>${etoiles(moyenne)} <b>${moyenne.toFixed(1).replace('.', ',')}/5</b> <span class="muted">(${notes.length})</span></span>` : ''}
+          <span class="rf-cout">Coût : <b>${C.chf(c.cost)}</b> <span class="muted">· ${C.chf(c.cost / people)} / pers.</span></span>
+        </div>
+        ${testBox}
+        <div class="rf-grid">
+          <section class="card rf-card">
+            <h2 class="h3 rf-h">${icon('cart', 19)} Ingrédients</h2>
+            ${C.ingLines(c, true)}
+            <div class="total"><span>Coût estimé<br><small class="muted">${C.chf(c.cost / people)} par personne${c.savings >= 0.05 ? ` · ${C.chf(c.savings)} d’économie` : ''}</small></span><b>${C.chf(c.cost)}</b></div>
+            <p class="small muted rf-promo">${icon('tag', 15)} ${c.stores.length ? `En promotion cette semaine chez ${c.stores.map((x) => C.storeById(x).name).join(', ')}.` : 'Aucun ingrédient en promotion cette semaine dans vos magasins.'}</p>
+          </section>
+          <section class="card rf-card">
+            <h2 class="h3 rf-h">${icon('list', 19)} Préparation</h2>
+            ${r.steps.length ? `<ol class="steps">${r.steps.map((x) => `<li data-act="step.toggle" tabindex="0" role="button" title="Toucher pour marquer l’étape comme faite"><span>${esc(x)}</span></li>`).join('')}</ol>
               <button class="btn btn--ghost" style="margin-top:22px" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner étape par étape</button>` : '<p class="muted">Aucune étape renseignée.</p>'}
-            ${nu && nu.rest ? `<p class="small muted" style="margin-top:20px">${esc(nu.rest)}</p>` : ''}
-            ${r.videoUrl ? `<p class="head-a" style="margin-top:20px;justify-content:flex-start"><a class="btn btn--ghost" href="${esc(r.videoUrl)}" target="_blank" rel="noopener">${icon('play', 18)} Voir la vidéo${r.videoSite === 'tiktok' ? ' sur TikTok' : ' sur YouTube'}</a><button class="btn btn--ghost" data-act="vid.image" data-id="${r.id}">${icon('upload', 18)} Changer l’image</button></p><p class="small muted" style="margin-top:10px">Recette tirée de la vidéo${r.videoAuthor ? ` de ${esc(r.videoAuthor)}` : ''} ; ingrédients et prix à vérifier.</p>` : ''}
-            ${r.photoSource === 'unsplash' ? `<p class="small muted" style="margin-top:14px">Photo : <a class="link" href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> (licence libre).</p>` : ''}
-            ${r.sourceUrl ? `<p class="small muted" style="margin-top:20px">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
           </section>
         </div>
-        <div class="rd-side">
-          <div>
-            <p class="eyebrow">${esc(r.category)}${r.demo ? ' · recette d’exemple' : fromIa ? ' · idée générée' : fromLib ? ' · Livre de cuisine Wikilivres' : fromBook ? ' · votre livre de recettes' : fromVid ? ' · importée d’une vidéo' : ''}${r.validated ? ' · validée' : ''}</p>
-            <h1 class="title" style="font-size:clamp(32px,3.6vw,46px)">${esc(r.name)}</h1>
-            ${lede ? `<p class="lede">${esc(lede)}</p>` : ''}
-            ${C.nutriChips(nu, true)}
-            <div class="meta" style="margin-top:14px"><span>${icon('clock', 16)}${r.prepTime} min</span><span>${icon('users', 16)}${r.servings} portions de base</span></div>
-            ${bad.length ? `<p style="margin-top:12px"><span class="badge badge--warn">Ne respecte pas vos préférences : ${esc(bad.map((b) => `${b.label} (${b.ing.toLowerCase()})`).join(', '))}</span></p>` : ''}
-            <div class="head-a" style="margin-top:18px">
-              ${r.steps.length ? `<button class="btn" data-act="cook.open" data-id="${r.id}" data-people="${people}">${icon('chef', 18)} Cuisiner</button>` : ''}
-              <button class="btn btn--citron" data-act="rec.plan" data-id="${r.id}">${icon('calendar', 18)} Planifier</button>
-              <button class="ibtn ibtn--line ${r.favorite ? 'is-on' : ''}" data-act="rec.fav" data-id="${r.id}" aria-label="Favori" aria-pressed="${!!r.favorite}">${icon('heart')}</button>
-              <button class="ibtn ibtn--line" data-act="rec.edit" data-id="${r.id}" aria-label="Modifier">${icon('edit')}</button>
-              <button class="ibtn ibtn--line" data-act="rec.del" data-id="${r.id}" aria-label="Supprimer">${icon('trash')}</button>
-            </div>
-            ${testBox}
-          </div>
-          <div class="card">
-            <div class="sec-h" style="align-items:center"><h2 class="h3">Ingrédients</h2>
-              <div class="step"><button data-act="rec.serv" data-id="${r.id}" data-d="-1" aria-label="Moins">${icon('minus', 16)}</button><b>${people}</b><button data-act="rec.serv" data-id="${r.id}" data-d="1" aria-label="Plus">${icon('plus', 16)}</button><span>pers.</span></div></div>
-            ${C.ingLines(c)}
-            <div class="total"><span>Coût estimé<br><small class="muted">${C.chf(c.cost / people)} par personne${c.savings >= 0.05 ? ` · ${C.chf(c.savings)} d’économie` : ''}</small></span><b>${C.chf(c.cost)}</b></div>
-          </div>
-          <div class="note">${icon('tag', 18)}<div>${
-            c.stores.length
-              ? `<b>En promotion cette semaine chez</b><div class="chips" style="margin-top:8px;gap:14px">${c.stores.map(C.storeChip).join('')}</div>`
-              : 'Aucun ingrédient de cette recette n’est en promotion cette semaine dans vos magasins.'
-          }</div></div>
+        <section class="card rf-avis">
+          <div class="sec-h"><h2 class="h3 rf-h">${icon('star', 19)} Avis</h2>${notes.length ? `<span>${etoiles(moyenne)} <b>${moyenne.toFixed(1).replace('.', ',')}/5</b></span>` : ''}</div>
+          ${avis.length ? `<div class="rf-avis-l">${avis.map((x) => `<div class="rf-av"><div class="rf-av-h">${x.note ? etoiles(x.note, 'stars--sm') : ''}<span class="small muted">${esc(date(x.date))}</span><button class="ibtn rf-av-x" data-act="avis.del" data-id="${r.id}" data-av="${esc(x.id)}" aria-label="Supprimer cet avis">${icon('x', 15)}</button></div>${x.texte ? `<p>${esc(x.texte)}</p>` : ''}</div>`).join('')}</div>` : '<p class="small muted">Pas encore d’avis. Après l’avoir cuisinée, notez ce qui était réussi ou à corriger.</p>'}
+          <form class="rf-avis-f">
+            <div class="rf-avis-n" role="radiogroup" aria-label="Note">${[1, 2, 3, 4, 5].map((k) => `<button type="button" class="star-b" data-n="${k}" aria-label="${k} sur 5">${icon('star', 22)}</button>`).join('')}</div>
+            <textarea class="inp" name="texte" rows="2" placeholder="Votre avis : ce qui était bon, ce qu’il faudrait corriger…"></textarea>
+            <button class="btn btn--sm" type="submit">Enregistrer l’avis</button>
+          </form>
+        </section>
+        <div class="rf-credits">
+          ${nu && nu.rest ? `<p class="small muted">${esc(nu.rest)}</p>` : ''}
+          ${r.videoUrl ? `<p class="head-a" style="justify-content:flex-start"><a class="btn btn--ghost" href="${esc(r.videoUrl)}" target="_blank" rel="noopener">${icon('play', 18)} Voir la vidéo${r.videoSite === 'tiktok' ? ' sur TikTok' : ' sur YouTube'}</a><button class="btn btn--ghost" data-act="vid.image" data-id="${r.id}">${icon('upload', 18)} Changer l’image</button></p><p class="small muted">Recette tirée de la vidéo${r.videoAuthor ? ` de ${esc(r.videoAuthor)}` : ''} ; ingrédients et prix à vérifier.</p>` : ''}
+          ${r.photoSource === 'unsplash' ? `<p class="small muted">Photo : <a class="link" href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> (licence libre).</p>` : ''}
+          ${r.sourceUrl ? `<p class="small muted">Recette adaptée de <a class="link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">« ${esc(r.name)} », Livre de cuisine de Wikilivres</a>, contributeurs de Wikilivres, licence <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>${r.photo ? ' ; photo : Wikimedia Commons' : ''}.</p>` : ''}
         </div>
-      </div>`;
+      </article>`;
+    // Avis : note en étoiles + commentaire daté
+    const f = root.querySelector('.rf-avis-f');
+    let note = 0;
+    f.querySelectorAll('.star-b').forEach((b) =>
+      b.addEventListener('click', () => {
+        note = Number(b.dataset.n) === note ? 0 : Number(b.dataset.n);
+        f.querySelectorAll('.star-b').forEach((x) => x.classList.toggle('is-on', Number(x.dataset.n) <= note));
+      })
+    );
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const texte = f.elements.texte.value.trim();
+      if (!texte && !note) return C.toast('Donnez une note ou écrivez un mot.');
+      const cur = C.recipe(r.id);
+      C.save.recipe({ ...cur, avis: [...(cur.avis || []), { id: C.uid(), date: C.today(), note, texte }] });
+      C.toast('Avis enregistré');
+    });
   }
 
   C.views.recettes = { render: (root, id) => (id ? detail(root, id) : list(root)) };
@@ -178,18 +222,21 @@
   // opts.nom : nom prérempli ; opts.apres(recette) : appelé après l'enregistrement (au lieu d'ouvrir la fiche)
   function editor(r, opts = {}) {
     const isNew = !r;
-    r = r || { validated: true, source: 'manuel', id: C.uid(), name: opts.nom || '', description: '', category: 'Autre', prepTime: 30, servings: 4, ingredients: [{}, {}, {}], steps: [], favorite: false, photo: '', createdAt: Date.now() };
+    r = r || { validated: true, source: 'manuel', id: C.uid(), name: opts.nom || '', description: '', category: 'Autre', tags: [], catV: 3, prepTime: 30, cookTime: 0, servings: 4, ingredients: [{}, {}, {}], steps: [], favorite: false, photo: '', createdAt: Date.now() };
     C.sheet({
       title: isNew ? 'Nouvelle recette' : 'Modifier la recette',
       size: 'wide',
       body: `<form class="form" id="rec-form" novalidate>
         ${C.field('Nom', `<input class="inp" name="name" required value="${esc(r.name)}" placeholder="Ex. Gratin de courge" autofocus>`)}
         ${C.field('Description', `<textarea class="inp" name="description" rows="2" placeholder="Une phrase pour s'en souvenir">${esc(r.description)}</textarea>`)}
-        <div class="form-3">
+        <div class="form-4">
           ${C.field('Catégorie', `<select class="inp" name="category">${C.options(C.RCATS.map((c) => c.name), r.category)}</select>`)}
-          ${C.field('Préparation (min)', `<input class="inp" name="prepTime" type="number" min="1" max="600" value="${r.prepTime}">`)}
+          ${C.field('Préparation (min)', `<input class="inp" name="prepTime" type="number" min="0" max="600" value="${r.prepTime}">`)}
+          ${C.field('Cuisson (min)', `<input class="inp" name="cookTime" type="number" min="0" max="600" value="${r.cookTime || ''}" placeholder="0">`)}
           ${C.field('Portions', `<input class="inp" name="servings" type="number" min="1" max="24" value="${r.servings}">`)}
         </div>
+        <div class="field"><span>Autres catégories <em class="muted">(facultatif)</em></span>
+          <div class="chips ed-tags">${C.RCATS.filter((c) => c.name !== 'Autre').map((c) => `<button type="button" class="chip ${(r.tags || []).includes(c.name) ? 'is-on' : ''}" data-act="ed.tag" data-v="${esc(c.name)}" aria-pressed="${(r.tags || []).includes(c.name)}">${esc(c.name)}</button>`).join('')}</div></div>
         ${C.photoField()}
         <label class="check"><input type="checkbox" name="validated" ${r.validated !== false ? 'checked' : ''}><span><b>Je l’ai testée et je la valide</b><small>Décochée, une nouvelle recette va dans « À tester ».</small></span></label>
         <div class="field"><span>Ingrédients</span>
@@ -224,7 +271,10 @@
             name,
             description: String(fd.get('description')).trim(),
             category: fd.get('category'),
-            prepTime: Math.max(1, Math.round(C.toNum(fd.get('prepTime'))) || 30),
+            tags: [...form.querySelectorAll('.ed-tags .chip.is-on')].map((b) => b.dataset.v).filter((t) => t !== fd.get('category')),
+            catV: 3,
+            prepTime: Math.max(0, Math.round(C.toNum(fd.get('prepTime'))) || 0) || 30,
+            cookTime: Math.max(0, Math.round(C.toNum(fd.get('cookTime'))) || 0),
             servings: Math.max(1, Math.round(C.toNum(fd.get('servings'))) || 4),
             photo: photo(),
             photoSource: photo() === r.photo ? r.photoSource || '' : '',
@@ -287,6 +337,21 @@
       if (r) C.save.recipe({ ...r, favorite: !r.favorite });
     },
     'rec.new': () => editor(null),
+    'ing.toggle': (el) => {
+      const on = !el.classList.contains('is-done');
+      el.classList.toggle('is-done', on);
+      el.setAttribute('aria-checked', on);
+    },
+    'ed.tag': (el) => {
+      const on = !el.classList.contains('is-on');
+      el.classList.toggle('is-on', on);
+      el.setAttribute('aria-pressed', on);
+    },
+    'avis.del': async (el) => {
+      const r = C.recipe(el.dataset.id);
+      if (!r || !(await C.confirm('Supprimer cet avis ?', 'Il disparaît de la fiche de la recette.', 'Supprimer'))) return;
+      C.save.recipe({ ...r, avis: (r.avis || []).filter((x) => x.id !== el.dataset.av) });
+    },
     'rec.import': async () => {
       const file = await C.pickFile('.json,application/json');
       if (!file) return;

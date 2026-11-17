@@ -226,7 +226,7 @@
   const FRESH = ['fl', 'vp', 'lait'];
   // Un vrai repas de midi ou du soir : ni petit-déjeuner ni dessert (on peut toujours les choisir à la main)
   const SUCRE = /\b(gateaux?|brioches?|pancakes?|muffins?|cookies?|biscuits?|granola|porridge|smoothies?|compote|tiramisu|clafoutis|crumble|mousse au chocolat|dessert|overnight oats?)\b/;
-  E.pourRepas = (r) => r.category !== 'Petit-déjeuner' && !SUCRE.test(C.norm(r.name));
+  E.pourRepas = (r) => !['Petit-déjeuner', 'Desserts', 'Apéritifs'].includes(r.category) && !SUCRE.test(C.norm(r.name));
   E.generate = (wid, opts = {}) => {
     const st = C.S.settings;
     // filtre : seulement certaines recettes (validées, à tester, pas encore testées…)
@@ -296,7 +296,7 @@
           score -= 7 * (used[r.id] || 0);
           if (prev && prev.category === r.category) score -= 1.5;
           if (other && other.recipeId === r.id) score -= 100;
-          if (slot === 'midi') score += r.prepTime <= 30 ? 0.8 : r.prepTime > 45 ? -0.8 : 0;
+          if (slot === 'midi') score += C.dureeTotale(r) <= 30 ? 0.8 : C.dureeTotale(r) > 45 ? -0.8 : 0;
           if (perMeal) score -= pressure * (n.c.cost / perMeal);
           if (flexi && E.hasRealMeat(r)) score -= meatMeals >= MEAT_MAX ? 50 : 1 + meatMeals * 0.6;
           if (flexi && other && E.hasRealMeat(r) && C.recipe(other.recipeId) && E.hasRealMeat(C.recipe(other.recipeId))) score -= 25; // pas de viande midi et soir
@@ -314,7 +314,7 @@
         if (shared.length) why.push(`réutilise ${shared.slice(0, 3).map((x) => x.name.toLowerCase()).join(', ')}`);
         if (r.favorite) why.push('recette favorite');
         if (n.liked) why.push('contient un aliment apprécié');
-        if (slot === 'midi' && r.prepTime <= 30) why.push(`rapide (${r.prepTime} min)`);
+        if (slot === 'midi' && C.dureeTotale(r) <= 30) why.push(`rapide (${C.dureeTotale(r)} min)`);
         if (flexi && !E.hasRealMeat(r) && !why.length) why.push('sans viande (moins de viande)');
         slots[key] = { recipeId: r.id, servings: people, why, auto: true };
         if (E.hasRealMeat(r)) meatMeals++;

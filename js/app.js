@@ -190,6 +190,7 @@
   C.ui.full = true; // on arrive sur la pièce en plein écran
   C.load()
     .then(() => {
+      C.migrerCategories(); // nouvelles catégories (pâtes et riz séparés…), une fois
       C.eng.refreshEstimates();
       C.render();
       syncPromos();
