@@ -1,26 +1,25 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-17T13:39:41+00:00",
+ "generatedAt": "2026-11-17T19:44:20+00:00",
  "sources": {
   "lidl": {
    "ok": true,
    "count": 57,
    "origine": "lidl.ch",
-   "updatedAt": "2026-11-17T13:37:23+00:00"
+   "updatedAt": "2026-11-17T19:40:56+00:00"
   },
   "migros": {
    "ok": true,
    "count": 34,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-17T13:38:28+00:00"
+   "updatedAt": "2026-11-17T19:41:49+00:00"
   },
   "coop": {
-   "ok": false,
-   "error": "HTTP Error 502: Bad Gateway",
+   "ok": true,
    "count": 45,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-16T12:55:32+00:00"
+   "updatedAt": "2026-11-17T19:44:20+00:00"
   }
  },
  "promotions": [
@@ -1736,23 +1735,6 @@
    "note": ""
   },
   {
-   "externalId": "rk-coop-frites-au-four-coop-suisse-2026-11-12",
-   "name": "Frites au four Coop, Suisse",
-   "store": "coop",
-   "category": "surg",
-   "promoPrice": 5.95,
-   "regularPrice": 8.25,
-   "discountPct": 27,
-   "unitLabel": "",
-   "validFrom": "2026-11-12",
-   "validTo": "2026-11-18",
-   "approxDates": false,
-   "match": "",
-   "photo": "https://fr.rabatt-kompass.ch/public/gimg/3/2/4/6/5/2/8/frites-au-four-coop-suisse--3246528.jpg",
-   "url": "https://fr.rabatt-kompass.ch/produits/frites",
-   "note": ""
-  },
-  {
    "externalId": "rk-coop-chataignes-italie-2026-11-12",
    "name": "Châtaignes, Italie",
    "store": "coop",
@@ -1767,6 +1749,23 @@
    "match": "chataigne",
    "photo": "https://fr.rabatt-kompass.ch/public/gimg/3/2/4/6/4/8/0/chataignes-italie--3246480.jpg",
    "url": "https://fr.rabatt-kompass.ch/produits/chataigne",
+   "note": ""
+  },
+  {
+   "externalId": "rk-coop-frites-au-four-coop-suisse-2026-11-12",
+   "name": "Frites au four Coop, Suisse",
+   "store": "coop",
+   "category": "surg",
+   "promoPrice": 5.95,
+   "regularPrice": 8.25,
+   "discountPct": 27,
+   "unitLabel": "",
+   "validFrom": "2026-11-12",
+   "validTo": "2026-11-18",
+   "approxDates": false,
+   "match": "",
+   "photo": "https://fr.rabatt-kompass.ch/public/gimg/3/2/4/6/5/2/8/frites-au-four-coop-suisse--3246528.jpg",
+   "url": "https://fr.rabatt-kompass.ch/produits/frites",
    "note": ""
   },
   {
@@ -2081,9 +2080,9 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 13.95,
-   "regularPrice": null,
-   "discountPct": null,
-   "unitLabel": "",
+   "regularPrice": 15.6,
+   "discountPct": 10,
+   "unitLabel": "250 g",
    "validFrom": "2026-11-12",
    "validTo": "2026-11-18",
    "approxDates": false,

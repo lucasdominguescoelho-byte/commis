@@ -30,6 +30,7 @@ import re
 import sys
 import time
 import unicodedata
+import urllib.error
 import urllib.request
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -297,8 +298,20 @@ def telecharger(url, cache=None, ajax=False):
     if ajax:
         entetes['X-Requested-With'] = 'XMLHttpRequest'
     req = urllib.request.Request(url, headers=entetes)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        texte = r.read().decode('utf-8', errors='replace')
+    # Un site peut avoir un raté passager (502, 503, délai dépassé) : on réessaie deux fois, plus tard.
+    essais = 3
+    for n in range(essais):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                texte = r.read().decode('utf-8', errors='replace')
+            break
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or n == essais - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if n == essais - 1:
+                raise
+        time.sleep(15 * (n + 1))
     if cache:
         os.makedirs(cache, exist_ok=True)
         with open(f, 'w', encoding='utf-8') as h:

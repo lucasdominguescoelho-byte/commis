@@ -69,7 +69,10 @@
     const parts = C.STORES.map((s) => {
       const src = (m.sources || {})[s.id];
       if (!src) return '';
-      return `<span class="store"><i style="background:${s.color}"></i>${s.name} ${src.ok ? src.count : `<span class="badge badge--warn" title="${esc(src.error || '')}">indisponible</span>`}</span>`;
+      // source en panne ce jour-là mais promotions de la veille encore là : on le dit sans alarmer
+      const depuis = src.updatedAt ? C.fmtDate(String(src.updatedAt).slice(0, 10), { day: 'numeric', month: 'short' }) : '';
+      const etat = src.ok ? src.count : src.count ? `${src.count} <span class="badge badge--soft" title="Mise à jour impossible aujourd’hui (${esc(src.error || 'site indisponible')}) : promotions récupérées le ${esc(depuis)}">du ${esc(depuis)}</span>` : `<span class="badge badge--warn" title="${esc(src.error || '')}">indisponible</span>`;
+      return `<span class="store"><i style="background:${s.color}"></i>${s.name} ${etat}</span>`;
     }).join('');
     return `<div class="sync"><span>${icon('check', 16)} Mises à jour ${C.fmtDate(C.iso(when), { weekday: 'long', day: 'numeric', month: 'long' })} à ${String(when.getHours()).padStart(2, '0')}h${String(when.getMinutes()).padStart(2, '0')}</span>${parts}</div>`;
   }
