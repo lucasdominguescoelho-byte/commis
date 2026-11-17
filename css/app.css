@@ -1193,3 +1193,7 @@ html.nuit .rf-tag { background: hsl(var(--h, 300) 28% 22%); color: hsl(var(--h, 
 .shop-done-l { margin: 8px 0 10px; opacity: 0.75; }
 .shop-fini { padding: 28px 0 8px; }
 
+/* Budget : trois cases « dépensé / planifié » côte à côte */
+.bud-cases { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .bud-cases { grid-template-columns: minmax(0, 1fr); } }
+

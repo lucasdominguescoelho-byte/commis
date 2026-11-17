@@ -1,4 +1,5 @@
-/* Commis — Budget : estimation des repas planifiés, dépenses réelles saisies, économies liées aux promotions. */
+/* Commis — Budget, en simple : ce qui a vraiment été dépensé face à ce qui était planifié,
+   l'historique des semaines, et les dépenses réelles (tickets de caisse). */
 (function () {
   'use strict';
   const C = window.C;
@@ -19,30 +20,25 @@
       const now = new Date();
       const hasBudget = st.weeklyBudget > 0;
       const bar = (v, max) => (max > 0 ? `<div class="bar ${v > max ? 'is-over' : ''}"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : '');
-      const cats = C.CATS.map((c) => ({ name: c.name, v: t.byCat[c.id] || 0 })).filter((c) => c.v > 0.004).sort((a, b) => b.v - a.v);
-      const catMax = cats.length ? cats[0].v : 1;
       const anyHist = hist.some((h) => h.planned > 0 || h.spent > 0);
-      const anySave = hist.some((h) => h.savings > 0.04);
       const expenses = [...C.S.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+      const avant = C.shiftWeek(wid, -1);
+      const tAvant = E.planTotals(avant);
+      // une case : dépensé réellement / planifié, avec une barre
+      const caseReel = (titre, depense, planifie, detail) => `<div class="card"><p class="stat-l">${titre}</p>
+            <p class="stat-v">${C.chf(depense)}<small>/ ${planifie > 0 ? C.num(planifie, 0) : '—'}</small></p>
+            ${bar(depense, planifie)}
+            <p class="stat-s">Dépensé réellement, sur ${planifie > 0 ? `${C.chf(planifie)} planifiés` : 'rien de planifié'}${detail ? ` · ${detail}` : ''}</p></div>`;
       const cols = (pick) => hist.map((h) => ({ label: h.label, tip: `Semaine ${C.weekNo(h.wid)} · ${C.weekLabel(h.wid)}`, now: h.wid === wid, values: pick(h) }));
 
       root.innerHTML = `
         <header class="head"><div><h1 class="title">Budget</h1></div>
           <div class="head-a"><button class="btn btn--citron" data-act="bud.ticket">${icon('receipt', 18)} Photographier un ticket</button><button class="btn btn--ghost" data-act="bud.add">${icon('plus', 18)} Noter une dépense</button></div></header>
-        ${hasBudget ? '' : `<div class="note" style="margin-bottom:16px">${icon('info', 18)}<span>Aucun budget hebdomadaire n’est défini.</span><a class="btn btn--ghost btn--sm note-a" href="#/reglages">Définir un budget</a></div>`}
 
-        <section class="grid g3">
-          <div class="card"><p class="stat-l">Cette semaine · sem. ${C.weekNo(wid)}</p>
-            <p class="stat-v">${C.chf(t.cost)}${hasBudget ? `<small>/ ${C.num(st.weeklyBudget, 0)}</small>` : ''}</p>
-            ${bar(t.cost, st.weeklyBudget)}
-            <p class="stat-s">Coût estimé de ${t.meals} repas planifié${t.meals > 1 ? 's' : ''}. Dépensé réellement : <b style="color:var(--ink)">${C.chf(spent)}</b></p></div>
-          <div class="card"><p class="stat-l">Ce mois · ${esc(C.monthName(now))}</p>
-            <p class="stat-v">${C.chf(m.planned)}${hasBudget ? `<small>/ ${C.num(m.budget, 0)}</small>` : ''}</p>
-            ${bar(m.planned, m.budget)}
-            <p class="stat-s">${hasBudget ? `Budget mensuel : ${C.chf(m.budget)} (hebdomadaire × 52 ÷ 12). ` : ''}Dépensé réellement : <b style="color:var(--ink)">${C.chf(m.spent)}</b></p></div>
-          <div class="card span-t ${m.savings >= 0.05 ? 'card--citron' : ''}"><p class="stat-l">${icon('tag', 17)} Économies grâce aux promotions</p>
-            <p class="stat-v">${C.chf(t.savings)}</p>
-            <p class="stat-s">Cette semaine, par rapport aux prix habituels. Sur le mois : ${C.chf(m.savings)}.</p></div>
+        <section class="grid bud-cases">
+          ${caseReel(`Cette semaine · sem. ${C.weekNo(wid)}`, spent, t.cost, `${t.meals} repas`)}
+          ${caseReel(`Semaine dernière · sem. ${C.weekNo(avant)}`, E.weekSpent(avant), tAvant.cost, `${tAvant.meals} repas`)}
+          ${caseReel(`Ce mois · ${esc(C.monthName(now))}`, m.spent, m.planned, '')}
         </section>
 
         <section class="sec card">
@@ -50,19 +46,9 @@
             <div class="legend"><span><i style="background:${S1}"></i>Planifié (estimation)</span><span><i style="background:${S2}"></i>Dépensé (saisi)</span>${hasBudget ? '<span><i class="dash"></i>Budget</span>' : ''}</div></div>
           ${
             anyHist
-              ? `${C.bars({ cols: cols((h) => [h.planned, h.spent]), series: [{ name: 'Planifié', color: S1 }, { name: 'Dépensé', color: S2 }], ref: hasBudget ? { value: st.weeklyBudget, label: `Budget ${C.num(st.weeklyBudget, 0)}` } : null })}
-                <details class="tbl"><summary>Voir les chiffres</summary><table class="t"><thead><tr><th>Semaine</th><th>Planifié</th><th>Dépensé</th><th>Économies promos</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${h.label} · ${C.weekLabel(h.wid)}</td><td>${C.money(h.planned)}</td><td>${C.money(h.spent)}</td><td>${C.money(h.savings)}</td></tr>`).join('')}</tbody></table></details>`
+              ? `${C.bars({ cols: cols((h) => [h.planned, h.spent]), series: [{ name: 'Planifié', color: S1 }, { name: 'Dépensé', color: S2 }], ref: hasBudget ? { value: st.weeklyBudget, label: `Budget ${C.num(st.weeklyBudget, 0)}` } : null })}`
               : '<p class="muted small" style="padding:26px 0 8px">Le graphique apparaîtra dès qu’une semaine contiendra des repas planifiés ou une dépense notée.</p>'
           }
-        </section>
-
-        <section class="sec grid g2">
-          <div class="card"><div class="sec-h"><div><h2 class="h3">Répartition par rayon</h2><p class="small muted">Repas planifiés cette semaine</p></div></div>
-            ${cats.length ? cats.map((c) => `<div class="hb"><span>${esc(c.name)}</span><div class="hb-t" title="${esc(c.name)} : ${C.chf(c.v)}"><i style="width:${(c.v / catMax) * 100}%"></i></div><span class="hb-v">${C.chf(c.v)}</span></div>`).join('') : '<p class="muted small" style="padding:14px 0">Aucun repas planifié cette semaine.</p>'}
-          </div>
-          <div class="card"><div class="sec-h"><div><h2 class="h3">Économies par semaine</h2><p class="small muted">Promotions appliquées aux repas planifiés, en CHF</p></div></div>
-            ${anySave ? C.bars({ cols: cols((h) => [h.savings]), series: [{ name: 'Économies', color: S1 }] }) : '<p class="muted small" style="padding:14px 0">Pas encore d’économies enregistrées.</p>'}
-          </div>
         </section>
 
         <section class="sec card">
