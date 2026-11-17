@@ -18,7 +18,8 @@
       const hist = E.history(8);
       const now = new Date();
       const hasBudget = st.weeklyBudget > 0;
-      const bar = (v, max) => (max > 0 ? `<div class="bar ${v > max ? 'is-over' : ''}"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : '');
+      // barre complète = le budget ; la partie remplie = ce qui est déjà dépensé
+      const bar = (v, max) => (max > 0 ? `<div class="bar bar--bud ${v > max ? 'is-over' : ''}" role="img" aria-label="${C.num(Math.round((v / max) * 100), 0)} % du budget"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : '');
       const anyHist = hist.some((h) => h.planned > 0 || h.spent > 0);
       const expenses = [...C.S.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
       const moisDernier = E.month(new Date(now.getFullYear(), now.getMonth() - 1, 15));

@@ -1196,4 +1196,8 @@ html.nuit .rf-tag { background: hsl(var(--h, 300) 28% 22%); color: hsl(var(--h, 
 /* Budget : trois cases « dépensé / planifié » côte à côte */
 .bud-cases { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { .bud-cases { grid-template-columns: minmax(0, 1fr); } }
+.bar--bud { height: 10px; border-radius: 6px; margin-top: 16px; background: var(--line); background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.bar--bud > i { border-radius: 6px; background: var(--citron); min-width: 6px; }
+.bar--bud.is-over > i { background: var(--danger); }
+html.nuit .bar--bud { background: rgba(255, 255, 255, 0.14); }
 
