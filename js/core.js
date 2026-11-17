@@ -51,6 +51,11 @@
   // Toutes les catégories d'une recette (principale d'abord)
   C.categoriesDe = (r) => [r.category, ...(r.tags || [])].filter(Boolean);
   C.dureeTotale = (r) => (Number(r.prepTime) || 0) + (Number(r.cookTime) || 0);
+  // « 45 min », « 1 h 30 », « 5 h »
+  C.duree = (m) => {
+    m = Math.round(Number(m) || 0);
+    return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${String(m % 60).padStart(2, '0')}` : ''}`;
+  };
 
   // Classe une recette d'après son nom et ses ingrédients ; « ancienne » = catégorie d'avant, comme indice
   const K = {

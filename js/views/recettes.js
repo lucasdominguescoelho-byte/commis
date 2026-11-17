@@ -60,7 +60,7 @@
             <div class="rc-tags">${testing(r) ? `<span class="badge badge--soft">${['cabas', 'ia', 'wikilivres'].includes(r.source) ? 'Idée · ' : ''}à tester</span>` : r.validated && C.ui.rtab === 'toutes' ? `<span class="badge badge--soft">${icon('check', 13)} validée</span>` : ''}${n ? `<span class="badge badge--promo">${n} en promo</span>` : ''}${bad.length ? `<span class="badge badge--warn" title="${esc(bad.map((b) => `${b.kind} : ${b.label} (${b.ing})`).join(' · '))}">${esc(conflictText(bad))}</span>` : ''}</div>
           </div>
           <div class="rc-b"><span class="eyebrow">${esc(r.category)}</span><h3 class="rc-n">${esc(r.name)}</h3>
-            <div class="meta" style="margin-top:auto;padding-top:8px"><span>${icon('clock', 15)}${C.dureeTotale(r)} min</span>${(C.nutri(r) || {}).kcal ? `<span>${C.nutri(r).kcal} kcal</span>` : ''}<span>${C.chf(c.cost / (r.servings || 1))} / pers.</span></div></div>
+            <div class="meta rc-meta"><span>${icon('clock', 15)}${C.duree(C.dureeTotale(r))}</span>${(C.nutri(r) || {}).kcal ? `<span class="rc-kcal">${C.nutri(r).kcal} kcal</span>` : ''}<span class="rc-prix">${C.chf(c.cost / (r.servings || 1))}/pers.</span></div></div>
         </article>`;
       })
       .join('')}</div>`;
@@ -152,8 +152,8 @@
         ${C.nutriChips(nu, true)}
         ${bad.length ? `<p style="margin-top:12px"><span class="badge badge--warn">Ne respecte pas vos préférences : ${esc(bad.map((b) => `${b.label} (${b.ing.toLowerCase()})`).join(', '))}</span></p>` : ''}
         <div class="rf-meta card">
-          <span>${icon('clock', 17)} Préparation : <b>${r.prepTime || 0} min</b></span>
-          ${r.cookTime ? `<span>${icon('flame', 17)} Cuisson : <b>${r.cookTime} min</b></span>` : ''}
+          <span>${icon('clock', 17)} Préparation : <b>${C.duree(r.prepTime || 0)}</b></span>
+          ${r.cookTime ? `<span>${icon('flame', 17)} Cuisson : <b>${C.duree(r.cookTime)}</b></span>` : ''}
           <span class="rf-port">${icon('users', 17)} Portions :
             <span class="step"><button data-act="rec.serv" data-id="${r.id}" data-d="-1" aria-label="Moins">${icon('minus', 15)}</button><b>${people}</b><button data-act="rec.serv" data-id="${r.id}" data-d="1" aria-label="Plus">${icon('plus', 15)}</button></span></span>
           ${notes.length ? `<span>${etoiles(moyenne)} <b>${moyenne.toFixed(1).replace('.', ',')}/5</b> <span class="muted">(${notes.length})</span></span>` : ''}
