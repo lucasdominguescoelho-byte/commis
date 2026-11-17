@@ -33,7 +33,7 @@
           <div class="head-a"><button class="btn btn--citron" data-act="bud.ticket">${icon('receipt', 18)} Photographier un ticket</button><button class="btn btn--ghost" data-act="bud.add">${icon('plus', 18)} Noter une dépense</button></div></header>
 
         <section class="grid bud-cases">
-          ${caseReel('Cette semaine', spent, 0)}
+          ${caseReel('Cette semaine', spent, st.weeklyBudget || 0)}
           ${caseReel('Ce mois', m.spent, m.budget)}
           ${caseReel('Le mois dernier', moisDernier.spent, 0)}
         </section>
