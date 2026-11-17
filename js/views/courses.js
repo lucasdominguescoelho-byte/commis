@@ -1,4 +1,4 @@
-/* Commis — Liste de courses : générée depuis le planning, regroupée, chiffrée, cochable, exportable.
+/* Commis — Liste de courses : générée depuis le planning, regroupée, chiffrée, cochable.
    Un article coché reste barré 5 minutes (le temps de se rattraper), puis passe dans « Déjà acheté »,
    en bas : la liste ne montre que ce qui manque. */
 (function () {
@@ -58,8 +58,6 @@
       root.innerHTML = `
         <header class="head"><div><h1 class="title">Liste de courses</h1></div>
           <div class="head-a no-print">${C.weekNav(wid)}
-            <button class="ibtn ibtn--line" data-act="shop.copy" aria-label="Copier la liste" title="Copier la liste">${icon('copy')}</button>
-            <button class="ibtn ibtn--line" data-act="shop.export" aria-label="Exporter en fichier texte" title="Exporter (.txt)">${icon('download')}</button>
             <button class="btn" data-act="shop.add">${icon('plus', 18)} Ajouter un produit</button></div></header>
         ${
           n
@@ -81,59 +79,6 @@
         }`;
     },
   };
-
-  function asText(wid) {
-    const shop = E.shopping(wid);
-    const lines = [`Liste de courses — semaine ${C.weekNo(wid)} (${C.weekLabel(wid)})`, ''];
-    groups(shop).forEach((g) => {
-      lines.push(g.name.toUpperCase());
-      g.items.forEach((it) => {
-        const q = C.fmtQty(it.qty, it.unit);
-        const promo = it.match ? ` — promo ${C.storeById(it.match.promo.store).name}` : '';
-        lines.push(`[${it.checked ? 'x' : ' '}] ${it.name}${q ? ` — ${q}` : ''}${promo}${it.cost ? ` — ${C.money(it.cost)}` : ''}`);
-      });
-      lines.push('');
-    });
-    lines.push(`Total estimé : CHF ${C.money(shop.total)}`);
-    return lines.join('\n').replace(/ /g, ' ');
-  }
-
-  function manualSheet(wid, m) {
-    const isNew = !m;
-    m = m || { id: C.uid(), name: '', qty: 1, unit: 'pièce', cat: 'autre', price: '', store: '' };
-    C.sheet({
-      title: isNew ? 'Ajouter un produit' : 'Modifier le produit',
-      sub: 'Pour ce qui ne vient pas d’une recette : café, lessive, petit-déjeuner…',
-      body: `<form class="form" id="shop-form" novalidate>
-        ${C.field('Produit', `<input class="inp" name="name" required value="${esc(m.name)}" placeholder="Ex. Café en grains" autofocus>`)}
-        <div class="form-2">
-          ${C.field('Quantité', `<input class="inp" name="qty" inputmode="decimal" value="${m.qty || ''}">`)}
-          ${C.field('Unité', `<select class="inp" name="unit">${C.options(C.UNITS, m.unit)}</select>`)}
-        </div>
-        <div class="form-3">
-          ${C.field('Rayon', `<select class="inp" name="cat">${C.options(C.CATS, m.cat)}</select>`)}
-          ${C.field('Prix estimé (CHF)', `<input class="inp" name="price" inputmode="decimal" value="${m.price || ''}" placeholder="facultatif">`)}
-          ${C.field('Magasin', `<select class="inp" name="store">${C.options([{ id: '', name: 'Peu importe' }, ...C.STORES], m.store)}</select>`)}
-        </div></form>`,
-      foot: `${isNew ? '' : `<button class="btn btn--ghost sp" data-act="shop.del" data-id="${m.id}">${icon('trash', 17)} Supprimer</button>`}<button class="btn btn--ghost" data-close>Annuler</button><button class="btn" type="submit" form="shop-form">${isNew ? 'Ajouter' : 'Enregistrer'}</button>`,
-      onMount(sheet) {
-        const form = sheet.el.querySelector('#shop-form');
-        form.onsubmit = (e) => {
-          e.preventDefault();
-          const d = C.formData(form);
-          if (!d.name.trim()) return C.toast('Indiquez le nom du produit.');
-          const item = { id: m.id, name: d.name.trim(), qty: C.toNum(d.qty), unit: d.unit, cat: d.cat, price: C.toNum(d.price), store: d.store };
-          sheet.close();
-          C.save.list(wid, (l) => {
-            const i = l.manual.findIndex((x) => x.id === item.id);
-            if (i >= 0) l.manual[i] = item;
-            else l.manual.push(item);
-          });
-          C.toast(isNew ? 'Produit ajouté à la liste' : 'Produit enregistré');
-        };
-      },
-    });
-  }
 
   Object.assign(C.acts, {
     'shop.toggle': (el) => {
@@ -164,18 +109,6 @@
       if (e) e.preventDefault();
       C.ui.shopDone = !C.ui.shopDone;
       el.parentNode.open = C.ui.shopDone;
-    },
-    'shop.copy': async () => {
-      try {
-        await navigator.clipboard.writeText(asText(C.ui.week));
-        C.toast('Liste copiée dans le presse-papiers');
-      } catch (e) {
-        C.toast('Copie impossible ici — utilisez l’export en fichier texte.');
-      }
-    },
-    'shop.export': () => {
-      C.download(`courses-semaine-${C.weekNo(C.ui.week)}.txt`, asText(C.ui.week));
-      C.toast('Liste exportée');
     },
   });
 })();
