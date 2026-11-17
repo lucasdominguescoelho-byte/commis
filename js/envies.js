@@ -451,13 +451,6 @@
     ['eco', 'Pas cher'],
     ['copieux', 'Copieux'],
   ];
-  // Quelles recettes utiliser : validées, mises « à tester », ou pas encore testées
-  const SOURCES = [
-    ['validees', 'Validées'],
-    ['tester', 'À tester'],
-    ['nouvelles', 'Pas encore testées'],
-  ];
-  const sourceDe = (r) => (r.validated ? 'validees' : r.toTest ? 'tester' : 'nouvelles');
   // Restes : ce qui se réchauffe bien le lendemain… et ce qui ne se ressert pas
   const BON_RESTE = /gratin|soupe|veloute|potage|curry|chili|lasagne|hachis|parmentier|mijot|ragout|risotto|dahl|dhal|tajine|bolognaise|papet|quiche|tarte|goulash|blanquette|boeuf|couscous|ratatouille/;
   const MAUVAIS_RESTE = /raclette|fondue|salade|burger|steak|frites|crepe|omelette|sushi|tartare|carpaccio|pizza|croute au fromage|tacos/;
@@ -483,7 +476,7 @@
   };
   const retenir = (st) => {
     try {
-      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], sources: [...st.sources], restes: st.restes, frigo: st.frigo }));
+      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], restes: st.restes, frigo: st.frigo }));
     } catch (e) {
       /* stockage indisponible */
     }
@@ -493,8 +486,7 @@
   function proposer(st) {
     const wid = st.wid;
     const people = C.S.settings.household || 2;
-    const filtre = (r) => st.sources.has(sourceDe(r));
-    const prep = preparer(st.texte, wid, filtre);
+    const prep = preparer(st.texte, wid);
     const premier = prep.premier;
     const plan = C.plan(wid);
     const base = {};
@@ -557,7 +549,7 @@
         const k = `${d}-midi`;
         if (!statut[k] && !skip.has(k)) pourRestes.add(k);
       }
-    let res = E.generate(wid, { dry: true, base, skip: new Set([...skip, ...pourRestes]), bonus, extra: nouvelles, filtre, maxUses: 2 });
+    let res = E.generate(wid, { dry: true, base, skip: new Set([...skip, ...pourRestes]), bonus, extra: nouvelles, maxUses: 2 });
     let restes = 0;
     if (!res.error && pourRestes.size) {
       pourRestes.forEach((k) => {
@@ -569,11 +561,10 @@
         restes++;
       });
       // les midis restés libres (pas de soir la veille, ou plat qui ne se ressert pas) : proposition normale
-      res = E.generate(wid, { dry: true, base: res.slots, skip, bonus, extra: nouvelles, filtre, maxUses: 2 });
+      res = E.generate(wid, { dry: true, base: res.slots, skip, bonus, extra: nouvelles, maxUses: 2 });
     }
     if (res.error) {
-      const UNE = { validees: 'validée', tester: '« à tester »', nouvelles: 'pas encore testée' };
-      st.erreur = res.vide ? `Aucune recette ${[...st.sources].map((x) => UNE[x]).join(' ou ')} utilisable pour l’instant. Cochez aussi un autre type de recettes.` : res.error;
+      st.erreur = res.error;
       return false;
     }
     st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip, manque: res.manque || 0, restes, frigo };
@@ -595,7 +586,7 @@
     const prises = new Set(Object.entries(st.prop.slots).filter(([k]) => k !== key).map(([, v]) => v.recipeId));
     const gen = st.prop.general;
     const liste = E.compatible()
-      .filter((r) => r.ingredients.length && E.pourRepas(r) && st.sources.has(sourceDe(r)) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
+      .filter((r) => r.ingredients.length && E.pourRepas(r) && !prises.has(r.id) && (!cur || r.id !== cur.recipeId))
       .map((r) => {
         const c = E.recipeCost(r, people, promos);
         let sc = 2 * c.savings + c.promoIngs.length + (r.favorite ? 1 : 0) + (r.validated ? 1 : 0) + (slot === 'midi' && r.prepTime <= 30 ? 0.6 : 0) + Math.random() * 0.8;
@@ -631,7 +622,6 @@
       prevus,
       texte: '',
       styles: new Set((m.styles || []).filter((x) => STYLES.some(([id]) => id === x))),
-      sources: new Set((m.sources || SOURCES.map(([id]) => id)).filter((x) => SOURCES.some(([id]) => id === x))),
       restes: !!m.restes,
       frigo: m.frigo !== false, // par défaut, le frigo d'abord (sans effet s'il est vide)
       garder: true, // les repas choisis à la main restent ; ceux proposés automatiquement sont refaits
@@ -646,8 +636,6 @@
 
     const vueEnvies = () => {
       const chip = (on, label, attrs) => `<button class="chip ${on ? 'is-on' : ''}" type="button" aria-pressed="${on}" ${attrs}>${label}</button>`;
-      const utilisables = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r));
-      const nb = (id) => utilisables.filter((r) => sourceDe(r) === id).length;
       return `<p class="pw-intro">Écrivez ce dont vous avez envie, ou laissez Commis choisir. Vous pourrez changer chaque repas avant de valider.</p>
         <section class="pw-sec">
           <h3 class="pw-h">Des envies précises ? <span>facultatif</span></h3>
@@ -659,11 +647,6 @@
           <h3 class="pw-h">Pour le reste de la semaine</h3>
           <div class="chips">${STYLES.map(([id, label]) => chip(st.styles.has(id), label, `data-act="pw.style" data-v="${id}"`)).join('')}</div>
           <p class="small muted" style="margin-top:8px">Rien de coché : Commis mélange, en privilégiant les promotions et vos favoris.</p>
-        </section>
-        <section class="pw-sec">
-          <h3 class="pw-h">Avec quelles recettes ?</h3>
-          <div class="chips">${SOURCES.map(([id, label]) => chip(st.sources.has(id), `${label} <span class="pw-nb">${nb(id)}</span>`, `data-act="pw.source" data-v="${id}"`)).join('')}</div>
-          <p class="small muted" style="margin-top:8px">Les plats que vous nommez sont toujours pris dans toutes vos recettes.</p>
         </section>
         <section class="pw-sec">
           <h3 class="pw-h">Restes</h3>
@@ -688,7 +671,7 @@
       const r = s && rec(s.recipeId);
       const slot = C.SLOT_LABEL[key.slice(2)];
       const ouvert = st.ouvert === key;
-      const tag = { envie: 'votre envie', garde: 'déjà prévu', choix: 'votre choix', reste: 'restes du soir d’avant' }[p.statut[key]] || (r && p.general.length && convient(r, p.general) ? p.general.map((g) => NOM_SOUHAIT[g]).join(', ') : '');
+      const tag = (s && s.reste && s.why && s.why[0]) || { envie: 'votre envie', garde: 'déjà prévu', choix: 'votre choix', reste: 'restes du soir d’avant' }[p.statut[key]] || (r && p.general.length && convient(r, p.general) ? p.general.map((g) => NOM_SOUHAIT[g]).join(', ') : '');
       let html;
       if (!r)
         html = `<div class="pw-row is-libre"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="pw-k">${slot}</span><span class="row-t muted">Libre</span></span><button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">Choisir</button></div>`;
@@ -740,7 +723,7 @@
         jours.push(`<div class="pw-day"><h4 class="pw-dh">${C.DAYS[d]} <span>${C.parse(C.dayIso(st.wid, d)).getDate()}</span></h4>${visibles.map(ligne).join('')}</div>`);
       }
       return `<div class="pw-sum"><span><b>${n}</b> repas</span><span><b>${C.chf(cout)}</b> estimés</span>${eco >= 0.05 ? `<span>${C.chf(eco)} économisés</span>` : ''}${p.general.length ? `<span>plutôt ${esc(p.general.map((g) => NOM_SOUHAIT[g]).join(', '))}</span>` : ''}${p.restes ? `<span>${p.restes} midi${p.restes > 1 ? 's' : ''} avec les restes</span>` : ''}</div>
-        ${p.manque ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas assez de recettes ${[...st.sources].map((x) => SOURCES.find(([id]) => id === x)[1].toLowerCase()).join(' ou ')} pour toute la semaine : ${p.manque} repas reste${p.manque > 1 ? 'nt' : ''} libre${p.manque > 1 ? 's' : ''}. Choisissez-les à la main, ou revenez aux envies pour cocher un autre type de recettes.</span></div>` : ''}
+        ${p.manque ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas assez de recettes différentes pour toute la semaine : ${p.manque} repas reste${p.manque > 1 ? 'nt' : ''} libre${p.manque > 1 ? 's' : ''}. Touchez « Choisir » pour en mettre un, ou ajoutez une recette.</span></div>` : ''}
         ${p.ko.length ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas pu placer : ${esc(p.ko.map((l) => `${LABEL_J[l.d] || ''}${l.slot ? ` ${l.slot}` : ''} (${l.ko})`).join(', '))}.</span></div>` : ''}
         ${jours.join('') || '<p class="muted">Aucun repas à prévoir avec ces réglages.</p>'}
         <p class="small muted" style="margin-top:14px">Touchez « Changer » pour voir d’autres idées. Rien n’est enregistré avant de valider.</p>`;
@@ -794,20 +777,9 @@
       st.frigo = !st.frigo;
       toggleDom(el, st.frigo);
     },
-    'pw.source': (el) => {
-      const st = C.ui.env;
-      const v = el.dataset.v;
-      if (st.sources.has(v)) st.sources.delete(v);
-      else st.sources.add(v);
-      toggleDom(el, st.sources.has(v));
-    },
     'pw.proposer': () => {
       const st = C.ui.env;
       lireTexte();
-      if (!st.sources.size) {
-        st.erreur = 'Choisissez au moins un type de recettes.';
-        return st.refresh();
-      }
       retenir(st);
       st.prop = null;
       if (proposer(st)) st.etape = 'choix';
@@ -846,13 +818,18 @@
     'pw.autre': (el) => {
       const st = C.ui.env;
       const key = el.dataset.key;
-      C.pickRecipe('Choisir un repas', `${C.DAYS[Number(key[0])]} ${key.slice(2)}`, (id) => {
-        st.prop.slots[key] = { recipeId: id, servings: C.S.settings.household || 2, why: ['votre choix'], auto: false };
-        st.prop.statut[key] = 'choix';
-        st.ouvert = null;
-        st.alts = {};
-        st.refresh();
-      });
+      C.pickRecipe(
+        'Choisir un repas',
+        `${C.DAYS[Number(key[0])]} ${key.slice(2)}`,
+        (id, o) => {
+          st.prop.slots[key] = o && o.reste ? { recipeId: id, servings: o.servings, why: [`restes de ${o.label}`], auto: false, reste: true } : { recipeId: id, servings: C.S.settings.household || 2, why: ['votre choix'], auto: false };
+          st.prop.statut[key] = 'choix'; // gardé si on relance
+          st.ouvert = null;
+          st.alts = {};
+          st.refresh();
+        },
+        { reste: C.restePour(st.prop.slots, key) }
+      );
     },
     'pw.vider': (el) => {
       const st = C.ui.env;

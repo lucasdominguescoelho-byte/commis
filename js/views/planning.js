@@ -24,7 +24,7 @@
     return `<div class="slot meal${cls}" ${pos} draggable="${mv ? 'false' : 'true'}" tabindex="0" role="button" data-key="${key}" data-act="${act}" aria-label="${slotName(key)} : ${esc(r.name)}">
       <span class="meal-v">${C.recipeVisual(r, 'ph--sm')}${n ? `<span class="badge badge--promo">${n} promo${n > 1 ? 's' : ''}</span>` : ''}</span>
       <span class="meal-t"><span class="slot-l">${C.SLOT_LABEL[slot]}</span><strong class="meal-n">${esc(r.name)}</strong>
-      <span class="meal-m">${C.chf(c.cost)} · ${s.servings} pers.</span></span></div>`;
+      <span class="meal-m">${s.reste ? 'restes · ' : ''}${C.chf(c.cost)} · ${s.servings} pers.</span></span></div>`;
   }
 
   C.views.planning = {
@@ -65,7 +65,19 @@
   };
 
   /* ---------- Sélecteur de recette ---------- */
-  C.pickRecipe = (title, sub, onPick) => {
+  C.restePour = (slots, key) => {
+    const d = Number(key[0]);
+    const midi = key.slice(2) === 'midi';
+    if (midi && d === 0) return null;
+    const k = midi ? `${d - 1}-soir` : `${d}-midi`;
+    const s = slots && slots[k];
+    const r = s && C.recipe(s.recipeId);
+    return r ? { r, servings: s.servings, label: midi ? `${C.DAYS[d - 1].toLowerCase()} soir` : 'ce midi' } : null;
+  };
+  const restes = (o, r) => (o && o.reste ? { reste: true, why: [`restes de ${o.label}`] } : {});
+
+  // opts.reste : { r, servings, label } — propose de resservir le repas d'avant (cuisiné en double)
+  C.pickRecipe = (title, sub, onPick, opts = {}) => {
     const wid = C.ui.week;
     const list = () => {
       const q = C.norm(C.ui.pick.q);
@@ -75,9 +87,11 @@
         .map((r) => ({ r, c: E.recipeCost(r, people, promos), bad: E.conflicts(r) }))
         .filter((x) => !q || C.norm([x.r.name, x.r.category, ...x.r.ingredients.map((i) => i.name)].join(' ')).includes(q))
         .sort((a, b) => a.bad.length - b.bad.length || b.c.savings - a.c.savings || a.r.name.localeCompare(b.r.name, 'fr'));
+      const re = C.ui.pick.reste;
+      const reste = re && !C.ui.pick.q.trim() ? `<button class="pick pick--reste" data-act="pick.reste"><span class="thumb">${C.recipeVisual(re.r, 'ph--sm')}</span><span class="row-b"><span class="row-t">Restes de ${esc(re.label)} : ${esc(re.r.name)}</span><span class="row-s">Le même plat, cuisiné en double pour les deux repas</span></span><span class="badge badge--soft">restes</span></button>` : '';
       const ajout = C.ui.pick.q.trim() && C.envies ? `<button class="pick pick--new" data-act="pick.nom"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="row-t">Ajouter « ${esc(C.ui.pick.q.trim())} »</span><span class="row-s">Nouvelle recette, avec sa photo${rows.length ? '' : ' — vous la compléterez quand vous voudrez'}</span></span></button>` : '';
-      if (!rows.length) return ajout || `<p class="muted" style="padding:18px 0">${C.S.recipes.length ? 'Aucune recette trouvée.' : 'Aucune recette dans la bibliothèque pour le moment.'}</p>`;
-      return ajout + rows
+      if (!rows.length) return reste + (ajout || `<p class="muted" style="padding:18px 0">${C.S.recipes.length ? 'Aucune recette trouvée.' : 'Aucune recette dans la bibliothèque pour le moment.'}</p>`);
+      return reste + ajout + rows
         .map(
           (x) => `<button class="pick ${x.bad.length ? 'is-off' : ''}" data-act="pick.choose" data-id="${x.r.id}">
             <span class="thumb">${C.recipeVisual(x.r, 'ph--sm')}</span>
@@ -86,7 +100,7 @@
         )
         .join('');
     };
-    C.ui.pick = { q: '', onPick, list };
+    C.ui.pick = { q: '', onPick, list, reste: opts.reste || null };
     C.sheet({
       title,
       sub,
@@ -177,6 +191,12 @@
       p.onPick(r.id);
       C.toast(`« ${r.name} » ajoutée et planifiée${r.ingredients.length ? '' : ' — ajoutez les ingrédients depuis sa fiche'}`);
     },
+    'pick.reste': () => {
+      const p = C.ui.pick;
+      C.closeSheet();
+      p.onPick(p.reste.r.id, { reste: true, servings: p.reste.servings, label: p.reste.label });
+      C.toast(`Restes de ${p.reste.label} : pensez à cuisiner « ${p.reste.r.name} » en double`);
+    },
     'pick.choose': (el) => {
       const p = C.ui.pick;
       C.closeSheet();
@@ -185,10 +205,14 @@
     'plan.add': (el) => {
       const wid = C.ui.week;
       const key = el.dataset.key;
-      C.pickRecipe('Choisir un repas', slotName(key), (id) =>
-        C.save.plan(wid, (slots) => {
-          slots[key] = { recipeId: id, servings: C.S.settings.household || 2 };
-        })
+      C.pickRecipe(
+        'Choisir un repas',
+        slotName(key),
+        (id, o) =>
+          C.save.plan(wid, (slots) => {
+            slots[key] = { recipeId: id, servings: (o && o.servings) || C.S.settings.household || 2, ...restes(o) };
+          }),
+        { reste: C.restePour(C.plan(wid).slots, key) }
       );
     },
     'plan.open': (el) => openMeal(C.ui.week, el.dataset.key),
@@ -209,10 +233,14 @@
       const { wid, key } = C.ui.meal;
       const old = slotOf(wid, key);
       C.closeSheet();
-      C.pickRecipe('Remplacer le repas', slotName(key), (id) =>
-        C.save.plan(wid, (slots) => {
-          slots[key] = { recipeId: id, servings: (old && old.servings) || C.S.settings.household || 2 };
-        })
+      C.pickRecipe(
+        'Remplacer le repas',
+        slotName(key),
+        (id, o) =>
+          C.save.plan(wid, (slots) => {
+            slots[key] = { recipeId: id, servings: (o && o.servings) || (old && old.servings) || C.S.settings.household || 2, ...restes(o) };
+          }),
+        { reste: C.restePour(C.plan(wid).slots, key) }
       );
     },
     'plan.move': () => {

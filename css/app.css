@@ -413,6 +413,8 @@ table.t th:not(:first-child), table.t td:not(:first-child) { text-align: right; 
 .sheet-f .sp { margin-right: auto; }
 .pick-a { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .pick--new .pw-vide { color: var(--citron); }
+.pick--reste { background: var(--wash); margin-bottom: 6px; }
+.pick--reste .badge { flex: none; }
 .pick--new .row-t { color: var(--citron-text); }
 html.nuit .pick--new .row-t { color: var(--citron); }
 .pick { display: flex; align-items: center; gap: 12px; padding: 10px; margin: 0 -10px; border-radius: 12px; cursor: pointer; width: calc(100% + 20px); text-align: left; }
