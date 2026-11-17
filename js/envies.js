@@ -458,6 +458,21 @@
     ['nouvelles', 'Pas encore testées'],
   ];
   const sourceDe = (r) => (r.validated ? 'validees' : r.toTest ? 'tester' : 'nouvelles');
+  // Restes : ce qui se réchauffe bien le lendemain… et ce qui ne se ressert pas
+  const BON_RESTE = /gratin|soupe|veloute|potage|curry|chili|lasagne|hachis|parmentier|mijot|ragout|risotto|dahl|dhal|tajine|bolognaise|papet|quiche|tarte|goulash|blanquette|boeuf|couscous|ratatouille/;
+  const MAUVAIS_RESTE = /raclette|fondue|salade|burger|steak|frites|crepe|omelette|sushi|tartare|carpaccio|pizza|croute au fromage|tacos/;
+  const seRechauffe = (r) => BON_RESTE.test(C.norm(`${r.name} ${r.category}`)) || ['Gratin & four', 'Soupe'].includes(r.category);
+  const seRessertMal = (r) => MAUVAIS_RESTE.test(C.norm(r.name));
+  // Frigo : aliments du frigo utilisés par une recette (ceux à consommer bientôt comptent double)
+  const frigoDe = (r) => (C.S.fridge && C.S.fridge.length ? [...new Set(r.ingredients.map((i) => E.fridgeFor(i.name)).filter(Boolean))] : []);
+  const bientot = (f) => {
+    const j = E.expiresIn(f);
+    return j != null && j <= 3;
+  };
+  const scoreFrigo = (r) => {
+    const f = frigoDe(r);
+    return Math.min(3, f.length) * 3 + f.filter(bientot).length * 2;
+  };
   const MEMO = 'commis-semaine'; // derniers réglages choisis (style, recettes), sur cet appareil
   const memo = () => {
     try {
@@ -468,7 +483,7 @@
   };
   const retenir = (st) => {
     try {
-      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], sources: [...st.sources] }));
+      localStorage.setItem(MEMO, JSON.stringify({ styles: [...st.styles], sources: [...st.sources], restes: st.restes, frigo: st.frigo }));
     } catch (e) {
       /* stockage indisponible */
     }
@@ -522,14 +537,46 @@
       if (!cout.has(r.id)) cout.set(r.id, E.recipeCost(r, people, promos).cost);
       return cout.get(r.id);
     };
-    const bonus = general.length ? (r) => (convient(r, general) ? 6 : -8) - (general.includes('eco') ? prix(r) / 3 : 0) : null;
-    const res = E.generate(wid, { dry: true, base, skip, bonus, extra: nouvelles, filtre, maxUses: 2 });
+    const frigo = st.frigo && C.S.fridge.length > 0;
+    const fr = new Map();
+    const bonus = (r, key) => {
+      let b = 0;
+      if (general.length) b += (convient(r, general) ? 6 : -8) - (general.includes('eco') ? prix(r) / 3 : 0);
+      if (frigo) {
+        if (!fr.has(r.id)) fr.set(r.id, scoreFrigo(r));
+        b += fr.get(r.id);
+      }
+      // restes : le soir, un plat qui se réchauffe bien (il sera resservi le lendemain midi)
+      if (st.restes && key && key.endsWith('soir')) b += seRechauffe(r) ? 3 : seRessertMal(r) ? -4 : 0;
+      return b;
+    };
+    // Restes : les midis qui suivent un soir sont gardés pour les restes (sauf envie ou repas déjà choisi)
+    const pourRestes = new Set();
+    if (st.restes)
+      for (let d = premier + 1; d < 7; d++) {
+        const k = `${d}-midi`;
+        if (!statut[k] && !skip.has(k)) pourRestes.add(k);
+      }
+    let res = E.generate(wid, { dry: true, base, skip: new Set([...skip, ...pourRestes]), bonus, extra: nouvelles, filtre, maxUses: 2 });
+    let restes = 0;
+    if (!res.error && pourRestes.size) {
+      pourRestes.forEach((k) => {
+        const soir = res.slots[`${Number(k[0]) - 1}-soir`];
+        const r = soir && (C.recipe(soir.recipeId) || nouvelles.get(soir.recipeId));
+        if (!r || seRessertMal(r)) return; // une raclette ne se ressert pas : ce midi-là sera proposé normalement
+        res.slots[k] = { recipeId: r.id, servings: soir.servings, why: ['restes du soir d’avant'], auto: true, reste: true };
+        statut[k] = 'reste';
+        restes++;
+      });
+      // les midis restés libres (pas de soir la veille, ou plat qui ne se ressert pas) : proposition normale
+      res = E.generate(wid, { dry: true, base: res.slots, skip, bonus, extra: nouvelles, filtre, maxUses: 2 });
+    }
     if (res.error) {
       const UNE = { validees: 'validée', tester: '« à tester »', nouvelles: 'pas encore testée' };
       st.erreur = res.vide ? `Aucune recette ${[...st.sources].map((x) => UNE[x]).join(' ou ')} utilisable pour l’instant. Cochez aussi un autre type de recettes.` : res.error;
       return false;
     }
-    st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip, manque: res.manque || 0 };
+    st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip, manque: res.manque || 0, restes, frigo };
     nouvelles.forEach((r) => !r.photo && !r.idee && illustrer(r)); // une vraie photo du plat, trouvée sur Wikipédia
     st.alts = {};
     st.ouvert = null;
@@ -555,6 +602,7 @@
         if (gen.length) sc += convient(r, gen) ? 6 : -8;
         if (gen.includes('eco')) sc -= c.cost / 3;
         if (autreR && autreR.category === r.category) sc -= 1;
+        if (st.prop.frigo) sc += scoreFrigo(r);
         return { r, sc };
       })
       .sort((a, b) => b.sc - a.sc);
@@ -584,6 +632,8 @@
       texte: '',
       styles: new Set((m.styles || []).filter((x) => STYLES.some(([id]) => id === x))),
       sources: new Set((m.sources || SOURCES.map(([id]) => id)).filter((x) => SOURCES.some(([id]) => id === x))),
+      restes: !!m.restes,
+      frigo: m.frigo !== false, // par défaut, le frigo d'abord (sans effet s'il est vide)
       garder: true, // les repas choisis à la main restent ; ceux proposés automatiquement sont refaits
       etape: 'envies',
       prop: null,
@@ -615,6 +665,20 @@
           <div class="chips">${SOURCES.map(([id, label]) => chip(st.sources.has(id), `${label} <span class="pw-nb">${nb(id)}</span>`, `data-act="pw.source" data-v="${id}"`)).join('')}</div>
           <p class="small muted" style="margin-top:8px">Les plats que vous nommez sont toujours pris dans toutes vos recettes.</p>
         </section>
+        <section class="pw-sec">
+          <h3 class="pw-h">Restes</h3>
+          <div class="chips">${chip(st.restes, 'Cuisiner pour deux repas', 'data-act="pw.restes"')}</div>
+          <p class="small muted" style="margin-top:8px">Le repas du soir est cuisiné en double et resservi le lendemain midi. Commis choisit alors le soir des plats qui se réchauffent bien.</p>
+        </section>
+        <section class="pw-sec">
+          <h3 class="pw-h">Frigo</h3>
+          ${(() => {
+            const n = (C.S.fridge || []).length;
+            const vite = (C.S.fridge || []).filter(bientot).length;
+            if (!n) return `<div class="chips"><span class="chip is-past" aria-disabled="true">Utiliser d’abord ce qu’il y a au frigo</span></div><p class="small muted" style="margin-top:8px">Votre frigo est vide : notez ce qu’il vous reste dans l’onglet Frigo pour que Commis s’en serve.</p>`;
+            return `<div class="chips">${chip(st.frigo, `Utiliser d’abord ce qu’il y a au frigo <span class="pw-nb">${n}</span>`, 'data-act="pw.frigo"')}</div><p class="small muted" style="margin-top:8px">Les recettes qui reprennent vos aliments passent devant${vite ? `, en commençant par ${vite > 1 ? `les ${vite} à consommer bientôt` : 'celui à consommer bientôt'}` : ''}.</p>`;
+          })()}
+        </section>
         ${st.erreur ? `<p class="vid-err" role="alert">${esc(st.erreur)}</p>` : ''}`;
     };
 
@@ -624,14 +688,14 @@
       const r = s && rec(s.recipeId);
       const slot = C.SLOT_LABEL[key.slice(2)];
       const ouvert = st.ouvert === key;
-      const tag = { envie: 'votre envie', garde: 'déjà prévu', choix: 'votre choix' }[p.statut[key]] || (r && p.general.length && convient(r, p.general) ? p.general.map((g) => NOM_SOUHAIT[g]).join(', ') : '');
+      const tag = { envie: 'votre envie', garde: 'déjà prévu', choix: 'votre choix', reste: 'restes du soir d’avant' }[p.statut[key]] || (r && p.general.length && convient(r, p.general) ? p.general.map((g) => NOM_SOUHAIT[g]).join(', ') : '');
       let html;
       if (!r)
         html = `<div class="pw-row is-libre"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="pw-k">${slot}</span><span class="row-t muted">Libre</span></span><button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">Choisir</button></div>`;
       else {
         const c = E.recipeCost(r, s.servings, E.activePromos(st.wid));
         html = `<div class="pw-row ${ouvert ? 'is-open' : ''}" data-rid="${esc(r.id)}"><span class="thumb">${C.recipeVisual(r, 'ph--sm')}</span>
-          <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${r.prepTime} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}</span></span>
+          <span class="row-b"><span class="pw-k">${slot}${tag ? ` · <em>${esc(tag)}</em>` : ''}</span><span class="row-t">${esc(r.name)}</span><span class="row-s">${C.chf(c.cost)} · ${r.prepTime} min${c.promoIngs.length ? ` · ${c.promoIngs.length} promo${c.promoIngs.length > 1 ? 's' : ''}` : ''}${p.frigo && p.statut[key] !== 'reste' && frigoDe(r).length ? ` · frigo : ${esc(frigoDe(r).slice(0, 2).map((f) => f.name.split(/\s+/)[0].toLowerCase()).join(', '))}` : ''}</span></span>
           <button class="btn btn--ghost btn--sm" data-act="pw.ouvrir" data-key="${key}" aria-expanded="${ouvert}">${ouvert ? 'Fermer' : 'Changer'}</button></div>`;
       }
       if (ouvert) {
@@ -675,7 +739,7 @@
         if (!visibles.length) continue;
         jours.push(`<div class="pw-day"><h4 class="pw-dh">${C.DAYS[d]} <span>${C.parse(C.dayIso(st.wid, d)).getDate()}</span></h4>${visibles.map(ligne).join('')}</div>`);
       }
-      return `<div class="pw-sum"><span><b>${n}</b> repas</span><span><b>${C.chf(cout)}</b> estimés</span>${eco >= 0.05 ? `<span>${C.chf(eco)} économisés</span>` : ''}${p.general.length ? `<span>plutôt ${esc(p.general.map((g) => NOM_SOUHAIT[g]).join(', '))}</span>` : ''}</div>
+      return `<div class="pw-sum"><span><b>${n}</b> repas</span><span><b>${C.chf(cout)}</b> estimés</span>${eco >= 0.05 ? `<span>${C.chf(eco)} économisés</span>` : ''}${p.general.length ? `<span>plutôt ${esc(p.general.map((g) => NOM_SOUHAIT[g]).join(', '))}</span>` : ''}${p.restes ? `<span>${p.restes} midi${p.restes > 1 ? 's' : ''} avec les restes</span>` : ''}</div>
         ${p.manque ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas assez de recettes ${[...st.sources].map((x) => SOURCES.find(([id]) => id === x)[1].toLowerCase()).join(' ou ')} pour toute la semaine : ${p.manque} repas reste${p.manque > 1 ? 'nt' : ''} libre${p.manque > 1 ? 's' : ''}. Choisissez-les à la main, ou revenez aux envies pour cocher un autre type de recettes.</span></div>` : ''}
         ${p.ko.length ? `<div class="note note--soft" style="margin-bottom:12px">${icon('info', 18)}<span>Pas pu placer : ${esc(p.ko.map((l) => `${LABEL_J[l.d] || ''}${l.slot ? ` ${l.slot}` : ''} (${l.ko})`).join(', '))}.</span></div>` : ''}
         ${jours.join('') || '<p class="muted">Aucun repas à prévoir avec ces réglages.</p>'}
@@ -719,6 +783,16 @@
       if (st.styles.has(v)) st.styles.delete(v);
       else st.styles.add(v);
       toggleDom(el, st.styles.has(v));
+    },
+    'pw.restes': (el) => {
+      const st = C.ui.env;
+      st.restes = !st.restes;
+      toggleDom(el, st.restes);
+    },
+    'pw.frigo': (el) => {
+      const st = C.ui.env;
+      st.frigo = !st.frigo;
+      toggleDom(el, st.frigo);
     },
     'pw.source': (el) => {
       const st = C.ui.env;
