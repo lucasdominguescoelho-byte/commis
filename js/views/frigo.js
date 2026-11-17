@@ -33,7 +33,7 @@
       const rest = items.filter((f) => !soon.includes(f));
       const groups = C.CATS.map((c) => ({ c, list: rest.filter((f) => f.cat === c.id) })).filter((g) => g.list.length);
       root.innerHTML = `
-        <header class="head"><div><p class="eyebrow">${items.length ? `${items.length} aliment${items.length > 1 ? 's' : ''}` : 'Ce qu’il reste à la maison'}</p><h1 class="title">Frigo</h1></div>
+        <header class="head"><div><h1 class="title">Frigo</h1></div>
           <div class="head-a">
             <button class="btn btn--ghost" data-act="frigo.scan">${icon('barcode', 18)} Scanner</button>
             <button class="btn btn--ghost" data-act="frigo.photo">${icon('receipt', 18)} Ticket</button>

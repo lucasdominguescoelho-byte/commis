@@ -42,7 +42,7 @@
         grid += slotHtml(wid, d, 'midi', promos, today) + slotHtml(wid, d, 'soir', promos, today);
       }
       root.innerHTML = `
-        <header class="head"><div><p class="eyebrow">Planning · semaine ${C.weekNo(wid)}</p><h1 class="title">${C.weekLabel(wid)}</h1></div>
+        <header class="head"><div><h1 class="title">${C.weekLabel(wid)}</h1></div>
           <div class="head-a">${C.weekNav(wid)}
             ${t.meals ? `<button class="ibtn ibtn--line" data-act="plan.clear" aria-label="Vider la semaine" title="Vider la semaine">${icon('trash')}</button>` : ''}
             <button class="btn btn--citron" data-act="env.open">${icon('wand', 18)} Préparer ma semaine</button></div></header>

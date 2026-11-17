@@ -77,8 +77,7 @@
     const tabBtn = (v, label) => `<button role="tab" class="${tab === v ? 'is-on' : ''}" aria-selected="${tab === v}" data-act="rec.tab" data-v="${v}">${label}</button>`;
     const tabs = `<div class="seg seg--tabs" role="tablist">${tabBtn('mes', `Mes recettes <em>${nMes}</em>`)}${tabBtn('tester', `À tester <em>${nTest}</em>`)}${tabBtn('toutes', `Toutes <em>${nAll}</em>`)}</div>`;
     if (!['mes', 'tester', 'toutes'].includes(tab)) C.ui.rtab = 'mes';
-    const sub = { mes: 'Testées et validées', tester: 'Mises de côté pour être cuisinées', toutes: 'Toute la bibliothèque' }[C.ui.rtab];
-    const head = `<header class="head"><div><p class="eyebrow">${sub}</p><h1 class="title">Recettes</h1></div>
+    const head = `<header class="head"><div><h1 class="title">Recettes</h1></div>
         <div class="head-a"><button class="btn btn--ghost" data-act="rec.video" title="Créer une recette depuis une vidéo YouTube ou TikTok">${icon('play', 18)} Depuis une vidéo</button><button class="btn btn--ghost" data-act="rec.import" title="Ajouter des recettes depuis un fichier .json">${icon('upload', 18)} Importer</button><button class="btn" data-act="rec.new">${icon('plus', 18)} Nouvelle recette</button></div></header>`;
     const cats = C.RCATS.map((c) => c.name).filter((n) => C.S.recipes.some((r) => inTab(r) && C.categoriesDe(r).includes(n)));
     const chip = (label, on, attrs) => `<button class="chip ${on ? 'is-on' : ''}" ${attrs} aria-pressed="${!!on}">${label}</button>`;

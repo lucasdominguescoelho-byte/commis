@@ -27,7 +27,7 @@
       const cols = (pick) => hist.map((h) => ({ label: h.label, tip: `Semaine ${C.weekNo(h.wid)} · ${C.weekLabel(h.wid)}`, now: h.wid === wid, values: pick(h) }));
 
       root.innerHTML = `
-        <header class="head"><div><p class="eyebrow">Budget alimentaire</p><h1 class="title">Budget</h1></div>
+        <header class="head"><div><h1 class="title">Budget</h1></div>
           <div class="head-a"><button class="btn btn--citron" data-act="bud.ticket">${icon('receipt', 18)} Photographier un ticket</button><button class="btn btn--ghost" data-act="bud.add">${icon('plus', 18)} Noter une dépense</button></div></header>
         ${hasBudget ? '' : `<div class="note" style="margin-bottom:16px">${icon('info', 18)}<span>Aucun budget hebdomadaire n’est défini.</span><a class="btn btn--ghost btn--sm note-a" href="#/reglages">Définir un budget</a></div>`}
 

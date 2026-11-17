@@ -84,7 +84,7 @@
       const off = C.STORES.filter((s) => !C.S.settings.stores.includes(s.id)).map((s) => s.name);
 
       root.innerHTML = `
-        <header class="head"><div><p class="eyebrow">${live.length} promotion${live.length > 1 ? 's' : ''} en cours ou à venir</p><h1 class="title">Promotions</h1></div>
+        <header class="head"><div><h1 class="title">Promotions</h1></div>
           <div class="head-a">
             <button class="btn btn--ghost" data-act="promo.sync">Actualiser</button>
             <button class="ibtn ibtn--line" data-act="promo.import" aria-label="Importer un fichier" title="Importer un fichier JSON">${icon('upload')}</button>

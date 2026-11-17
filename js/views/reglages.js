@@ -57,7 +57,7 @@
       const demoR = C.S.recipes.filter((r) => r.demo).length;
       const demoP = C.S.promotions.filter((p) => p.demo).length;
       root.innerHTML = `
-        <header class="head"><div><p class="eyebrow">Personnalisation</p><h1 class="title">Réglages</h1>
+        <header class="head"><div><h1 class="title">Réglages</h1>
           <p class="lede">Ces choix orientent les suggestions de recettes, la proposition de planning et les calculs de budget. <b style="color:var(--ink)">${pool} recette${pool > 1 ? 's' : ''} sur ${total}</b> ${pool > 1 ? 'respectent' : 'respecte'} actuellement vos préférences.</p></div>
           <div class="head-a"><button class="btn btn--ghost" data-act="set.onboard">${icon('wand', 18)} Revoir le questionnaire</button></div></header>
 

@@ -373,7 +373,11 @@
     (list.manual || []).forEach((m) =>
       items.push({ key: 'm:' + m.id, manual: m, name: m.name, qty: Number(m.qty) || 0, unit: m.unit || 'pièce', cat: m.cat || 'autre', regular: Number(m.price) || 0, cost: Number(m.price) || 0, recipes: [], stores: m.store ? [m.store] : [], match: null })
     );
-    items.forEach((it) => (it.checked = !!list.checked[it.key]));
+    items.forEach((it) => {
+      const v = list.checked[it.key];
+      it.checked = !!v;
+      it.checkedAt = typeof v === 'number' ? v : v ? 1 : 0; // heure où l'article a été coché (1 = avant cette fonction)
+    });
     // Ce qui est déjà au frigo n'est pas compté dans le total (réglable sur la liste).
     const deduct = list.deductFridge !== false;
     items.forEach((it) => {
