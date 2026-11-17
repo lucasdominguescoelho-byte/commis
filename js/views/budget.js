@@ -13,7 +13,6 @@
     render(root) {
       const st = C.S.settings;
       const wid = C.weekId();
-      const t = E.planTotals(wid);
       const spent = E.weekSpent(wid);
       const m = E.month();
       const hist = E.history(8);
@@ -22,13 +21,11 @@
       const bar = (v, max) => (max > 0 ? `<div class="bar ${v > max ? 'is-over' : ''}"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : '');
       const anyHist = hist.some((h) => h.planned > 0 || h.spent > 0);
       const expenses = [...C.S.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
-      const avant = C.shiftWeek(wid, -1);
-      const tAvant = E.planTotals(avant);
-      // une case : dépensé réellement / planifié, avec une barre
-      const caseReel = (titre, depense, planifie, detail) => `<div class="card"><p class="stat-l">${titre}</p>
-            <p class="stat-v">${C.chf(depense)}<small>/ ${planifie > 0 ? C.num(planifie, 0) : '—'}</small></p>
-            ${bar(depense, planifie)}
-            <p class="stat-s">Dépensé réellement, sur ${planifie > 0 ? `${C.chf(planifie)} planifiés` : 'rien de planifié'}${detail ? ` · ${detail}` : ''}</p></div>`;
+      const moisDernier = E.month(new Date(now.getFullYear(), now.getMonth() - 1, 15));
+      // une case : un titre, un montant réellement dépensé (et, s'il y en a un, le budget prévu avec une barre)
+      const caseReel = (titre, depense, prevu) => `<div class="card"><p class="stat-l">${titre}</p>
+            <p class="stat-v">${C.chf(depense)}${prevu > 0 ? `<small>/ ${C.num(prevu, 0)}</small>` : ''}</p>
+            ${prevu > 0 ? bar(depense, prevu) : ''}</div>`;
       const cols = (pick) => hist.map((h) => ({ label: h.label, tip: `Semaine ${C.weekNo(h.wid)} · ${C.weekLabel(h.wid)}`, now: h.wid === wid, values: pick(h) }));
 
       root.innerHTML = `
@@ -36,9 +33,9 @@
           <div class="head-a"><button class="btn btn--citron" data-act="bud.ticket">${icon('receipt', 18)} Photographier un ticket</button><button class="btn btn--ghost" data-act="bud.add">${icon('plus', 18)} Noter une dépense</button></div></header>
 
         <section class="grid bud-cases">
-          ${caseReel(`Cette semaine · sem. ${C.weekNo(wid)}`, spent, t.cost, `${t.meals} repas`)}
-          ${caseReel(`Semaine dernière · sem. ${C.weekNo(avant)}`, E.weekSpent(avant), tAvant.cost, `${tAvant.meals} repas`)}
-          ${caseReel(`Ce mois · ${esc(C.monthName(now))}`, m.spent, m.planned, '')}
+          ${caseReel('Cette semaine', spent, 0)}
+          ${caseReel('Ce mois', m.spent, m.budget)}
+          ${caseReel('Le mois dernier', moisDernier.spent, 0)}
         </section>
 
         <section class="sec card">
