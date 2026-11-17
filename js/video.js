@@ -229,19 +229,20 @@
   const ENTETE_ING = /^(les )?(ingredients?|il (vous )?faut|liste de courses|pour (\d+|deux|quatre) (personnes|pers|portions))\b/;
   const ENTETE_ETAPES = /^(la )?(preparation|etapes?|recette|instructions?|methode|deroulement|realisation)$/;
   const BRUIT = /\b(bon appetit|abonne|abonnez|like|partage|commente|en bio|lien|te donne envie|vous donne envie|enjoy|bisous|merci|domcooks|recette complete|rendez vous sur)\b/;
-  const GENERIQUE = /\b(recettes?( (facile|rapide|simple|maison|express|du jour|inratable|parfaite|ultime|de ma grand mere|de grand mere))*|facile|faciles|rapide|rapides|simple|inratable|delicieu(x|se)|trop bon(ne)?|la meilleure|le meilleur|les meilleur(e)?s|meilleur(e)?s?|ultime|maison|en \d+ ?(min|minutes|mn)|tuto(riel)?|pas a pas|episode \d+|ep \d+|partie \d+|shorts?|asmr|vlog|food|cooking|healthy|best|easy|quick|recipe|how to make|the|virale?s?|de tiktok|tiktok|sur tiktok|youtube)\b/g;
-  const ARTICLE = /^(la|le|les|l|ma|mon|mes|ta|ton|tes|notre|nos|votre|vos|ce|cet|cette|ces|une?|des|de|du|d)$/;
+  const GENERIQUE = /\b(recettes? et preparation|preparation|vraie?s?|veritables?|authentiques?|traditionnelle?s?|recettes?( (facile|rapide|simple|maison|express|du jour|inratable|parfaite|ultime|de ma grand mere|de grand mere))*|facile|faciles|rapide|rapides|simple|inratable|delicieu(x|se)|trop bon(ne)?|la meilleure|le meilleur|les meilleur(e)?s|meilleur(e)?s?|ultime|maison|en \d+ ?(min|minutes|mn)|tuto(riel)?|pas a pas|episode \d+|ep \d+|partie \d+|shorts?|asmr|vlog|hd|4k|food|cooking|healthy|best|easy|quick|recipe|how to make|the|virale?s?|de tiktok|tiktok|sur tiktok|youtube)\b/g;
+  const ARTICLE = /^(la|le|les|l|ma|mon|mes|ta|ton|tes|notre|nos|votre|vos|ce|cet|cette|ces|une?|des|de|du|d|et|a|au|aux)$/;
 
   function nommer(titre) {
-    let t = decouper(titre).split('\n').map((x) => x.trim()).filter(Boolean)[0] || '';
+    // première ligne qui n'est pas un simple en-tête (« Recette : … » est coupé en deux lignes)
+    let t = decouper(titre).split('\n').map((x) => x.trim()).filter((x) => x && !/^(la |ma |une )?(recettes?|preparation|instructions?|etapes?)$/.test(C.norm(x)))[0] || '';
     t = t.split(/\s[|•–—]\s|\s-\s|\|/)[0];
-    t = t.replace(/\s*[([].*?[)\]]\s*/g, ' ').replace(/^r[ée]ponse [àa]\s*/i, '').trim();
+    t = t.replace(/\s*[([].*?[)\]]\s*/g, ' ').replace(/^r[ée]ponse [àa]\s*/i, '').replace(/^\s*(la |ma |une )?recettes?\s*:\s*/i, '').trim();
     const phrase = t.match(/^(.*?\p{L}{3})\s?[.!?:](?:\s|$)/u);
     if (phrase) t = phrase[1];
     if (ENTETE_ING.test(C.norm(t))) return '';
     t = t
       .replace(/^(d[ée]couvre[zs]?|voici|je (te |vous )?(teste|fais|propose|partage)|j['’]ai (test[ée]|fait)|aujourd['’]hui( on fait| je fais)?|on (fait|teste)|testons|petite?s?)\s+/i, '')
-      .replace(/\s(que|qui|quand|parce que|comme jamais|a tester|a faire|un plat|une recette|parfaite?s? pour)\s.*$/i, '');
+      .replace(/\s(que|qui|quand|parce que|comme jamais|a tester|a faire|un plat|une recette|parfaite?s? pour|dans la tradition|comme (a|à|en|chez)|selon)\s.*$/i, '');
     // repère les mots génériques sur le texte sans accents, puis les retire du texte d'origine
     const mots = t.split(/\s+/).filter(Boolean);
     const norm = mots.map((w) => C.norm(w));
@@ -615,8 +616,9 @@
   }
 
   /* ---------- Fenêtre ---------- */
-  function fenetre() {
-    const st = { lien: '', desc: '', etat: '', erreur: '', prop: null };
+  // opts.apres(recette) : appelé après l'ajout (au lieu d'ouvrir la fiche), par ex. pour la mettre au planning
+  function fenetre(opts = {}) {
+    const st = { lien: '', desc: '', etat: '', erreur: '', prop: null, apres: opts.apres || null };
     const body = () => {
       if (st.prop) {
         const r = st.prop.r;
@@ -753,6 +755,7 @@
       if (nom && nom.value.trim()) r.name = nom.value.trim();
       await C.save.recipe(r);
       st.close();
+      if (st.apres) return st.apres(r);
       C.ui.rtab = 'tester';
       C.go(`#/recettes/${r.id}`);
       C.toast('Recette ajoutée dans « À tester ».');
@@ -766,5 +769,5 @@
     }
   });
 
-  C.video = { lireLien, lireTexte, nommer, composer, imagesPour, ameliorerAnciennes, illustration }; // aussi pour vérifier depuis la console
+  C.video = { ouvrir: fenetre, lireLien, lireTexte, nommer, composer, imagesPour, ameliorerAnciennes, illustration }; // aussi pour vérifier depuis la console
 })();

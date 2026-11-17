@@ -194,6 +194,14 @@
       C.render();
       syncPromos();
       setTimeout(() => C.video && C.video.ameliorerAnciennes(), 5000); // anciennes recettes vidéo : plus belle image
+      // La dictée vocale a été retirée : on libère la place de son modèle (jusqu'à ~620 Mo)
+      if (window.caches) caches.delete('transformers-cache').catch(() => {});
+      try {
+        localStorage.removeItem('commis-dictee');
+        localStorage.removeItem('commis-dictee-gpu');
+      } catch (e) {
+        /* sans importance */
+      }
       setTimeout(() => C.envies && C.envies.illustrerEnvies(), 6000); // recettes d'envies : une photo du plat
       // Premier lancement sur cet appareil : questionnaire de réglages
       if (!C.S.settings.onboarded && !C.noStorage) C.onboard();

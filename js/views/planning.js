@@ -60,8 +60,7 @@
           const label = past.length === 1 ? C.DAYS[0].toLowerCase() : `${C.DAYS[0].toLowerCase()} – ${C.DAYS[past.length - 1].toLowerCase()}`;
           return `<button class="past-t" data-act="plan.past" aria-expanded="${!!C.ui.showPast}">${icon(C.ui.showPast ? 'minus' : 'plus', 16)} ${C.ui.showPast ? 'Masquer' : 'Afficher'} les jours passés <span class="muted">(${label})</span></button>`;
         })()}
-        <div class="plan ${C.ui.showPast ? 'show-past' : ''}">${grid}</div>
-        <p class="small muted" style="margin-top:16px">« Préparer ma semaine » remplit tout en une fois ; vous pouvez aussi cliquer sur une case pour ajouter un repas, sur un repas pour voir ses ingrédients. Sur ordinateur, glissez un repas pour le déplacer ; ailleurs, utilisez « Déplacer ».</p>`;
+        <div class="plan ${C.ui.showPast ? 'show-past' : ''}">${grid}</div>`;
     },
   };
 
@@ -76,8 +75,9 @@
         .map((r) => ({ r, c: E.recipeCost(r, people, promos), bad: E.conflicts(r) }))
         .filter((x) => !q || C.norm([x.r.name, x.r.category, ...x.r.ingredients.map((i) => i.name)].join(' ')).includes(q))
         .sort((a, b) => a.bad.length - b.bad.length || b.c.savings - a.c.savings || a.r.name.localeCompare(b.r.name, 'fr'));
-      if (!rows.length) return `<p class="muted" style="padding:18px 0">${C.S.recipes.length ? 'Aucune recette trouvée.' : 'Aucune recette dans la bibliothèque pour le moment.'}</p>`;
-      return rows
+      const ajout = C.ui.pick.q.trim() && C.envies ? `<button class="pick pick--new" data-act="pick.nom"><span class="thumb pw-vide">${icon('plus', 18)}</span><span class="row-b"><span class="row-t">Ajouter « ${esc(C.ui.pick.q.trim())} »</span><span class="row-s">Nouvelle recette, avec sa photo${rows.length ? '' : ' — vous la compléterez quand vous voudrez'}</span></span></button>` : '';
+      if (!rows.length) return ajout || `<p class="muted" style="padding:18px 0">${C.S.recipes.length ? 'Aucune recette trouvée.' : 'Aucune recette dans la bibliothèque pour le moment.'}</p>`;
+      return ajout + rows
         .map(
           (x) => `<button class="pick ${x.bad.length ? 'is-off' : ''}" data-act="pick.choose" data-id="${x.r.id}">
             <span class="thumb">${C.recipeVisual(x.r, 'ph--sm')}</span>
@@ -90,7 +90,8 @@
     C.sheet({
       title,
       sub,
-      body: `<div class="search" style="max-width:none;margin-bottom:10px">${icon('search', 18)}<input class="inp" type="search" placeholder="Rechercher une recette ou un ingrédient" data-input="pick.search" aria-label="Rechercher" autofocus></div>
+      body: `<div class="pick-a"><button class="btn btn--ghost btn--sm" type="button" data-act="pick.new">${icon('plus', 16)} Nouvelle recette</button>${C.video ? `<button class="btn btn--ghost btn--sm" type="button" data-act="pick.video">${icon('play', 16)} Depuis une vidéo</button>` : ''}</div>
+        <div class="search" style="max-width:none;margin-bottom:10px">${icon('search', 18)}<input class="inp" type="search" placeholder="Rechercher, ou taper le nom d’un nouveau plat" data-input="pick.search" aria-label="Rechercher" autofocus></div>
         <p class="small muted" style="margin-bottom:6px">Classées par économies possibles cette semaine, pour ${C.S.settings.household} pers.</p><div id="pick-list">${list()}</div>`,
     });
   };
@@ -145,6 +146,36 @@
     'pick.search': (el) => {
       C.ui.pick.q = el.value;
       document.getElementById('pick-list').innerHTML = C.ui.pick.list();
+    },
+    'pick.new': () => {
+      const p = C.ui.pick;
+      C.closeSheet();
+      C.nouvelleRecette({
+        nom: p.q.trim(),
+        apres: (r) => {
+          p.onPick(r.id);
+          C.toast(`« ${r.name} » ajoutée et planifiée`);
+        },
+      });
+    },
+    'pick.video': () => {
+      const p = C.ui.pick;
+      C.closeSheet();
+      C.video.ouvrir({
+        apres: (r) => {
+          p.onPick(r.id);
+          C.toast(`« ${r.name} » ajoutée et planifiée`);
+        },
+      });
+    },
+    'pick.nom': async () => {
+      const p = C.ui.pick;
+      const nom = p.q.trim();
+      if (!nom) return;
+      C.closeSheet();
+      const r = await C.envies.depuisNom(nom.charAt(0).toUpperCase() + nom.slice(1));
+      p.onPick(r.id);
+      C.toast(`« ${r.name} » ajoutée et planifiée${r.ingredients.length ? '' : ' — ajoutez les ingrédients depuis sa fiche'}`);
     },
     'pick.choose': (el) => {
       const p = C.ui.pick;
@@ -205,6 +236,14 @@
       C.save.plan(wid, (slots) => Object.keys(slots).forEach((k) => delete slots[k]));
       C.toast('Semaine vidée', { label: 'Annuler', run: () => C.save.plan(wid, (slots) => Object.assign(slots, backup)) });
     },
+  });
+
+  // Entrée dans la recherche du sélecteur : si rien ne correspond, on crée la recette avec ce nom
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !e.target || e.target.getAttribute('data-input') !== 'pick.search') return;
+    e.preventDefault();
+    const b = document.querySelector('#pick-list .pick:not(.pick--new)') ? null : document.querySelector('#pick-list .pick--new');
+    if (b) b.click();
   });
 
   /* ---------- Glisser-déposer (ordinateur) ---------- */

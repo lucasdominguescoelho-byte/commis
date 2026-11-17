@@ -1,8 +1,7 @@
-/* Commis — « Mes envies » : on dit (ou écrit) ce qu'on a envie de manger dans la semaine,
+/* Commis — « Mes envies » : on écrit ce qu'on a envie de manger dans la semaine,
    Commis place ces plats aux bons jours puis complète le reste du planning.
 
    Tout se passe sur l'appareil, sans intelligence artificielle ni service payant :
-     - la dictée utilise la reconnaissance vocale du navigateur (Safari, Chrome), quand elle existe ;
      - la phrase est comprise par des règles : jours (« mardi soir », « demain », « ce midi-là »),
        repas (« midi », « dîner » au sens suisse, « soir », « souper »), plats nommés, et souhaits
        (« léger », « rapide », « sans viande », « poisson », « pas cher », « copieux ») ;
@@ -113,7 +112,7 @@
   ];
   const NOM_SOUHAIT = { leger: 'léger', rapide: 'rapide', vege: 'sans viande', poisson: 'poisson', eco: 'pas cher', copieux: 'copieux' };
 
-  // Confusions fréquentes de la dictée (« je dis midi » pour « jeudi midi », « pattes » pour « pâtes »)
+  // Confusions fréquentes de la dictée du clavier (« je dis midi » pour « jeudi midi », « pattes » pour « pâtes »)
   const DICTEE = [
     [/\bje dis (?=midi|soir|matin|a midi)/g, 'jeudi '],
     [/\bpattes?\b/g, 'pates'],
@@ -475,7 +474,6 @@
     }
   };
 
-  let dictee = null; // dictée en cours
 
   function proposer(st) {
     const wid = st.wid;
@@ -592,52 +590,20 @@
       alts: {},
       ouvert: null,
       erreur: '',
-      voix: { etape: '', message: '', proposer: false, pct: null },
     };
     const people = C.S.settings.household || 2;
     const rec = (id) => C.recipe(id) || (st.prop && st.prop.nouvelles.get(id));
-
-    // État de la dictée : une petite pastille dans le champ, seulement quand il se passe quelque chose
-    const etatVoix = () => {
-      const v = st.voix;
-      if (v.etape === 'ecoute') return v.pct != null ? `J’écoute… · préparation de la dictée ${v.pct} %` : 'J’écoute… (arrêt automatique quand vous vous taisez)';
-      if (v.etape === 'telechargement') return v.enregistre ? `J’écoute… · préparation de la dictée${v.pct != null ? ` ${v.pct} %` : '…'}` : `Préparation de la dictée${v.pct != null ? ` · ${v.pct} %` : '…'} (une seule fois)`;
-      if (v.etape === 'transcription') return 'J’écris ce que vous avez dit…';
-      if (v.etape === 'erreur' || v.etape === 'info') return v.message;
-      return '';
-    };
-    const majVoix = () => {
-      const el = document.getElementById('pw-voix');
-      const txt = etatVoix();
-      if (el) {
-        el.textContent = txt;
-        el.hidden = !txt;
-        el.classList.toggle('is-err', st.voix.etape === 'erreur');
-      }
-      const b = document.querySelector('.env-mic');
-      const on = st.voix.etape === 'ecoute' || (st.voix.etape === 'telechargement' && st.voix.enregistre);
-      if (b) {
-        b.classList.toggle('is-on', on);
-        b.classList.toggle('is-busy', st.voix.etape === 'transcription' || (st.voix.etape === 'telechargement' && !st.voix.enregistre));
-        b.setAttribute('aria-label', on ? 'Arrêter la dictée' : 'Dicter');
-        if (!on) b.style.removeProperty('--lvl');
-      }
-      const box = document.querySelector('.env-in');
-      if (box) box.classList.toggle('has-voix', !!txt);
-    };
 
     const vueEnvies = () => {
       const chip = (on, label, attrs) => `<button class="chip ${on ? 'is-on' : ''}" type="button" aria-pressed="${on}" ${attrs}>${label}</button>`;
       const utilisables = E.compatible().filter((r) => r.ingredients.length && E.pourRepas(r));
       const nb = (id) => utilisables.filter((r) => sourceDe(r) === id).length;
-      return `<p class="pw-intro">Dites ce dont vous avez envie, ou laissez Commis choisir. Vous pourrez changer chaque repas avant de valider.</p>
+      return `<p class="pw-intro">Écrivez ce dont vous avez envie, ou laissez Commis choisir. Vous pourrez changer chaque repas avant de valider.</p>
         <section class="pw-sec">
           <h3 class="pw-h">Des envies précises ? <span>facultatif</span></h3>
           <div class="env-in">
             <textarea class="inp" id="env-text" rows="3" placeholder="Ex. Mardi soir une raclette, jeudi midi des pâtes bolognaise, et un repas léger ce midi-là.">${esc(st.texte)}</textarea>
-            ${C.dictee && C.dictee.possible() ? `<button class="env-mic" data-act="pw.mic" type="button" aria-label="Dicter">${icon('mic', 22)}</button>` : ''}
           </div>
-          <span class="pw-voix" id="pw-voix" aria-live="polite" hidden></span>
         </section>
         <section class="pw-sec">
           <h3 class="pw-h">Pour le reste de la semaine</h3>
@@ -727,19 +693,13 @@
       body,
       foot,
       size: 'wide',
-      onClose: () => {
-        if (dictee) dictee.arreter();
-        dictee = null;
-      },
     });
     st.refresh = () => {
       lireTexte();
       sheet.refresh();
     };
-    st.majVoix = majVoix;
     st.sheet = sheet;
     C.ui.env = st;
-    if (C.dictee) C.dictee.prechauffer(); // la dictée se prépare pendant qu'on lit la fenêtre
   }
 
   const lireTexte = () => {
@@ -751,55 +711,8 @@
     el.setAttribute('aria-pressed', on);
   };
 
-  // Vocabulaire donné à la dictée : vos plats préférés, les classiques, puis les jours et repas
-  // (en dernier : c'est la fin qui compte le plus si la liste est trop longue)
-  const vocabulaireDictee = () => {
-    const perso = C.S.recipes.filter((r) => (r.favorite || r.validated) && r.name.split(/\s+/).length <= 4).slice(0, 8).map((r) => r.name);
-    const plats = [...new Set([...perso, ...CLASSIQUES.map((c) => c.name)])];
-    return `${plats.join(', ')}. Repas léger, rapide, sans viande, du poisson, pas cher, copieux. Lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche, demain, ce soir, ce midi-là. Midi et soir.`;
-  };
-
-  function micro() {
-    const st = C.ui.env;
-    if (dictee) {
-      dictee.arreter();
-      return;
-    }
-    const ta = document.getElementById('env-text');
-    const base = ta ? ta.value.trim() : '';
-    dictee = C.dictee.demarrer({
-      vocabulaire: vocabulaireDictee(),
-      texte(t) {
-        t = t.replace(/\bje dis (?=midi|soir)/gi, 'jeudi ').replace(/\bpattes\b/gi, 'pâtes'); // confusions de la dictée
-        const el = document.getElementById('env-text');
-        const v = (base ? `${base.replace(/[.,;]?$/, ',')} ` : '') + t;
-        if (el) el.value = v;
-        st.texte = v;
-      },
-      etat(e) {
-        if (e.etape === 'telechargement' && e.enregistre) e = { ...e, etape: 'ecoute' }; // on écoute pendant le téléchargement
-        st.voix = e;
-        if (e.etape === 'fini' || e.etape === 'erreur' || e.etape === 'info') dictee = null;
-        st.majVoix();
-        clearTimeout(st.voixMinuterie);
-        if (e.etape === 'fini') st.voix = { etape: '' };
-        if (e.etape === 'erreur' || e.etape === 'info') st.voixMinuterie = setTimeout(() => {
-          if (!dictee) {
-            st.voix = { etape: '' };
-            st.majVoix();
-          }
-        }, 9000);
-      },
-      niveau(x) {
-        const b = document.querySelector('.env-mic');
-        if (b) b.style.setProperty('--lvl', x.toFixed(2));
-      },
-    });
-  }
-
   Object.assign(C.acts, {
     'env.open': () => assistant(),
-    'pw.mic': () => micro(),
     'pw.style': (el) => {
       const st = C.ui.env;
       const v = el.dataset.v;
@@ -816,7 +729,6 @@
     },
     'pw.proposer': () => {
       const st = C.ui.env;
-      if (dictee) dictee.arreter();
       lireTexte();
       if (!st.sources.size) {
         st.erreur = 'Choisissez au moins un type de recettes.';
@@ -910,5 +822,14 @@
     const cl = CLASSIQUES.find((d) => d.cle.test(normaliser(texte)));
     return cl ? { name: cl.name, category: cl.category, prepTime: cl.prepTime, ingredients: cl.ingredients.map((x) => ({ ...x })), steps: cl.steps.slice() } : null;
   };
-  C.envies = { comprendre, preparer, classique, proposer, illustrerEnvies, photoPlat, vocabulaireDictee }; // aussi pour vérifier depuis la console
+  // Recette à partir d'un nom tapé (« raclette ») : la vôtre si elle existe, sinon une recette de base ou à compléter
+  async function depuisNom(nom) {
+    const res = recettePour(nom);
+    if (res.nouvelle && !C.recipe(res.r.id)) {
+      await C.save.recipe({ ...res.r, toTest: true });
+      illustrer({ ...res.r }); // la photo du plat arrive dans la foulée
+    }
+    return C.recipe(res.r.id) || res.r;
+  }
+  C.envies = { comprendre, preparer, classique, proposer, illustrerEnvies, photoPlat, depuisNom }; // aussi pour vérifier depuis la console
 })();

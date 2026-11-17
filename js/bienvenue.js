@@ -21,7 +21,7 @@
         return `<div class="ob-hello"><span class="logo-mark ob-mark">${C.logoMark || ''}</span>
           <h2 class="ob-t">Bienvenue dans ${C.APP}</h2>
           <p class="ob-s">Vos repas de la semaine avec les promotions de vos magasins, la liste de courses qui va avec, et votre budget.</p>
-          <p class="ob-s">Quatre petites questions pour régler l’app sur vous. Une minute, et tout reste modifiable ensuite.</p></div>`;
+          <p class="ob-s">Trois petites questions pour régler l’app sur vous. Une minute, et tout reste modifiable ensuite.</p></div>`;
       case 1:
         return `<p class="eyebrow">Votre foyer</p><h2 class="ob-t">Vous êtes combien à table ?</h2>
           <div class="ob-row"><div class="step ob-step"><button data-act="ob.people" data-d="-1" aria-label="Moins">${icon('minus', 18)}</button><b>${D.household}</b><button data-act="ob.people" data-d="1" aria-label="Plus">${icon('plus', 18)}</button><span>personne${D.household > 1 ? 's' : ''}</span></div></div>

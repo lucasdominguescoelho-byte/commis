@@ -97,6 +97,8 @@
       <div id="rec-grid">${cards()}</div>`;
   }
 
+  C.nouvelleRecette = (opts) => editor(null, opts);
+
   /* ---------- Fiche ---------- */
   function detail(root, id) {
     const r = C.recipe(id);
@@ -173,9 +175,10 @@
       <input class="inp" name="ing-price" inputmode="decimal" placeholder="CHF" value="${x.price != null ? x.price : ''}" aria-label="Coût estimé">
       <button type="button" class="ibtn" data-act="rec.ingDel" aria-label="Retirer cet ingrédient">${icon('x', 18)}</button></div>`;
 
-  function editor(r) {
+  // opts.nom : nom prérempli ; opts.apres(recette) : appelé après l'enregistrement (au lieu d'ouvrir la fiche)
+  function editor(r, opts = {}) {
     const isNew = !r;
-    r = r || { validated: true, source: 'manuel', id: C.uid(), name: '', description: '', category: 'Autre', prepTime: 30, servings: 4, ingredients: [{}, {}, {}], steps: [], favorite: false, photo: '', createdAt: Date.now() };
+    r = r || { validated: true, source: 'manuel', id: C.uid(), name: opts.nom || '', description: '', category: 'Autre', prepTime: 30, servings: 4, ingredients: [{}, {}, {}], steps: [], favorite: false, photo: '', createdAt: Date.now() };
     C.sheet({
       title: isNew ? 'Nouvelle recette' : 'Modifier la recette',
       size: 'wide',
@@ -233,6 +236,7 @@
           };
           sheet.close();
           C.save.recipe(saved);
+          if (opts.apres) return opts.apres(saved);
           C.toast(isNew ? 'Recette ajoutée' : 'Recette enregistrée');
           if (isNew) C.go('#/recettes/' + saved.id);
         };
