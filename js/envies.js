@@ -358,81 +358,79 @@
     return { lignes: lignes.sort((a, b) => (a.d ?? 9) - (b.d ?? 9) || (a.slot === 'soir') - (b.slot === 'soir')), general: [...new Set(general)], premier };
   }
 
-  /* ---------- Photo d'un plat, trouvée sur Wikipédia (gratuit, sans clé) ----------
-     Pour une recette créée à partir d'une envie (« raclette ») : on cherche l'article du plat et on prend
-     sa photo, seulement si le titre de l'article reprend bien le nom du plat (jamais de logo ni de dessin). */
-  const GENERIQUES = new Set(['maison', 'grand', 'grande', 'petit', 'petite', 'filet', 'facon', 'recette', 'cuisine', 'vapeur', 'pomme', 'legume', 'herbe', 'plat', 'simple', 'rapide', 'lait', 'sauce']);
-  const photos = new Map();
-  // une requête à la fois, espacées : Wikipédia limite les appels anonymes
-  let file = Promise.resolve();
-  const pause = () => new Promise((r) => setTimeout(r, 1200));
-  const enFile = (f) => {
-    const p = file.then(f, f);
-    file = p.then(pause, pause);
-    return p;
+  /* ---------- Photo d'un plat (Unsplash, licence libre) ----------
+     Pour les recettes sans photo (ou avec une ancienne photo trouvée sur Wikipédia) : une belle photo
+     choisie à la main sur Unsplash pour chaque plat courant, sinon une photo du même type de plat.
+     Les photos viennent directement d'Unsplash (gratuit, sans clé). */
+  const UNSPLASH = (id) => `https://images.unsplash.com/${id}?w=900&h=675&fit=crop&q=70&auto=format`;
+  const P = {
+    raclette: 'photo-1635924210828-ccbe493b6e1d', fondue: 'photo-1765099271832-258bee41458b', chinoise: 'photo-1614104030967-5ca61a54247b',
+    bolognaise: 'photo-1622973536968-3ead9e780960', carbonara: 'photo-1588013273468-315fd88ea34c', lasagnes: 'photo-1709429790175-b02bb1b19207',
+    pizza: 'photo-1513104890138-7c749659a591', burger: 'photo-1568901346375-23c9450c58cd', tacos: 'photo-1599974579688-8dbdd335c77f',
+    chili: 'photo-1658308766948-01c85ade2737', papet: 'photo-1698843813577-db28459556b0', croute: 'photo-1608039858788-667850f129f6',
+    rosti: 'photo-1712746785642-110ad4b7e0fa', curry: 'photo-1764304733301-3a9f335f0c67', pouletRoti: 'photo-1606728035253-49e8a23146de',
+    saumon: 'photo-1675209705883-7aec595f5aa8', poisson: 'photo-1776097633704-6666ffafc58d', salade: 'photo-1512621776951-a57141f2eefd',
+    soupe: 'photo-1665594051407-7385d281ad76', omelette: 'photo-1646579933415-92109f9805df', crepes: 'photo-1597524305544-cd821476715f',
+    parmentier: 'photo-1696935257293-9ec4f03074a1', steak: 'photo-1600020333626-de555db06232', gratin: 'photo-1684950888991-224571bf3910',
+    tartiflette: 'photo-1586032340517-0475038cee18', risotto: 'photo-1712407881629-a8ca82a3c64f', quiche: 'photo-1650844010413-3f24dc1c182b',
+    couscous: 'photo-1582576163090-09d3b6f8a969', wok: 'photo-1607328874071-45a9cd600644', poke: 'photo-1768326119231-bf064c1b8fdf',
+    oignon: 'photo-1549203438-a7696aed4dac', ragout: 'photo-1759392773285-0f86affdf1df', schnitzel: 'photo-1599921841143-819065a55cc6',
+    paella: 'photo-1623961990059-28356e226a77', sushi: 'photo-1579584425555-c3ce17fd4351', ramen: 'photo-1569718212165-3a8278d5f624',
+    falafel: 'photo-1786174045076-1cd880429ef1', moules: 'photo-1600265721436-734abbfe2137', dahl: 'photo-1788604619692-120407b7207c',
+    quesadilla: 'photo-1618040996337-56904b7850b9', croque: 'photo-1531664412848-9610afed156c', ratatouille: 'photo-1652622550740-f90d03edfbf0',
+    pates: 'photo-1621996346565-e3dbc646d9a9', poulet: 'photo-1610057099431-d73a1c9d2f2f', poissonGrille: 'photo-1665401015549-712c0dc5ef85',
+    vege: 'photo-1623428187969-5da2dcea5ebf', four: 'photo-1645453014403-4ad5170a386c', wrap: 'photo-1584947897804-408958123f1d',
+    oeufs: 'photo-1533089860892-a7c6f0a88666',
   };
-  function photoPlat(nom) {
-    const cle = C.norm(nom);
-    if (!cle) return Promise.resolve(null);
-    if (photos.has(cle)) return photos.get(cle);
-    const p = (async () => {
-      const toks = C.tokens(nom).filter((t) => t.length > 2 && !GENERIQUES.has(t));
-      if (!toks.length) return null;
-      const url = `https://fr.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=0&gsrlimit=6&gsrsearch=${encodeURIComponent(nom)}&prop=pageimages&piprop=thumbnail&pithumbsize=800`;
-      const appel = () =>
-        fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then((r) => {
-          if (!r.ok) throw new Error(`Wikipédia ${r.status}`);
-          return r.json();
-        });
-      // un refus passager (trop de demandes) : on réessaie une fois un peu plus tard
-      const d = await enFile(() => appel().catch(() => new Promise((r) => setTimeout(r, 4000)).then(appel)));
-      const pages = Object.values((d.query && d.query.pages) || {}).sort((a, b) => a.index - b.index);
-      const proche = (t, x) => t === x || (t.length > 4 && x.length > 4 && (t.includes(x) || x.includes(t)));
-      let best = null;
-      pages.forEach((pg, i) => {
-        if (!pg.thumbnail || /\.svg/i.test(pg.thumbnail.source) || /homonymie|film|liste/i.test(pg.title)) return;
-        const tt = C.tokens(pg.title.replace(/\(.*?\)/g, ' ')).filter((t) => t.length > 2);
-        const communs = toks.filter((t) => tt.some((x) => proche(t, x)));
-        if (!communs.length) return;
-        const sc = communs.length * 2 - i * 0.8; // mots du plat retrouvés, puis rang dans Wikipédia
-        if (!best || sc > best.sc) best = { pg, sc };
-      });
-      if (!best) return null;
-      return { src: best.pg.thumbnail.source.replace(/\?utm_.*$/, ''), page: `https://fr.wikipedia.org/wiki/${encodeURIComponent(best.pg.title.replace(/ /g, '_'))}`, titre: best.pg.title };
-    })().catch(() => {
-      photos.delete(cle); // échec réseau : on pourra réessayer plus tard
-      return null;
-    });
-    photos.set(cle, p);
-    return p;
+  // Le premier motif qui correspond au nom gagne (les plats précis avant les familles)
+  const PLATS = [
+    [/raclette/, P.raclette], [/fondue chinoise|hot pot/, P.chinoise], [/fondue/, P.fondue],
+    [/bolognaise|bolognese/, P.bolognaise], [/carbonara/, P.carbonara], [/lasagne/, P.lasagnes], [/pizza/, P.pizza],
+    [/burger/, P.burger], [/quesadilla/, P.quesadilla], [/\btacos?\b/, P.tacos], [/wrap|kebab|pita|burrito|fajita|naan/, P.wrap],
+    [/chili/, P.chili], [/papet|saucisse aux choux/, P.papet], [/croute au fromage|croute fromage/, P.croute], [/croque/, P.croque],
+    [/rosti/, P.rosti], [/tartiflette|reblochon/, P.tartiflette], [/hachis|parmentier/, P.parmentier], [/gratin|dauphinois/, P.gratin],
+    [/curry|tikka|massala|masala|korma/, P.curry], [/\bdahl?\b|\bdhal\b|lentilles corail/, P.dahl],
+    [/poulet roti|poulet au four|cuisses? de poulet|poulet entier/, P.pouletRoti], [/saumon/, P.saumon], [/moules/, P.moules],
+    [/sushi|maki/, P.sushi], [/poke/, P.poke], [/paella/, P.paella], [/risotto/, P.risotto], [/quiche|tarte salee|tarte aux poireaux/, P.quiche],
+    [/couscous|tajine|tagine/, P.couscous], [/ramen|\bpho\b|soupe de nouilles/, P.ramen], [/wok|nouilles|vermicelles|bobun|bo bun|pad thai|chow mein|riz saute|riz cantonais/, P.wok],
+    [/soupe a l oignon/, P.oignon], [/soupe|veloute|potage|minestrone|gaspacho/, P.soupe], [/omelette|frittata/, P.omelette],
+    [/crepe|galette/, P.crepes], [/steak|entrecote|bavette|filet de boeuf/, P.steak], [/schnitzel|escalope|cordon bleu|wiener/, P.schnitzel],
+    [/bourguignon|ragout|daube|goulash|pot au feu|blanquette|mijot|boeuf braise|joue/, P.ragout], [/ratatouille/, P.ratatouille],
+    [/falafel|houmous/, P.falafel], [/poisson|cabillaud|colin|truite|perche|dorade|merlu|\blieu\b|thon/, P.poisson], [/\boeufs?\b/, P.oeufs],
+    [/pates|spaghetti|penne|tagliatelle|macaroni|gnocchi|orzo|cornettes|coquillettes|fusilli|ravioli|linguine/, P.pates],
+    [/poulet|volaille|dinde/, P.poulet], [/salade|bowl/, P.salade],
+  ];
+  const PAR_CATEGORIE = { 'Pâtes & riz': P.pates, Viande: P.ragout, Poisson: P.poissonGrille, 'Végétarien': P.vege, Soupe: P.soupe, Salade: P.salade, 'Gratin & four': P.four, 'Burgers & wraps': P.burger, 'Petit-déjeuner': P.oeufs };
+  function photoPlat(nom, categorie) {
+    const n = C.norm(nom);
+    const hit = PLATS.find(([re]) => re.test(n));
+    const id = hit ? hit[1] : PAR_CATEGORIE[categorie];
+    return Promise.resolve(id ? { src: UNSPLASH(id), page: 'https://unsplash.com', titre: 'Unsplash', exacte: !!hit } : null);
   }
   C.photoPlat = photoPlat;
 
-  // Donne une photo à une recette qui n'en a pas (et met à jour la vignette affichée)
+  // Photo à remplacer : aucune, ou une ancienne photo trouvée sur Wikipédia / une illustration générique d'import vidéo
+  const aRemplacer = (r) => !r.photo || /wikipedia|wikimedia/.test(`${r.photoSource || ''} ${r.photo}`) || (r.source === 'video' && /^assets\//.test(r.photo));
+
+  // Donne une photo à une recette (et met à jour la vignette affichée)
   async function illustrer(r) {
-    if (!r || r.photo) return r;
-    const ph = await photoPlat(r.name);
-    if (!ph || r.photo) return r;
+    if (!r || !aRemplacer(r)) return r;
+    const ph = await photoPlat(r.name, r.category);
+    if (!ph) return r;
     r.photo = ph.src;
-    r.photoSource = ph.page;
+    r.photoSource = 'unsplash';
     const saved = C.recipe(r.id);
-    if (saved && !saved.photo) await C.save.recipe({ ...saved, photo: ph.src, photoSource: ph.page });
+    if (saved && aRemplacer(saved)) await C.save.recipe({ ...saved, photo: ph.src, photoSource: 'unsplash' });
     document.querySelectorAll(`[data-rid="${CSS.escape(r.id)}"] .thumb`).forEach((el) => (el.innerHTML = C.recipeVisual(r, 'ph--sm')));
     return r;
   }
-  // Recettes d'envies déjà enregistrées sans photo : une tentative par visite
-  const tentees = new Set();
+  // Toutes les recettes sans photo (ou à photo Wikipédia) : une seule fois par visite
   let illuEnCours = false;
   async function illustrerEnvies() {
     if (illuEnCours) return;
-    const sans = C.S.recipes.filter((r) => r.source === 'envie' && !r.photo && !tentees.has(r.id));
-    if (!sans.length) return;
     illuEnCours = true;
     try {
-      for (const r of sans.slice(0, 6)) {
-        tentees.add(r.id);
-        await illustrer({ ...r });
-      }
+      for (const r of C.S.recipes.filter(aRemplacer)) await illustrer({ ...r });
     } finally {
       illuEnCours = false;
     }
@@ -568,7 +566,7 @@
       return false;
     }
     st.prop = { slots: res.slots, statut, nouvelles, general, ko: prep.lignes.filter((l) => !l.res), premier, skip, manque: res.manque || 0, restes, frigo };
-    nouvelles.forEach((r) => !r.photo && !r.idee && illustrer(r)); // une vraie photo du plat, trouvée sur Wikipédia
+    nouvelles.forEach((r) => illustrer(r)); // une belle photo du plat (Unsplash)
     st.alts = {};
     st.ouvert = null;
     st.erreur = '';

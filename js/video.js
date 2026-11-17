@@ -558,8 +558,8 @@
           /* image protégée : on s'en passe */
         }
     }
-    const web = C.photoPlat ? await C.photoPlat(r.name) : null;
-    if (web) out.push({ id: 'web', label: 'Photo du plat', src: web.src, page: web.page });
+    const web = C.photoPlat ? await C.photoPlat(r.name, r.category) : null;
+    if (web) out.push({ id: 'web', label: web.exacte ? 'Photo du plat' : 'Photo du même type', src: web.src, page: 'unsplash' });
     const illu = illustration(r);
     if (illu) out.push({ id: 'illu', label: 'Illustration', src: illu });
     return out;
