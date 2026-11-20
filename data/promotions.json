@@ -1,7 +1,7 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-19T13:29:19+00:00",
+ "generatedAt": "2026-11-20T13:10:14+00:00",
  "sources": {
   "lidl": {
    "ok": false,
@@ -14,13 +14,13 @@
    "ok": true,
    "count": 19,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-19T13:28:23+00:00"
+   "updatedAt": "2026-11-20T13:09:14+00:00"
   },
   "coop": {
    "ok": true,
    "count": 45,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-19T13:29:19+00:00"
+   "updatedAt": "2026-11-20T13:10:14+00:00"
   }
  },
  "promotions": [
@@ -540,9 +540,9 @@
    "store": "coop",
    "category": "epi",
    "promoPrice": 5.75,
-   "regularPrice": null,
-   "discountPct": null,
-   "unitLabel": "",
+   "regularPrice": 7.2,
+   "discountPct": 20,
+   "unitLabel": "4 × 1 kg",
    "validFrom": "2026-11-19",
    "validTo": "2026-11-25",
    "approxDates": false,
@@ -693,9 +693,9 @@
    "store": "coop",
    "category": "surg",
    "promoPrice": 8.95,
-   "regularPrice": null,
-   "discountPct": null,
-   "unitLabel": "",
+   "regularPrice": 11.2,
+   "discountPct": 20,
+   "unitLabel": "10 × 55 ml",
    "validFrom": "2026-11-19",
    "validTo": "2026-11-25",
    "approxDates": false,
@@ -999,9 +999,9 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 19.95,
-   "regularPrice": 25.9,
-   "discountPct": 22,
-   "unitLabel": "2 × 400 g",
+   "regularPrice": null,
+   "discountPct": null,
+   "unitLabel": "",
    "validFrom": "2026-11-19",
    "validTo": "2026-11-25",
    "approxDates": false,
