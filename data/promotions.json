@@ -1,7 +1,7 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-22T12:42:44+00:00",
+ "generatedAt": "2026-11-23T14:56:14+00:00",
  "sources": {
   "lidl": {
    "ok": false,
@@ -12,35 +12,18 @@
   },
   "migros": {
    "ok": true,
-   "count": 19,
+   "count": 18,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-22T12:41:42+00:00"
+   "updatedAt": "2026-11-23T14:55:12+00:00"
   },
   "coop": {
    "ok": true,
    "count": 45,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-22T12:42:44+00:00"
+   "updatedAt": "2026-11-23T14:56:14+00:00"
   }
  },
  "promotions": [
-  {
-   "externalId": "rk-migros-tomates-cerises-melangees-2026-11-19",
-   "name": "Tomates cerises mélangées",
-   "store": "migros",
-   "category": "fl",
-   "promoPrice": 3.45,
-   "regularPrice": 4.95,
-   "discountPct": 30,
-   "unitLabel": "500 g",
-   "validFrom": "2026-11-19",
-   "validTo": "2026-11-25",
-   "approxDates": false,
-   "match": "tomate cerise",
-   "photo": "https://fr.rabatt-kompass.ch/public/gimg/3/2/5/1/9/1/6/tomates-cerises-melangees--3251916.jpg",
-   "url": "https://fr.rabatt-kompass.ch/produits/tomates",
-   "note": ""
-  },
   {
    "externalId": "rk-migros-mayonnaise-paprika-thomy-x-zweifel-2026-11-19",
    "name": "Mayonnaise Paprika Thomy x Zweifel",
