@@ -1,7 +1,7 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-23T14:56:14+00:00",
+ "generatedAt": "2026-11-24T14:59:53+00:00",
  "sources": {
   "lidl": {
    "ok": false,
@@ -14,13 +14,13 @@
    "ok": true,
    "count": 18,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-23T14:55:12+00:00"
+   "updatedAt": "2026-11-24T14:58:52+00:00"
   },
   "coop": {
    "ok": true,
    "count": 45,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-23T14:56:14+00:00"
+   "updatedAt": "2026-11-24T14:59:53+00:00"
   }
  },
  "promotions": [
