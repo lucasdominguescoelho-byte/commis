@@ -1,7 +1,7 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-26T14:01:45+00:00",
+ "generatedAt": "2026-11-27T14:00:23+00:00",
  "sources": {
   "lidl": {
    "ok": false,
@@ -14,13 +14,13 @@
    "ok": true,
    "count": 15,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-26T14:00:40+00:00"
+   "updatedAt": "2026-11-27T13:59:26+00:00"
   },
   "coop": {
    "ok": true,
    "count": 30,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-26T14:01:45+00:00"
+   "updatedAt": "2026-11-27T14:00:23+00:00"
   }
  },
  "promotions": [
@@ -285,8 +285,8 @@
    "store": "coop",
    "category": "fl",
    "promoPrice": 3.95,
-   "regularPrice": null,
-   "discountPct": null,
+   "regularPrice": 5.4,
+   "discountPct": 26,
    "unitLabel": "",
    "validFrom": "2026-11-26",
    "validTo": "2026-12-02",
@@ -317,15 +317,15 @@
    "externalId": "rk-coop-ice-tea-lemon-coop-2026-11-26",
    "name": "Ice Tea Lemon Coop",
    "store": "coop",
-   "category": "fl",
+   "category": "bois",
    "promoPrice": 4.95,
-   "regularPrice": 6.2,
-   "discountPct": 20,
+   "regularPrice": null,
+   "discountPct": null,
    "unitLabel": "",
    "validFrom": "2026-11-26",
    "validTo": "2026-12-02",
    "approxDates": false,
-   "match": "citron",
+   "match": "",
    "photo": "https://fr.rabatt-kompass.ch/public/gimg/3/2/6/6/6/6/4/ice-tea-lemon-coop--3266664.jpg",
    "url": "https://fr.rabatt-kompass.ch/produits/the-glace",
    "note": ""
@@ -608,9 +608,9 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 14.5,
-   "regularPrice": null,
-   "discountPct": null,
-   "unitLabel": "",
+   "regularPrice": 15.8,
+   "discountPct": 8,
+   "unitLabel": "250 g",
    "validFrom": "2026-11-26",
    "validTo": "2026-12-02",
    "approxDates": false,
