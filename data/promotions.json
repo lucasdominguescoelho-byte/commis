@@ -1,7 +1,7 @@
 {
  "app": "cabas",
  "version": 1,
- "generatedAt": "2026-11-27T14:00:23+00:00",
+ "generatedAt": "2026-11-28T13:15:15+00:00",
  "sources": {
   "lidl": {
    "ok": false,
@@ -14,13 +14,13 @@
    "ok": true,
    "count": 15,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-27T13:59:26+00:00"
+   "updatedAt": "2026-11-28T13:14:20+00:00"
   },
   "coop": {
    "ok": true,
    "count": 30,
    "origine": "rabatt-kompass.ch (catalogue romand)",
-   "updatedAt": "2026-11-27T14:00:23+00:00"
+   "updatedAt": "2026-11-28T13:15:15+00:00"
   }
  },
  "promotions": [
@@ -608,9 +608,9 @@
    "store": "coop",
    "category": "lait",
    "promoPrice": 14.5,
-   "regularPrice": 15.8,
-   "discountPct": 8,
-   "unitLabel": "250 g",
+   "regularPrice": null,
+   "discountPct": null,
+   "unitLabel": "",
    "validFrom": "2026-11-26",
    "validTo": "2026-12-02",
    "approxDates": false,
